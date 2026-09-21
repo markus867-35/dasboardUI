@@ -1,9 +1,9 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { useFontSize } from '@/app/context/FontSizeContext';
+import { useState } from 'react';
+import { useFontSize, FontSizeContextType } from '@/app/context/FontSizeContext';
 
 export default function FontSizeDropdown() {
-  const { fontSize, changeFontSize } = useFontSize();
+  const { fontSize, changeFontSize } = useFontSize() as FontSizeContextType;
   const [isOpen, setIsOpen] = useState(false);
 
   const options = [

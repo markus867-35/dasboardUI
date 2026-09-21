@@ -2,6 +2,14 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+// Deklarasi global agar TypeScript mengenali objek google & fungsi callback-nya
+declare global {
+  interface Window {
+    google: any;
+    googleTranslateElementInit: () => void;
+  }
+}
+
 export default function GoogleTranslate() {
   const pathname = usePathname();
 
@@ -17,7 +25,8 @@ export default function GoogleTranslate() {
       }
 
       window.googleTranslateElementInit = () => {
-        if (document.getElementById('google_translate_element') && !document.getElementById('google_translate_element').hasChildNodes()) {
+        const el = document.getElementById('google_translate_element');
+        if (el && !el.hasChildNodes()) {
           new window.google.translate.TranslateElement(
             {
               pageLanguage: 'id',
@@ -58,7 +67,8 @@ export default function GoogleTranslate() {
       if (document.body.style.top && document.body.style.top !== '0px') {
         document.body.style.setProperty('top', '0px', 'important');
       }
-      const banner = document.querySelector('.goog-te-banner-frame');
+      // Memperbaiki tipe pada querySelector agar aman dari error property style
+      const banner = document.querySelector('.goog-te-banner-frame') as HTMLElement;
       if (banner) {
         banner.style.setProperty('display', 'none', 'important');
       }
