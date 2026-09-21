@@ -20,18 +20,24 @@ export default function RichTextEditorPage() {
     alert('Konten berhasil disimpan!');
   };
 
-  // === FUNGSI DOWNLOAD KE PDF ===
+// === FUNGSI DOWNLOAD KE PDF ===
   const handleDownloadPDF = async () => {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const element = document.getElementById('pdf-preview-content');
       
+      // Tambahkan pengecekan ini agar TypeScript tidak error jika elemen belum/tidak ditemukan
+      if (!element) {
+        console.error("Elemen PDF tidak ditemukan");
+        return;
+      }
+
       const options = {
-        margin:       10,
-        filename:     'dokumen-editor.pdf',
-        image:        { type: 'jpeg' as const, quality: 0.98 },
+        margin:      10,
+        filename:    'dokumen-editor.pdf',
+        image:       { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
 
       html2pdf().from(element).set(options).save();
