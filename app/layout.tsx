@@ -1,18 +1,19 @@
 'use client';
 import "./globals.css";
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { ThemeProvider, useTheme } from "@/app/context/ThemeContext";
 import { TabProvider } from "@/app/context/TabContext";
 import Sidebar from "@/app/components/Sidebar";
 import Header from "@/app/components/Header";
 import TagsView from "@/app/components/TagsView";
-import { FontSizeProvider, useFontSize } from '@/app/context/FontSizeContext';
+import { FontSizeProvider, useFontSize, FontSizeContextType } from '@/app/context/FontSizeContext';
 import { LanguageProvider } from "@/app/context/LanguageContext";
 import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 
-function DashboardLayout({ children }) {
+// Komponen internal untuk menangani efek responsif sidebar & ukuran font
+function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { isSidebarOpen, setIsSidebarOpen } = useTheme();
-  const { currentSizeClass } = useFontSize();
+  const { currentSizeClass } = useFontSize() as FontSizeContextType;
 
   useEffect(() => {
     if (window.innerWidth < 1024 && typeof setIsSidebarOpen === 'function') {
@@ -66,7 +67,7 @@ function DashboardLayout({ children }) {
   );
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
       <body className="min-h-screen antialiased bg-[#142028] text-white">
@@ -74,7 +75,8 @@ export default function RootLayout({ children }) {
           <FontSizeProvider>
             <ThemeProvider>
               <SidebarThemeProvider>
-              <DashboardLayout>{children}</DashboardLayout>
+                {/* Diubah dari DashboardLayout menjadi DashboardLayoutContent */}
+                <DashboardLayoutContent>{children}</DashboardLayoutContent>
               </SidebarThemeProvider>
             </ThemeProvider>
           </FontSizeProvider>

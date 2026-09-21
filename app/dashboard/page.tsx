@@ -45,7 +45,7 @@ function AnimatedCounter({ value }) {
 // ==========================================
 function NewsWidget() {
   const { mode, colorTheme } = useTheme();
-  const [news, setNews] = useState([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
 useEffect(() => {
@@ -84,6 +84,18 @@ useEffect(() => {
       }
     }
   };
+
+  interface NewsItem {
+  source: string;
+  link: string;
+  title: string;
+  snippet: string;
+  date: string;
+  image?: string;
+}
+
+// Pada deklarasi state di page.tsx:
+
 
   return (
     <div className={`w-full rounded-2xl p-4 sm:p-6 box-border transition-all duration-300 ${getWidgetCardStyle()}`}>
