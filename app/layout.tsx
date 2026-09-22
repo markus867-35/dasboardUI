@@ -23,7 +23,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
   return (
     <TabProvider>
-      <div className={`flex min-h-screen w-full relative ${useFontSize}`}>
+      <div className={`flex min-h-screen w-full relative ${fontSize}`}>
         
         {/* BACKDROP / AREA KLIK PENUTUP DI MOBILE */}
         {isSidebarOpen && (
