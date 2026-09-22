@@ -7,10 +7,11 @@ import { useSidebarTheme } from '@/app/context/SidebarThemeContext';
 
 export default function RichTextEditorPage() {
   // State khusus untuk menampung teks Live Preview
-  const [previewContent, setPreviewContent] = useState('<p>Perkenalkan nama saya jimbaran...</p>');
+  const [previewContent, setPreviewContent] = useState<string>('<p>Perkenalkan nama saya jimbaran...</p>');
   const editorRef = useRef<TinyMCEEditor | null>(null);
   
-  const { theme } = useTheme();
+  // Ubah 'theme' menjadi 'mode' sesuai dengan tipe data ThemeContextType
+  const { mode } = useTheme();
   const { sidebarTheme } = useSidebarTheme();
 
   // Fungsi untuk menyimpan ke Database / Console
@@ -50,12 +51,12 @@ export default function RichTextEditorPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       
-      {/* Bagian Header Informasi */}
-      <div className={`border p-4 rounded-xl text-sm leading-relaxed transition-colors duration-300 ${
-        theme === 'light' 
-          ? 'bg-slate-100 border-slate-300 text-slate-700' 
-          : 'bg-white/5 border-white/10 text-slate-300'
-      }`}>
+{/* Bagian Header Informasi */}
+<div className={`border p-4 rounded-xl text-sm leading-relaxed transition-colors duration-300 ${
+  mode === 'light'
+    ? 'bg-slate-100 border-slate-300 text-slate-700'
+    : 'bg-white/5 border-white/10 text-slate-300'
+}`}>
         Rich text is a core feature of the management backend, but at the same time it is a place with lots of pits. 
         The common rich texts on the market have been basically used, and I finally chose Tinymce.
       </div>
@@ -71,11 +72,12 @@ export default function RichTextEditorPage() {
       </div>
 
       {/* Komponen TinyMCE Editor */}
-      <div className={`rounded-xl shadow-lg overflow-hidden border transition-colors duration-300 ${
-        theme === 'light' 
-          ? 'bg-white border-slate-300 shadow-slate-200/50' 
-          : 'bg-white/5 border-white/20 shadow-black/40'
-      }`}>
+{/* Bagian Header Informasi */}
+<div className={`border p-4 rounded-xl text-sm leading-relaxed transition-colors duration-300 ${
+  mode === 'light'
+    ? 'bg-slate-100 border-slate-300 text-slate-700'
+    : 'bg-white/5 border-white/10 text-slate-300'
+}`}>
         <Editor
           apiKey="w4zcww4rfgtbbudm6m1tup4m4jz248dngih399mlkot5625j"
           onInit={(_evt, editor) => {
@@ -106,13 +108,14 @@ export default function RichTextEditorPage() {
       </div>
 
 {/* === BAGIAN LIVE PREVIEW (DIPERBESAR TINGGINYA) === */}
-      <div className={`border p-6 rounded-xl space-y-3 shadow-xl transition-colors duration-300 ${
-        theme === 'light' 
-          ? 'bg-white border-slate-300 text-slate-900 shadow-sm' 
-          : 'bg-slate-900/80 border-white/20 text-white backdrop-blur-md'
-      }`}>
+{/* Bagian Header Informasi */}
+<div className={`border p-4 rounded-xl text-sm leading-relaxed transition-colors duration-300 ${
+  mode === 'light'
+    ? 'bg-slate-100 border-slate-300 text-slate-700'
+    : 'bg-white/5 border-white/10 text-slate-300'
+}`}>
         <h3 className={`text-xs font-semibold uppercase tracking-wider border-b pb-2 ${
-          theme === 'light' ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-white/15'
+          mode === 'light' ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-white/15'
         }`}>
           Live Preview Hasil Edit:
         </h3>
@@ -121,7 +124,7 @@ export default function RichTextEditorPage() {
         <div 
           id="pdf-preview-content"
           className={`prose max-w-none min-h-[250px] p-4 rounded-lg border border-dashed ${
-            theme === 'light' 
+            mode === 'light' 
               ? 'text-slate-900 bg-slate-50/50 border-slate-200' 
               : 'text-slate-100 prose-invert bg-white/5 border-white/10'
           }`}

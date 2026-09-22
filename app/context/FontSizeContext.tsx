@@ -1,25 +1,22 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const FontSizeContext = createContext();
+export interface FontSizeContextType {
+  fontSize: string;
+  changeFontSize: (size: string) => void;
+}
 
-export function FontSizeProvider({ children }) {
-  const [fontSize, setFontSize] = useState('default');
+const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
 
-  useEffect(() => {
-    const savedSize = localStorage.getItem('global_font_size');
-    if (savedSize) {
-      setFontSize(savedSize);
-      applyFontSize(savedSize);
-    }
-  }, []);
+export function FontSizeProvider({ children }: { children: ReactNode }) {
+  const [fontSize, setFontSize] = useState<string>('default');
 
-  const applyFontSize = (size) => {
+  const applyFontSize = (size: string) => {
     if (typeof window === 'undefined') return;
     const htmlElement = document.documentElement;
     
-    // Skala persentase root (100% = 16px)
-    const scales = {
+    // Berikan tipe Record<string, string> agar aman diindeks oleh string
+    const scales: Record<string, string> = {
       default: '100%', // 16px
       medium: '112.5%', // 18px
       small: '87.5%',  // 14px
@@ -29,7 +26,15 @@ export function FontSizeProvider({ children }) {
     htmlElement.style.fontSize = scales[size] || '100%';
   };
 
-  const changeFontSize = (size) => {
+  useEffect(() => {
+    const savedSize = localStorage.getItem('global_font_size');
+    if (savedSize) {
+      setFontSize(savedSize);
+      applyFontSize(savedSize);
+    }
+  }, []);
+
+  const changeFontSize = (size: string) => {
     setFontSize(size);
     localStorage.setItem('global_font_size', size);
     applyFontSize(size);
@@ -42,4 +47,10 @@ export function FontSizeProvider({ children }) {
   );
 }
 
-export const useFontSize = () => useContext(FontSizeContext);
+export function useFontSize(): FontSizeContextType {
+  const context = useContext(FontSizeContext);
+  if (!context) {
+    throw new Error('useFontSize must be used within a FontSizeProvider');
+  }
+  return context;
+}

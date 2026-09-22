@@ -41,7 +41,7 @@ export default function Sidebar() {
     }
   };
 
-  const [openMenus, setOpenMenus] = useState({
+const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     visitor: pathname.startsWith('/dashboard/add'),
     list: pathname.startsWith('/dashboard/list'),
     report: pathname.startsWith('/dashboard/report'),
@@ -49,7 +49,7 @@ export default function Sidebar() {
     setting: pathname.startsWith('/dashboard/setting'),
   });
 
-  const toggleMenu = (menuKey) => {
+  const toggleMenu = (menuKey: string) => {
     setOpenMenus((prev) => ({
       ...prev,
       [menuKey]: !prev[menuKey],
