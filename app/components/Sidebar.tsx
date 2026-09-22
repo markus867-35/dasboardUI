@@ -88,7 +88,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     }`}>
 <div className="p-6 flex items-center justify-between relative z-50">
   <h1 className="text-3xl font-bold tracking-wider text-white italic">
-    Data-save
+    Data-save-Markus
   </h1>
 
   {/* Tombol Close Khusus Mobile */}
@@ -313,7 +313,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         A
       </div>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-white truncate">Super Admin</h3>
+        <h3 className="text-sm font-semibold text-white truncate">Maretsa</h3>
         <span className="text-[10px] text-emerald-400 font-medium">● Online</span>
       </div>
     </div>
