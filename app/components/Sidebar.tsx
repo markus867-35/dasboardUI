@@ -75,7 +75,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
       isActive ? 'bg-[#2E4053] text-white' : 'text-slate-400 hover:text-white hover:bg-[#253644]/50'
     }`;
   };
-  
+
   return (
 <aside className={`fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 flex flex-col justify-between ${getSidebarStyle()} ${
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -341,7 +341,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 {/* ========================================== */}
 {/* AREA TANGGAL BUAT / REGISTRASI AKUN        */}
 {/* ========================================== */}
-<div className=" text-[12px] text-slate-400 flex flex-col space-y-0.5">
+<div className="px-1 text-[10px] text-slate-400 flex flex-col space-y-0.5">
   <div className="flex items-center space-x-1.5">
     <span className="opacity-75">📅</span>
     <span>Hari Ini: <strong className="text-slate-200">
@@ -355,7 +355,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   </div>
   
   {/* Tanggal Pembuatan / Bergabung */}
-  <div className="flex items-center space-x-1 opacity-80 pl-1.5 text-[12px]">
+  <div className="flex items-center space-x-1 opacity-80 pl-1.5 text-[10px]">
     <span>Terdaftar Sejak: <strong>20 September 2026</strong></span> {/* Ganti dengan variabel tanggal dari database Anda */}
   </div>
 </div>
