@@ -35,12 +35,16 @@ export default function Sidebar() {
     }
   };
 
-  const handleMenuClick = () => {
+// Jika fungsi dipanggil saat item menu diklik dengan membawa parameter path
+  const handleMenuClick = (path?: string) => {
     if (window.innerWidth < 1024 && typeof setIsSidebarOpen === 'function') {
       setIsSidebarOpen(false);
     }
+    // Jika path disertakan untuk navigasi/router
+    if (path) {
+      // router.push(path) atau logika navigasi Anda
+    }
   };
-
 const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     visitor: pathname.startsWith('/dashboard/add'),
     list: pathname.startsWith('/dashboard/list'),
