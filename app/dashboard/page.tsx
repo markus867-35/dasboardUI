@@ -10,7 +10,7 @@ const visitorData = [
   { date: 'Sep 18', registrasi: 29 },
   { date: 'Sep 19', registrasi: 32 },
   { date: 'Sep 20', registrasi: 21 },
-  { date: 'Sep 21', registrasi: 1 },
+  { date: 'Sep 21', registrasi: 15 },
 ];
 
 interface AnimatedCounterProps {
@@ -54,7 +54,7 @@ interface NewsItem {
 }
 
 // ==========================================
-// KODE KOMPONEN NEWS WIDGET
+// KODE KOMPONEN NEWS WIDGET (DILENGKAPI)
 // ==========================================
 function NewsWidget() {
   const { mode, colorTheme } = useTheme();
@@ -66,7 +66,6 @@ function NewsWidget() {
       try {
         const res = await fetch('/api/news');
         const json = await res.json();
-        console.log("Data dari API:", json);
         if (json.success) {
           setNews(json.data);
         }
@@ -159,19 +158,27 @@ function NewsWidget() {
   );
 }
 
+
+
+
 // ==========================================
 // HALAMAN UTAMA DASHBOARD
 // ==========================================
 export default function DashboardPage() {
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   const { mode, colorTheme } = useTheme();
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 50);
-    return () => clearTimeout(timer);
+useEffect(() => {
+    // 2. Ubah isLoaded menjadi true agar animasi fade-in berjalan
+    setIsLoaded(true);
+    setChartData(visitorData);
   }, []);
+useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
 
   const getCardStyle = () => {
     if (mode === 'light') {
@@ -253,15 +260,28 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* 2. Bagian Grafik */}
+
+
+
+
+
+
+{/* 2. Bagian Grafik dengan Efek Muncul Satu-Satu */}
       <div 
-        style={{ transitionDelay: '600ms' }}
+        style={{ transitionDelay: '300ms' }}
         className={`w-full transition-all duration-1000 transform ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
       >
         <div className={`w-full rounded-2xl p-4 sm:p-6 box-border transition-colors duration-300 ${getCardStyle()}`}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          
+          {/* Bagian 1: Judul dan Tombol (Muncul Duluan) */}
+          <div 
+            style={{ transitionDelay: '500ms' }}
+            className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 transition-all duration-700 transform ${
+              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
             <h3 className="text-lg font-bold">Registrasi 7 hari terakhir</h3>
             <div className={`flex space-x-1 text-xs p-1 rounded-xl ${mode === 'light' ? 'bg-black/5' : 'bg-white/10'}`}>
               <button className="px-3 py-1 rounded-lg bg-[#2E4053] text-white shadow">Week</button>
@@ -269,29 +289,47 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="h-64 w-full overflow-hidden">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={visitorData} margin={{ top: 20, right: 10, left: -25, bottom: 5 }}>
-                <XAxis dataKey="date" stroke={mode === 'light' ? '#475569' : '#94a3b8'} fontSize={12} />
-                <YAxis stroke={mode === 'light' ? '#475569' : '#94a3b8'} fontSize={12} />
-                <Tooltip 
-                  cursor={{ fill: mode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{ 
-                    backgroundColor: mode === 'light' ? '#ffffff' : '#1B2A35', 
-                    borderColor: '#475569', 
-                    borderRadius: '8px', 
-                    color: mode === 'light' ? '#0f172a' : '#fff',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
-                  }} 
-                />
-                <Bar dataKey="registrasi" fill="#3b82f6" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="registrasi" position="top" fill={mode === 'light' ? '#1e293b' : '#e2e8f0'} fontSize={11} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Bagian 2: Area Grafik (Muncul Terakhir dengan Efek Smooth) */}
+          <div 
+            style={{ transitionDelay: '800ms' }}
+            className={`h-64 w-full overflow-hidden transition-all duration-1000 transform ${
+              isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+          >
+<ResponsiveContainer width="100%" height="100%">
+  <BarChart data={chartData} margin={{ top: 20, right: 10, left: -25, bottom: 5 }}>
+    <XAxis dataKey="date" stroke={mode === 'light' ? '#475569' : '#94a3b8'} fontSize={12} />
+    <YAxis stroke={mode === 'light' ? '#475569' : '#94a3b8'} fontSize={12} />
+    <Tooltip 
+      cursor={{ fill: mode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}
+      contentStyle={{ 
+        backgroundColor: mode === 'light' ? '#ffffff' : '#1B2A35', 
+        borderColor: '#475569', 
+        borderRadius: '8px', 
+        color: mode === 'light' ? '#0f172a' : '#fff',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+      }} 
+    />
+<Bar 
+  dataKey="registrasi" 
+  fill="#3b82f6" 
+  radius={[6, 6, 0, 0]} 
+  isAnimationActive={true}
+  animationDuration={2000}
+  animationEasing="ease-out"
+>
+  <LabelList dataKey="registrasi" position="top" fill={mode === 'light' ? '#1e293b' : '#e2e8f0'} fontSize={11} />
+</Bar>
+  </BarChart>
+</ResponsiveContainer>
           </div>
+
         </div>
       </div>
+
+
+
+
 
       {/* 3. Area Tabel Recent Visitor */}
       <div 
