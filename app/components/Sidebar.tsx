@@ -137,16 +137,16 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           
           {openMenus.visitor && (
             <div className="pl-11 pr-2  py-1 space-y-2">
-              <Link href="/dashboard/add/form" className={getSubLinkStyle('/dashboard/add/form')} onClick={handleMenuClick}>
+              <Link href="/dashboard/add-data/file-manager" className={getSubLinkStyle('/dashboard/add-data/file-manager')} onClick={handleMenuClick}>
                 File manager
               </Link>
-              <Link href="/dashboard/add/image" className={getSubLinkStyle('/dashboard/add/image')} onClick={handleMenuClick}>
+              <Link href="/dashboard/add-data/file-image" className={getSubLinkStyle('/dashboard/add-data/file-image')} onClick={handleMenuClick}>
                 Manager image
               </Link>
-              <Link href="/dashboard/add/music" className={getSubLinkStyle('/dashboard/add/music')} onClick={handleMenuClick}>
+              <Link href="/dashboard/add-data/file-music" className={getSubLinkStyle('/dashboard/add-data/file-music')} onClick={handleMenuClick}>
                 Manager Music
               </Link>
-              <Link href="/dashboard/add/video" className={getSubLinkStyle('/dashboard/add/video')} onClick={handleMenuClick}>
+              <Link href="/dashboard/add-data/file-video" className={getSubLinkStyle('/dashboard/add-data/file-video')} onClick={handleMenuClick}>
                 Manager Video
               </Link>
             </div>
