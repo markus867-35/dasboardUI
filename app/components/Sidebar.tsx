@@ -45,12 +45,18 @@ const handleMenuClick = (e?: MouseEvent<HTMLAnchorElement>, path?: string) => {
   // Jika Anda perlu menggunakan path atau event lainnya
 };
 const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    visitor: pathname.startsWith('/dashboard/add'),
-    list: pathname.startsWith('/dashboard/list'),
-    report: pathname.startsWith('/dashboard/report'),
-    notifications: pathname.startsWith('/dashboard/notifications'),
-    setting: pathname.startsWith('/dashboard/setting'),
-  });
+  visitor: pathname.startsWith('/dashboard/add'),
+  
+  // Perbarui bagian 'list' ini agar mengenali rute-rute baru Anda
+  list: pathname.startsWith('/dashboard/list') || 
+        pathname.startsWith('/dashboard/countries') || 
+        pathname.startsWith('/dashboard/currencies') || 
+        pathname.startsWith('/dashboard/directory'),
+
+  report: pathname.startsWith('/dashboard/report'),
+  notifications: pathname.startsWith('/dashboard/notifications'),
+  setting: pathname.startsWith('/dashboard/setting'),
+});
 
   const toggleMenu = (menuKey: string) => {
     setOpenMenus((prev) => ({
@@ -149,37 +155,61 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
               <Link href="/dashboard/add-data/file-video" className={getSubLinkStyle('/dashboard/add-data/file-video')} onClick={handleMenuClick}>
                 Manager Video
               </Link>
+              <Link href="/dashboard/add-data/file-ulr" className={getSubLinkStyle('/dashboard/add-data/file-ulr')} onClick={handleMenuClick}>
+                Manager Url
+              </Link>
             </div>
           )}
         </div>
 
-        {/* 2. Url browser */}
+
+
+
+
+{/* 2. Global Atlas */}
         <div>
           <button
-            onClick={() => toggleMenu('list')}
+            onClick={(e) => {
+              e.preventDefault();
+              setOpenMenus(prev => ({ ...prev, list: !prev.list }));
+            }}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
             <div className="flex items-center">
-              <span className="mr-4 text-[16px]">📋</span> Url browser
+              <span className="mr-4 text-[16px]">🌐</span> Global Atlas
             </div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.list ? 'rotate-90' : ''}`}>
               &gt;
             </span>
           </button>
-          {openMenus.list && (
+          
+{openMenus.list && (
             <div className="pl-11 pr-2 py-1 space-y-1">
-              <Link href="/dashboard/list/active" className={getSubLinkStyle('/dashboard/list/active')} onClick={handleMenuClick}>
-                Link 1
+              <Link 
+                href="/dashboard/countries" 
+                className={getSubLinkStyle('/dashboard/countries')}
+              >
+                Country List
               </Link>
-              <Link href="/dashboard/list/history" className={getSubLinkStyle('/dashboard/list/history')} onClick={handleMenuClick}>
-                Link 2
+              <Link 
+                href="/dashboard/currencies" 
+                className={getSubLinkStyle('/dashboard/currencies')}
+              >
+                Currencies
               </Link>
-              <Link href="/dashboard/list/history" className={getSubLinkStyle('/dashboard/list/history')} onClick={handleMenuClick}>
-                Link 3
+              <Link 
+                href="/dashboard/directory" 
+                className={getSubLinkStyle('/dashboard/directory')}
+              >
+                Name Directory
               </Link>
             </div>
           )}
         </div>
+
+
+
+
 
         {/* 3. Report */}
         <div>
