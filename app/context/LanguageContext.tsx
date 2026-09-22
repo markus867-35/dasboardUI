@@ -1,10 +1,16 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const LanguageContext = createContext();
+interface LanguageContextType {
+  locale: string;
+  changeLanguage: (lang: string) => void;
+  t: (key: string) => string;
+}
 
-// Kamus terjemahan sederhana untuk contoh (bisa diperluas)
-const translations = {
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+// Kamus terjemahan dengan indeks tipe string yang aman
+const translations: Record<string, Record<string, string>> = {
   id: {
     dashboard: 'Dashboard',
     theme: 'Tema:',
@@ -37,8 +43,8 @@ const translations = {
   },
 };
 
-export function LanguageProvider({ children }) {
-  const [locale, setLocale] = useState('id'); // Default Bahasa Indonesia / ganti 'en'
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocale] = useState<string>('id');
 
   useEffect(() => {
     const savedLang = localStorage.getItem('global_language');
@@ -47,14 +53,13 @@ export function LanguageProvider({ children }) {
     }
   }, []);
 
-  const changeLanguage = (lang) => {
+  const changeLanguage = (lang: string) => {
     setLocale(lang);
     localStorage.setItem('global_language', lang);
   };
 
-  // Fungsi penerjemah teks otomatis (t: translation)
-  const t = (key) => {
-    return translations[locale]?.[key] || translations['id'][key] || key;
+  const t = (key: string): string => {
+    return translations[locale]?.[key] || translations['id']?.[key] || key;
   };
 
   return (
@@ -64,4 +69,10 @@ export function LanguageProvider({ children }) {
   );
 }
 
-export const useLanguage = () => useContext(LanguageContext);
+export function useLanguage(): LanguageContextType {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}

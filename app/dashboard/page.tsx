@@ -13,9 +13,13 @@ const visitorData = [
   { date: 'Sep 21', registrasi: 1 },
 ];
 
-function AnimatedCounter({ value }) {
-  const [count, setCount] = useState(0);
-  const target = parseInt(value, 10) || 0;
+interface AnimatedCounterProps {
+  value: number | string;
+}
+
+function AnimatedCounter({ value }: AnimatedCounterProps) {
+  const [count, setCount] = useState<number>(0);
+  const target = parseInt(String(value), 10) || 0;
 
   useEffect(() => {
     let start = 0;
@@ -40,33 +44,41 @@ function AnimatedCounter({ value }) {
   return <span>{Number(count).toLocaleString('id-ID')}</span>;
 }
 
+interface NewsItem {
+  source: string;
+  link: string;
+  title: string;
+  snippet: string;
+  date: string;
+  image?: string;
+}
+
 // ==========================================
-// KODE KOMPONEN NEWS WIDGET TERSEBUT
+// KODE KOMPONEN NEWS WIDGET
 // ==========================================
 function NewsWidget() {
   const { mode, colorTheme } = useTheme();
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
-useEffect(() => {
-  async function fetchNews() {
-    try {
-      const res = await fetch('/api/news');
-      const json = await res.json();
-      console.log("Data dari API:", json); // <-- Cek di Console Browser (F12)
-      if (json.success) {
-        setNews(json.data);
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const res = await fetch('/api/news');
+        const json = await res.json();
+        console.log("Data dari API:", json);
+        if (json.success) {
+          setNews(json.data);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil berita:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Gagal mengambil berita:", error);
-    } finally {
-      setLoading(false);
     }
-  }
-  fetchNews();
-}, []);
+    fetchNews();
+  }, []);
 
-  // Mengikuti fungsi gaya warna kartu dashboard Anda agar konsisten
   const getWidgetCardStyle = () => {
     if (mode === 'light') {
       switch (colorTheme) {
@@ -85,18 +97,6 @@ useEffect(() => {
     }
   };
 
-  interface NewsItem {
-  source: string;
-  link: string;
-  title: string;
-  snippet: string;
-  date: string;
-  image?: string;
-}
-
-// Pada deklarasi state di page.tsx:
-
-
   return (
     <div className={`w-full rounded-2xl p-4 sm:p-6 box-border transition-all duration-300 ${getWidgetCardStyle()}`}>
       <h3 className="text-lg font-bold mb-6 border-b pb-3 border-black/10 dark:border-white/10">
@@ -105,6 +105,8 @@ useEffect(() => {
 
       {loading ? (
         <p className="text-xs opacity-70 animate-pulse">Memuat berita...</p>
+      ) : news.length === 0 ? (
+        <p className="text-xs opacity-70">Tidak ada berita tersedia.</p>
       ) : (
         <div className="space-y-6">
           {news.map((item, index) => (
@@ -162,7 +164,7 @@ useEffect(() => {
 // ==========================================
 export default function DashboardPage() {
   const { mode, colorTheme } = useTheme();
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -330,7 +332,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. Bagian Widget Berita yang Ditambahkan */}
+      {/* 4. Bagian Widget Berita */}
       <div 
         style={{ transitionDelay: '1000ms' }}
         className={`w-full transition-all duration-1000 transform ${
