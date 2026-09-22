@@ -13,7 +13,7 @@ import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 // Komponen internal untuk menangani efek responsif sidebar & ukuran font
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { isSidebarOpen, setIsSidebarOpen } = useTheme();
-  const { currentSizeClass } = useFontSize() as FontSizeContextType;
+  const { fontSize } = useFontSize() as FontSizeContextType;
 
   useEffect(() => {
     if (window.innerWidth < 1024 && typeof setIsSidebarOpen === 'function') {
@@ -23,7 +23,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
   return (
     <TabProvider>
-      <div className={`flex min-h-screen w-full relative ${currentSizeClass}`}>
+      <div className={`flex min-h-screen w-full relative ${useFontSize}`}>
         
         {/* BACKDROP / AREA KLIK PENUTUP DI MOBILE */}
         {isSidebarOpen && (

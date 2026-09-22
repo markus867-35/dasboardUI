@@ -59,7 +59,8 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     }));
   };
 
-  const getLinkStyle = (path) => {
+// Tambahkan ': string' pada parameter path
+  const getLinkStyle = (path: string) => {
     const isActive = pathname === path;
     if (isActive) {
       return "flex items-center px-4 py-3 rounded-xl text-sm font-medium bg-[#2E4053] text-white shadow-md transition-all";
@@ -67,13 +68,14 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     return "flex items-center px-4 py-3 rounded-xl text-sm font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all";
   };
 
-  const getSubLinkStyle = (path) => {
+  // Tambahkan ': string' pada parameter path
+  const getSubLinkStyle = (path: string) => {
     const isActive = pathname === path;
     return `block px-3 py-2 rounded-lg text-xs font-medium transition-all ${
       isActive ? 'bg-[#2E4053] text-white' : 'text-slate-400 hover:text-white hover:bg-[#253644]/50'
     }`;
   };
-
+  
   return (
 <aside className={`fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 flex flex-col justify-between ${getSidebarStyle()} ${
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
