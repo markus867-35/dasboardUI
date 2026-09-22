@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useSidebarTheme } from '@/app/context/SidebarThemeContext'; // Sesuaikan path-nya
+import { MouseEvent } from 'react'; // Pastikan MouseEvent sudah diimport
 
 
 export default function Sidebar() {
@@ -36,15 +37,13 @@ export default function Sidebar() {
   };
 
 // Jika fungsi dipanggil saat item menu diklik dengan membawa parameter path
-  const handleMenuClick = (path?: string) => {
-    if (window.innerWidth < 1024 && typeof setIsSidebarOpen === 'function') {
-      setIsSidebarOpen(false);
-    }
-    // Jika path disertakan untuk navigasi/router
-    if (path) {
-      // router.push(path) atau logika navigasi Anda
-    }
-  };
+// Ubah fungsi Anda agar kompatibel dengan MouseEventHandler React
+const handleMenuClick = (e?: MouseEvent<HTMLAnchorElement>, path?: string) => {
+  if (window.innerWidth < 1024 && typeof setIsSidebarOpen === 'function') {
+    setIsSidebarOpen(false);
+  }
+  // Jika Anda perlu menggunakan path atau event lainnya
+};
 const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     visitor: pathname.startsWith('/dashboard/add'),
     list: pathname.startsWith('/dashboard/list'),
