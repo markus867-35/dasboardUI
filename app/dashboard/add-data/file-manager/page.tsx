@@ -118,13 +118,12 @@ export default function FileManagerPage() {
     }
   };
 
-  // Handler Upload Folder & File (Mendukung Gambar Base64 & Teks Kode)
-// Handler Upload Folder & File yang Akurat sesuai Posisi Folder Aktif
+// Handler Upload Folder & File (Mendukung Folder Bersarang / Sub-folder)
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const uploadedFiles = Array.from(e.target.files);
       const newEntries: FileItem[] = [];
-      const discoveredFolders = new Set<string>();
+      const discoveredFolders = new Map<string, string>(); // Map<namaFolder, parentFolder>
 
       for (const file of uploadedFiles as any[]) {
         const relativePath = file.webkitRelativePath || file.name;
@@ -149,28 +148,24 @@ export default function FileManagerPage() {
           console.error('Gagal membaca isi file:', err);
         }
 
-        // 2. Penentuan parentFolder yang akurat:
-        // - Jika sedang di dalam folder tertentu (misal: 'gambar_promosi'), masukkan file langsung ke folder aktif ini.
-        // - Jika sedang di 'root' dan meng-upload satu folder penuh, petakan ke rootFolder-nya.
+        // 2. Petak hierarchical folder (Folder di dalam folder)
         let targetParentFolder = currentFolder;
 
         if (pathSegments.length > 1) {
-          const rootFolderName = pathSegments[0];
-          discoveredFolders.add(rootFolderName);
-
-          // Jika path punya sub-folder dan kita di root, masukkan ke folder root-nya
-          if (currentFolder === 'root') {
-            // Jika struktur file ada di dalam sub-folder tingkat 2 (folder/file.png)
-            if (pathSegments.length === 2) {
-              targetParentFolder = rootFolderName;
-            } else if (pathSegments.length > 2) {
-              // Untuk folder bersarang, Anda bisa sesuaikan atau masukkan ke folder utamanya
-              targetParentFolder = pathSegments[pathSegments.length - 2]; 
-            }
+          // Loop untuk mendaftarkan setiap tingkat folder ke dalam discoveredFolders
+          for (let i = 0; i < pathSegments.length - 1; i++) {
+            const folderName = pathSegments[i];
+            const parentOfThisFolder = i === 0 ? (currentFolder === 'root' ? 'root' : currentFolder) : pathSegments[i - 1];
+            
+            // Simpan relasi folder
+            discoveredFolders.set(folderName, parentOfThisFolder);
           }
+
+          // Parent langsung dari file ini adalah folder tepat di atasnya (elemen sebelum nama file)
+          targetParentFolder = pathSegments[pathSegments.length - 2];
         }
 
-        // Jika user sedang membuka folder tertentu dan meng-upload file di dalamnya
+        // Masukkan file ke daftar entri baru
         newEntries.push({
           id: `${Date.now()}-${Math.random()}`,
           name: file.name,
@@ -182,17 +177,20 @@ export default function FileManagerPage() {
         });
       }
 
-      // Tambahkan ikon folder baru ke daftar utama jika mengupload folder dari root
-      discoveredFolders.forEach((folderName) => {
-        const folderExists = files.some(f => f.name === folderName && f.parentFolder === 'root');
-        if (!folderExists && currentFolder === 'root') {
+      // 3. Buat objek item folder untuk setiap folder & sub-folder yang ditemukan
+      discoveredFolders.forEach((parent, folderName) => {
+        // Cek apakah folder ini sudah ada di state utama atau di newEntries
+        const folderExists = files.some(f => f.name === folderName && f.parentFolder === parent) ||
+                             newEntries.some(f => f.name === folderName && f.type === 'folder' && f.parentFolder === parent);
+        
+        if (!folderExists) {
           newEntries.push({
-            id: `${Date.now()}-dir-${folderName}`,
+            id: `${Date.now()}-dir-${Math.random()}`,
             name: folderName,
             type: 'folder',
             size: '--',
             date: 'Baru saja',
-            parentFolder: 'root'
+            parentFolder: parent
           });
         }
       });
@@ -346,30 +344,40 @@ export default function FileManagerPage() {
             <FiFolder size={48} className="mb-2" />
             <p>Folder ini kosong.</p>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {displayedFiles.map((file) => (
-              <div 
-                key={file.id} 
-                onClick={() => handleItemClick(file)}
-                className="group flex flex-col items-center p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-blue-500/30 relative"
-              >
-                <div className="mb-2 transition transform group-hover:scale-105 relative">
-                  {getFileIcon(file.type, file.name)}
-                  {file.type !== 'folder' && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
-                      <FiEye size={10} />
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-center font-medium line-clamp-2 w-full mt-1" title={file.name}>
-                  {file.name}
-                </span>
-                <span className="text-[10px] opacity-50 mt-0.5">{file.size}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
+) : viewMode === 'grid' ? (
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+    {displayedFiles.map((file) => (
+      <div 
+        key={file.id} 
+        onClick={() => handleItemClick(file)}
+        className="group flex flex-col items-center p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-blue-500/30 relative"
+      >
+        {/* Tombol Delete di Pojok Kanan Atas (Muncul saat Hover) */}
+        <button 
+          onClick={(e) => handleDeleteFile(file.id, e)}
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition z-10"
+          title="Hapus"
+        >
+          <FiTrash2 size={12} />
+        </button>
+
+        <div className="mb-2 transition transform group-hover:scale-105 relative">
+          {getFileIcon(file.type, file.name)}
+          {file.type !== 'folder' && (
+            <span className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
+              <FiEye size={10} />
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-center font-medium line-clamp-2 w-full mt-1" title={file.name}>
+          {file.name}
+        </span>
+        <span className="text-[10px] opacity-50 mt-0.5">{file.size}</span>
+      </div>
+    ))}
+  </div>
+) : (
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
