@@ -5,7 +5,7 @@ import {
   FiMusic, FiUpload, FiTrash2, FiSearch, 
   FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload, FiLink, FiSave 
 } from 'react-icons/fi';
-import { supabase } from '@/lib/supabase'; // Sesuaikan path supabase client Anda
+import { supabase } from '@/lib/supabase';
 
 interface MusicItem {
   id: string | number;
@@ -73,14 +73,12 @@ export default function FileMusicPage() {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload file ke Supabase Storage (Bucket: music-files)
       const { error: uploadError } = await supabase.storage
         .from('music-files')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Ambil Public URL dari file yang di-upload
       const { data: publicURLData } = supabase.storage
         .from('music-files')
         .getPublicUrl(filePath);
@@ -100,7 +98,6 @@ export default function FileMusicPage() {
         date: formattedDate
       };
 
-      // Simpan metadata ke tabel database Supabase
       const { data, error: insertError } = await supabase
         .from('music_tracks')
         .insert([newTrack])
@@ -135,7 +132,6 @@ export default function FileMusicPage() {
         year: 'numeric'
       });
 
-      // Mengambil nama file atau domain dari URL sebagai judul default
       const urlObj = new URL(audioUrlInput);
       const defaultName = urlObj.pathname.split('/').pop() || 'External Audio Track';
 
@@ -157,7 +153,7 @@ export default function FileMusicPage() {
 
       if (data) {
         setMusicList([data[0], ...musicList]);
-        setAudioUrlInput(''); // Reset input form
+        setAudioUrlInput('');
         alert('Link audio berhasil disimpan!');
       }
     } catch (error) {
@@ -180,7 +176,6 @@ export default function FileMusicPage() {
 
       if (error) throw error;
 
-      // Jika file berasal dari storage bucket internal, hapus filenya
       try {
         if (fileUrl.includes('/music-files/')) {
           const urlParts = fileUrl.split('/music-files/');
@@ -190,7 +185,7 @@ export default function FileMusicPage() {
           }
         }
       } catch (storageErr) {
-        console.warn('File fisik di storage gagal dihapus atau merupakan URL eksternal:', storageErr);
+        console.warn('File fisik di storage gagal dihapus:', storageErr);
       }
 
       if (activeAudio?.id === id) {
@@ -205,24 +200,36 @@ export default function FileMusicPage() {
     }
   };
 
-  // Toggle Play / Pause Audio
+  // LOGIKA UTAMA: Ganti Musik Secara Otomatis Saat Diklik
   const togglePlayAudio = (item: MusicItem) => {
     if (activeAudio?.id === item.id) {
+      // Jika lagu yang sama diklik, toggle antara play/pause
       if (isPlaying) {
         audioRef.current?.pause();
         setIsPlaying(false);
       } else {
-        audioRef.current?.play();
+        audioRef.current?.play().catch(err => console.log("Play error:", err));
         setIsPlaying(true);
       }
     } else {
+      // Jika lagu BERBEDA diklik, ganti activeAudio secara otomatis
       setActiveAudio(item);
       setIsPlaying(true);
-      setTimeout(() => {
-        audioRef.current?.play();
-      }, 100);
     }
   };
+
+  // Efek samping untuk memaksa elemen <audio> memuat ulang sumber baru & langsung mainkan
+  useEffect(() => {
+    if (activeAudio && audioRef.current) {
+      audioRef.current.load(); // Reset buffer audio ke URL baru
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          console.log("Autoplay dicegah browser atau gagal:", err);
+          setIsPlaying(false);
+        });
+    }
+  }, [activeAudio]);
 
   const filteredMusic = musicList.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -265,7 +272,6 @@ export default function FileMusicPage() {
         {/* AREA DUA KOLOM: UPLOAD FILE & INPUT LINK AUDIO */}
         <div className="mt-6 pt-6 border-t border-slate-700/20 grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          {/* Kolom 1: Upload File Fisik ke Supabase */}
           <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
             <FiUpload className="text-blue-500 text-xl shrink-0" />
             <div className="text-left overflow-hidden">
@@ -277,7 +283,6 @@ export default function FileMusicPage() {
             <input type="file" accept="audio/*" onChange={handleMusicUpload} disabled={uploading} className="hidden" />
           </label>
 
-          {/* Kolom 2: Input Link Audio & Tombol Simpan di Sampingnya */}
           <form onSubmit={handleUrlSubmit} className={`flex flex-col justify-center p-4 rounded-xl border-2 border-dashed ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/20'}`}>
             <div className="flex items-center gap-2 mb-1.5">
               <FiLink className="text-indigo-500 shrink-0" size={14} />
@@ -350,7 +355,6 @@ export default function FileMusicPage() {
                     </div>
                   </div>
 
-                  {/* Tombol Aksi (Download & Hapus) di Grid */}
                   <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                     <a 
                       href={item.url} 
@@ -447,7 +451,7 @@ export default function FileMusicPage() {
       {activeAudio && (
         <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-xl p-4 rounded-2xl border shadow-2xl flex items-center justify-between gap-4 backdrop-blur-lg ${mode === 'light' ? 'bg-white/90 text-slate-900 border-slate-200' : 'bg-[#16222A]/90 text-slate-100 border-slate-700'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 animate-spin">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 ${isPlaying ? 'animate-spin' : ''}`}>
               <FiDisc size={20} />
             </div>
             <div className="truncate">

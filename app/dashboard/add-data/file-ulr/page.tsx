@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import Swal from 'sweetalert2';
 import { 
@@ -7,26 +7,21 @@ import {
   FiExternalLink, FiCopy, FiCheck, FiGlobe, 
   FiMaximize2, FiGrid, FiList 
 } from 'react-icons/fi';
+import { supabase } from '@/lib/supabase';
 
 interface UrlItem {
-  id: string;
+  id: string | number;
   title: string;
   url: string;
   category: string;
   date: string;
 }
 
-const initialUrls: UrlItem[] = [
-  { id: '1', title: 'Next.js 15 Official Documentation', url: 'https://nextjs.org/docs', category: 'Documentation', date: '22 Sep 2026' },
-  { id: '2', title: 'Supabase Dashboard & API', url: 'https://supabase.com/dashboard', category: 'Database', date: '21 Sep 2026' },
-  { id: '3', title: 'Tailwind CSS v4 Utility Classes', url: 'https://tailwindcss.com', category: 'Design', date: '20 Sep 2026' },
-  { id: '4', title: 'GitHub Repository Dashboard', url: 'https://github.com', category: 'Development', date: '19 Sep 2026' },
-];
-
 export default function FileUrlPage() {
   const { mode } = useTheme();
-  const [urlList, setUrlList] = useState<UrlItem[]>(initialUrls);
+  const [urlList, setUrlList] = useState<UrlItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
   
   // State untuk pengubah tampilan (Grid / List)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -44,6 +39,28 @@ export default function FileUrlPage() {
 
   const getWebsiteThumbnail = (url: string) => {
     return `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url`;
+  };
+
+  // Ambil data dari Supabase saat komponen dimuat
+  useEffect(() => {
+    fetchUrlsFromSupabase();
+  }, []);
+
+  const fetchUrlsFromSupabase = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('url_bookmarks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setUrlList(data);
+    } catch (error) {
+      console.error('Gagal memuat daftar URL:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageClick = (item: UrlItem) => {
@@ -67,7 +84,8 @@ export default function FileUrlPage() {
     });
   };
 
-  const handleAddUrl = (e: React.FormEvent) => {
+  // Simpan URL baru ke Supabase
+  const handleAddUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim()) return;
 
@@ -76,22 +94,60 @@ export default function FileUrlPage() {
       formattedUrl = 'https://' + formattedUrl;
     }
 
-    const newItem: UrlItem = {
-      id: Date.now().toString(),
+    const formattedDate = new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    const newItem = {
       title: newTitle.trim() || formattedUrl,
       url: formattedUrl,
       category: newCategory,
-      date: 'Baru saja'
+      date: formattedDate
     };
 
-    setUrlList([newItem, ...urlList]);
-    setNewTitle('');
-    setNewUrl('');
+    try {
+      const { data, error } = await supabase
+        .from('url_bookmarks')
+        .insert([newItem])
+        .select();
+
+      if (error) throw error;
+      
+      if (data) {
+        setUrlList([data[0], ...urlList]);
+        setNewTitle('');
+        setNewUrl('');
+      }
+    } catch (error: any) {
+      console.error('Gagal menyimpan URL:', error);
+      alert(`Terjadi kesalahan saat menyimpan URL: ${error.message || error}`);
+    }
   };
 
-  const handleCopyLink = (url: string, id: string) => {
+  // Hapus URL dari Supabase
+  const handleDeleteUrl = async (id: string | number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus tautan ini?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('url_bookmarks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setUrlList(urlList.filter(u => u.id !== id));
+    } catch (error) {
+      console.error('Gagal menghapus URL:', error);
+      alert('Gagal menghapus tautan dari database.');
+    }
+  };
+
+  const handleCopyLink = (url: string, id: string | number) => {
     navigator.clipboard.writeText(url);
-    setCopiedId(id);
+    setCopiedId(String(id));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -109,7 +165,7 @@ export default function FileUrlPage() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              Daftar URL <span className="text-xs font-normal opacity-60">/ Pustaka Tautan & Bookmark</span>
+              Daftar URL <span className="text-xs font-normal opacity-60">/ Pustaka Tautan & Bookmark Supabase</span>
             </h1>
             <p className="text-xs opacity-70 mt-0.5">
               Simpan, kelola, dan akses tautan penting proyek atau referensi Anda dengan cepat.
@@ -205,7 +261,9 @@ export default function FileUrlPage() {
           <span>Total Tautan Tersimpan: {filteredUrls.length} URL</span>
         </div>
 
-        {filteredUrls.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat tautan dari Supabase...</div>
+        ) : filteredUrls.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
             <FiLink size={48} className="mb-2" />
             <p>Belum ada tautan atau URL yang ditemukan.</p>
@@ -268,8 +326,8 @@ export default function FileUrlPage() {
                         className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-blue-600 hover:text-white transition flex items-center gap-1 font-medium"
                         title="Salin Tautan"
                       >
-                        {copiedId === item.id ? <FiCheck size={12} className="text-green-500" /> : <FiCopy size={12} />}
-                        <span>{copiedId === item.id ? 'Tersalin' : 'Salin'}</span>
+                        {copiedId === String(item.id) ? <FiCheck size={12} className="text-green-500" /> : <FiCopy size={12} />}
+                        <span>{copiedId === String(item.id) ? 'Tersalin' : 'Salin'}</span>
                       </button>
 
                       <a 
@@ -284,7 +342,7 @@ export default function FileUrlPage() {
                       </a>
 
                       <button 
-                        onClick={() => setUrlList(urlList.filter(u => u.id !== item.id))}
+                        onClick={() => handleDeleteUrl(item.id)}
                         className="p-1 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition opacity-70 hover:opacity-100"
                         title="Hapus"
                       >
