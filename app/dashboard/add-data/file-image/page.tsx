@@ -139,7 +139,7 @@ export default function FileImagePage() {
     }]);
   };
 
-  const handleDeleteImage = async (id: string) => {
+  const handleDeleteImage = async (id: string | number, url?: string) => {
     await supabase.from('image_items').delete().eq('id', id);
     const updatedImages = images.filter(img => img.id !== id);
     setImages(updatedImages);
