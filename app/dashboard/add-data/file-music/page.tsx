@@ -19,6 +19,7 @@ interface MusicItem {
 
 export default function FileMusicPage() {
   const { mode } = useTheme();
+  const [isExpanded, setIsExpanded] = useState(false);
   const [musicList, setMusicList] = useState<MusicItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -447,42 +448,101 @@ export default function FileMusicPage() {
         )}
       </div>
 
-      {/* FIXED AUDIO PLAYER BAR DI BAGIAN BAWAH */}
-      {activeAudio && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-xl p-4 rounded-2xl border shadow-2xl flex items-center justify-between gap-4 backdrop-blur-lg ${mode === 'light' ? 'bg-white/90 text-slate-900 border-slate-200' : 'bg-[#16222A]/90 text-slate-100 border-slate-700'}`}>
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 ${isPlaying ? 'animate-spin' : ''}`}>
-              <FiDisc size={20} />
-            </div>
-            <div className="truncate">
-              <h4 className="text-xs font-bold truncate">{activeAudio.name}</h4>
-              <p className="text-[10px] opacity-60 truncate">{activeAudio.artist}</p>
-            </div>
+{/* FIXED AUDIO PLAYER BAR DI BAGIAN BAWAH */}
+{activeAudio && (
+  <div 
+    className={`fixed z-40 transition-all duration-300 ease-in-out shadow-2xl backdrop-blur-lg border ${
+      mode === 'light' ? 'bg-white/95 text-slate-900 border-slate-200' : 'bg-[#16222A]/95 text-slate-100 border-slate-700'
+    } ${
+      isExpanded 
+        ? 'bottom-1/2 translate-y-1/2 left-1/2 -translate-x-1/2 w-[90%] max-w-lg p-8 rounded-3xl flex flex-col items-center gap-6 text-center' 
+        : 'bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl px-5 py-3 rounded-2xl flex items-center justify-between gap-4'
+    }`}
+  >
+    {/* Tampilan jika diperbesar (Expanded Mode) */}
+    {isExpanded ? (
+      <div className="flex flex-col items-center gap-4 w-full">
+        <button 
+          onClick={() => setIsExpanded(false)}
+          className="self-end text-xs opacity-60 hover:opacity-100 px-3 py-1 rounded-lg bg-black/5 dark:bg-white/5 transition"
+        >
+          Perkecil 📉
+        </button>
+        
+        <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-xl">
+          <FiDisc size={56} className={isPlaying ? 'animate-spin' : ''} />
+        </div>
+
+        <div className="w-full truncate px-4">
+          <h3 className="text-base font-bold truncate">{activeAudio.name}</h3>
+          <p className="text-xs opacity-60 truncate mt-0.5">{activeAudio.artist}</p>
+        </div>
+
+        <audio 
+          ref={audioRef} 
+          src={activeAudio.url} 
+          onEnded={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          controls 
+          className="w-full mt-2"
+        />
+      </div>
+    ) : (
+      /* Tampilan Normal / Kecil di Bawah (Dibuat Flex Row & Rapi) */
+      <>
+        {/* Bagian Kiri: Cover & Judul */}
+        <div 
+          onClick={() => setIsExpanded(true)} 
+          className="flex items-center gap-3 overflow-hidden cursor-pointer flex-grow min-w-0 group"
+          title="Klik untuk memperbesar player"
+        >
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 ${isPlaying ? 'animate-spin' : ''}`}>
+            <FiDisc size={20} />
           </div>
+          <div className="truncate min-w-0">
+            <h4 className="text-xs font-bold truncate group-hover:text-blue-500 transition">{activeAudio.name}</h4>
+            <p className="text-[10px] opacity-60 truncate">{activeAudio.artist}</p>
+          </div>
+        </div>
 
-          <audio 
-            ref={audioRef} 
-            src={activeAudio.url} 
-            onEnded={() => setIsPlaying(false)}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            controls 
-            className="h-8 max-w-[200px] sm:max-w-xs"
-          />
+        {/* Bagian Tengah: Audio Player Element */}
+        <audio 
+          ref={audioRef} 
+          src={activeAudio.url} 
+          onEnded={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          controls 
+          className="h-8 w-[200px] sm:w-[260px] shrink-0"
+        />
 
+        {/* Bagian Kanan: Tombol Expand & Close */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button 
+            onClick={() => setIsExpanded(true)}
+            className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition text-xs"
+            title="Perbesar Player"
+          >
+            ⬆️
+          </button>
           <button 
             onClick={() => {
               audioRef.current?.pause();
               setActiveAudio(null);
               setIsPlaying(false);
+              setIsExpanded(false);
             }}
-            className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition shrink-0"
+            className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition"
             title="Tutup Player"
           >
             <FiX size={16} />
           </button>
         </div>
-      )}
+      </>
+    )}
+  </div>
+)}
 
     </div>
   );
