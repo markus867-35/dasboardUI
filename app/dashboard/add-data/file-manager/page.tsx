@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
 import { 
   FiFolder, FiUpload, FiLink, FiTrash2, FiSearch, 
   FiGrid, FiList, FiFile, FiArrowLeft, FiX, FiEye 
@@ -9,33 +10,53 @@ import {
 interface FileItem {
   id: string;
   name: string;
-  type: 'excel' | 'folder' | 'code' | 'archive' | 'app' | 'other';
+  type: 'excel' | 'folder' | 'code' | 'archive' | 'app' | 'image' | 'json' | 'html' | 'python' | 'other';
   size: string;
   date: string;
   parentFolder?: string;
   content?: string;
 }
 
-const initialFiles: FileItem[] = [
-  { id: '1', name: 'coin-report-202609', type: 'excel', size: '2.4 MB', date: '19 Sep 2026', parentFolder: 'root', content: 'Contoh data laporan keuangan koin: \n- Baris 1: Deposit ID #9921 - 20.000\n- Baris 2: Withdraw ID #9922 - 15.000\n- Status: Success' },
-  { id: '2', name: 'Laporan Bonus(3)', type: 'excel', size: '1.1 MB', date: '18 Sep 2026', parentFolder: 'root', content: 'Rincian Laporan Bonus Member:\n- Bonus Referral: Rp 500.000\n- Bonus Cashback: Rp 250.000' },
-  { id: '3', name: 'Vysor-win-5.0.7', type: 'app', size: '45.2 MB', date: '18 Sep 2026', parentFolder: 'root', content: 'File Installer Aplikasi Desktop (.exe)' },
-  { id: '4', name: 'Python-3.14.7.tar', type: 'archive', size: '120 MB', date: '15 Sep 2026', parentFolder: 'root', content: 'Arsip source code python environment.' },
-  { id: '9', name: 'tes', type: 'folder', size: '--', date: '15 Sep 2026', parentFolder: 'root' },
-  { id: '10', name: 'Telegram Desktop', type: 'folder', size: '--', date: '14 Sep 2026', parentFolder: 'root' },
-  { id: '12', name: 'catatan-penting.txt', type: 'other', size: '15 KB', date: '15 Sep 2026', parentFolder: 'tes', content: 'Catatan rahasia: Pastikan konfigurasi database Supabase sudah aman sebelum deployment.' },
-  { id: '13', name: 'config-backup.json', type: 'code', size: '4 KB', date: '15 Sep 2026', parentFolder: 'tes', content: '{\n  "theme": "dark",\n  "version": "1.0.4",\n  "debug": false\n}' },
-];
-
 export default function FileManagerPage() {
   const { mode } = useTheme();
-  const [files, setFiles] = useState<FileItem[]>(initialFiles);
+  
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [currentFolder, setCurrentFolder] = useState<string>('root');
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [isDragging, setIsDragging] = useState(false);
   const [selectedFileForPreview, setSelectedFileForPreview] = useState<FileItem | null>(null);
+
+  // Ambil Data dari Supabase saat awal dimuat
+  const fetchFilesFromSupabase = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.from('file_items').select('*');
+      if (error) {
+        console.error('Gagal mengambil data file:', error.message);
+      } else if (data) {
+        const formattedData: FileItem[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          size: item.size,
+          date: item.date,
+          parentFolder: item.parent_folder,
+          content: item.content
+        }));
+        setFiles(formattedData);
+      }
+    } catch (err) {
+      console.error('Terjadi kesalahan:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilesFromSupabase();
+  }, []);
 
   const getCardStyle = () => {
     return mode === 'light' 
@@ -43,21 +64,49 @@ export default function FileManagerPage() {
       : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
   };
 
-  const getFileIcon = (type: FileItem['type']) => {
-    switch (type) {
-      case 'excel':
-        return <div className="w-12 h-14 bg-emerald-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">XLS</div>;
-      case 'folder':
-        return <FiFolder className="w-14 h-14 text-amber-400 fill-amber-400/20" />;
-      case 'code':
-        return <div className="w-12 h-14 bg-sky-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">{ }</div>;
-      case 'archive':
-        return <div className="w-12 h-14 bg-amber-700 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">ZIP</div>;
-      case 'app':
-        return <div className="w-12 h-14 bg-blue-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">APP</div>;
-      default:
-        return <FiFile className="w-12 h-14 text-slate-400" />;
+  // Deteksi Tipe Berdasarkan Ekstensi
+  const determineFileType = (filename: string): FileItem['type'] => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (['xlsx', 'xls'].includes(ext || '')) return 'excel';
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) return 'image';
+    if (['js', 'ts', 'jsx', 'tsx'].includes(ext || '')) return 'code';
+    if (['py'].includes(ext || '')) return 'python';
+    if (['json'].includes(ext || '')) return 'json';
+    if (['html', 'htm'].includes(ext || '')) return 'html';
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return 'archive';
+    return 'other';
+  };
+
+  // Render Ikon Berdasarkan Tipe File
+  const getFileIcon = (type: FileItem['type'], fileName?: string) => {
+    const ext = fileName ? fileName.split('.').pop()?.toLowerCase() : '';
+
+    if (type === 'excel' || ext === 'xlsx' || ext === 'xls') {
+      return <div className="w-12 h-14 bg-emerald-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">XLS</div>;
     }
+    if (type === 'folder') {
+      return <FiFolder className="w-14 h-14 text-amber-400 fill-amber-400/20" />;
+    }
+    if (type === 'image' || ['png', 'jpg', 'jpeg', 'webp'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-purple-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">PNG</div>;
+    }
+    if (type === 'code' || ['js', 'ts', 'jsx', 'tsx'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-yellow-500 rounded flex flex-col items-center justify-center text-slate-900 font-bold text-xs shadow-md">JS</div>;
+    }
+    if (type === 'python' || ext === 'py') {
+      return <div className="w-12 h-14 bg-blue-500 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">PY</div>;
+    }
+    if (type === 'json' || ext === 'json') {
+      return <div className="w-12 h-14 bg-amber-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">JSON</div>;
+    }
+    if (type === 'html' || ['html', 'htm'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-orange-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">HTML</div>;
+    }
+    if (type === 'archive' || ['zip', 'rar', '7z'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-rose-700 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">ZIP</div>;
+    }
+    
+    return <FiFile className="w-12 h-14 text-slate-400" />;
   };
 
   const handleItemClick = (item: FileItem) => {
@@ -69,50 +118,71 @@ export default function FileManagerPage() {
     }
   };
 
-  // Handler Upload Folder & File Sekaligus
-  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler Upload Folder & File (Mendukung Gambar Base64 & Teks Kode)
+// Handler Upload Folder & File yang Akurat sesuai Posisi Folder Aktif
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const uploadedFiles = Array.from(e.target.files);
       const newEntries: FileItem[] = [];
       const discoveredFolders = new Set<string>();
 
-      uploadedFiles.forEach((file: any) => {
-        // Mendapatkan path relatif file (misal: "NamaFolder/subfolder/file.txt")
+      for (const file of uploadedFiles as any[]) {
         const relativePath = file.webkitRelativePath || file.name;
         const pathSegments = relativePath.split('/');
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        const fileType = determineFileType(file.name);
+        const fileSizeFormatted = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+        // 1. Baca isi file (Base64 untuk gambar, teks untuk kode)
+        let fileContent = `File upload: ${file.name}`;
+        try {
+          if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) {
+            fileContent = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (uploadEvent) => resolve(uploadEvent.target?.result as string);
+              reader.readAsDataURL(file);
+            });
+          } else if (['js', 'json', 'html', 'py', 'txt', 'css', 'ts', 'htm'].includes(ext || '')) {
+            fileContent = await file.text();
+          }
+        } catch (err) {
+          console.error('Gagal membaca isi file:', err);
+        }
+
+        // 2. Penentuan parentFolder yang akurat:
+        // - Jika sedang di dalam folder tertentu (misal: 'gambar_promosi'), masukkan file langsung ke folder aktif ini.
+        // - Jika sedang di 'root' dan meng-upload satu folder penuh, petakan ke rootFolder-nya.
+        let targetParentFolder = currentFolder;
 
         if (pathSegments.length > 1) {
-          // Jika di dalam folder, catat folder utamanya agar otomatis menjadi folder baru di UI
           const rootFolderName = pathSegments[0];
           discoveredFolders.add(rootFolderName);
 
-          // Jika file berada tepat di dalam root folder tersebut
-          if (pathSegments.length === 2 && currentFolder === 'root') {
-            newEntries.push({
-              id: `${Date.now()}-${Math.random()}`,
-              name: file.name,
-              type: file.name.endsWith('.xlsx') ? 'excel' : 'other',
-              size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-              date: 'Baru saja',
-              parentFolder: rootFolderName,
-              content: `File dari folder ${rootFolderName}/${file.name}`
-            });
+          // Jika path punya sub-folder dan kita di root, masukkan ke folder root-nya
+          if (currentFolder === 'root') {
+            // Jika struktur file ada di dalam sub-folder tingkat 2 (folder/file.png)
+            if (pathSegments.length === 2) {
+              targetParentFolder = rootFolderName;
+            } else if (pathSegments.length > 2) {
+              // Untuk folder bersarang, Anda bisa sesuaikan atau masukkan ke folder utamanya
+              targetParentFolder = pathSegments[pathSegments.length - 2]; 
+            }
           }
-        } else {
-          // File biasa tanpa struktur folder
-          newEntries.push({
-            id: `${Date.now()}-${Math.random()}`,
-            name: file.name,
-            type: file.name.endsWith('.xlsx') ? 'excel' : 'other',
-            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-            date: 'Baru saja',
-            parentFolder: currentFolder,
-            content: `File upload: ${file.name}`
-          });
         }
-      });
 
-      // Tambahkan ikon folder baru ke daftar jika ditemukan folder saat upload
+        // Jika user sedang membuka folder tertentu dan meng-upload file di dalamnya
+        newEntries.push({
+          id: `${Date.now()}-${Math.random()}`,
+          name: file.name,
+          type: fileType,
+          size: fileSizeFormatted,
+          date: 'Baru saja',
+          parentFolder: targetParentFolder,
+          content: fileContent
+        });
+      }
+
+      // Tambahkan ikon folder baru ke daftar utama jika mengupload folder dari root
       discoveredFolders.forEach((folderName) => {
         const folderExists = files.some(f => f.name === folderName && f.parentFolder === 'root');
         if (!folderExists && currentFolder === 'root') {
@@ -128,18 +198,38 @@ export default function FileManagerPage() {
       });
 
       setFiles(prev => [...newEntries, ...prev]);
+
+      // Sinkronisasi otomatis ke Supabase
+      const dbPayload = newEntries.map(item => ({
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        size: item.size,
+        date: item.date,
+        parent_folder: item.parentFolder,
+        content: item.content
+      }));
+      
+      const { error } = await supabase.from('file_items').insert(dbPayload);
+      if (error) {
+        console.error('Gagal menyimpan ke Supabase:', error.message);
+      }
     }
   };
-
   const displayedFiles = files.filter(f => {
     const matchesFolder = f.parentFolder === currentFolder;
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFolder && matchesSearch;
   });
 
+  const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await supabase.from('file_items').delete().eq('id', id);
+    setFiles(files.filter(f => f.id !== id));
+  };
+
   return (
     <div className="p-6 space-y-6 relative">
-      
       {/* HEADER & TOOLBAR */}
       <div className={`p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -189,7 +279,6 @@ export default function FileManagerPage() {
               <p className="text-xs font-semibold">Upload Folder / File ke &quot;{currentFolder}&quot;</p>
               <p className="text-[10px] opacity-60">Pilih folder atau dokumen dari perangkat</p>
             </div>
-            {/* Atribut webkitdirectory & directory diaktifkan di sini */}
             <input 
               type="file" 
               onChange={handleFolderUpload} 
@@ -208,7 +297,7 @@ export default function FileManagerPage() {
               className="bg-transparent border-none outline-none text-xs w-full px-2"
             />
             <button 
-              onClick={() => {
+              onClick={async () => {
                 if(!urlInput) return;
                 const newEntry: FileItem = { 
                   id: Date.now().toString(), 
@@ -221,6 +310,15 @@ export default function FileManagerPage() {
                 };
                 setFiles([newEntry, ...files]);
                 setUrlInput('');
+                await supabase.from('file_items').insert([{
+                  id: newEntry.id,
+                  name: newEntry.name,
+                  type: newEntry.type,
+                  size: newEntry.size,
+                  date: newEntry.date,
+                  parent_folder: newEntry.parentFolder,
+                  content: newEntry.content
+                }]);
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition"
             >
@@ -241,7 +339,9 @@ export default function FileManagerPage() {
           )}
         </div>
 
-        {displayedFiles.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data dari Supabase...</div>
+        ) : displayedFiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
             <FiFolder size={48} className="mb-2" />
             <p>Folder ini kosong.</p>
@@ -255,7 +355,7 @@ export default function FileManagerPage() {
                 className="group flex flex-col items-center p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-blue-500/30 relative"
               >
                 <div className="mb-2 transition transform group-hover:scale-105 relative">
-                  {getFileIcon(file.type)}
+                  {getFileIcon(file.type, file.name)}
                   {file.type !== 'folder' && (
                     <span className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
                       <FiEye size={10} />
@@ -289,7 +389,7 @@ export default function FileManagerPage() {
                   >
                     <td className="py-3 flex items-center gap-3 font-medium">
                       <div className="w-8 h-8 flex items-center justify-center scale-75 origin-left">
-                        {getFileIcon(file.type)}
+                        {getFileIcon(file.type, file.name)}
                       </div>
                       <span className="truncate max-w-xs">{file.name}</span>
                     </td>
@@ -302,7 +402,7 @@ export default function FileManagerPage() {
                         </span>
                       )}
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setFiles(files.filter(f => f.id !== file.id)); }}
+                        onClick={(e) => handleDeleteFile(file.id, e)}
                         className="p-1.5 hover:text-red-500 transition opacity-60 hover:opacity-100"
                         title="Hapus"
                       >
@@ -330,7 +430,7 @@ export default function FileManagerPage() {
 
             <div className="flex items-center gap-3 mb-4">
               <div className="scale-75 origin-left">
-                {getFileIcon(selectedFileForPreview.type)}
+                {getFileIcon(selectedFileForPreview.type, selectedFileForPreview.name)}
               </div>
               <div>
                 <h2 className="text-base font-bold">{selectedFileForPreview.name}</h2>
@@ -338,8 +438,18 @@ export default function FileManagerPage() {
               </div>
             </div>
 
-            <div className={`w-full h-64 p-4 rounded-xl border overflow-y-auto font-mono text-xs whitespace-pre-wrap ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-700 text-slate-300'}`}>
-              {selectedFileForPreview.content || "Tidak ada pratonton teks tersedia untuk berkas ini."}
+            <div className={`w-full h-80 p-4 rounded-xl border overflow-auto flex items-center justify-center ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-700 text-slate-300'}`}>
+              {selectedFileForPreview.content && selectedFileForPreview.content.startsWith('data:image') ? (
+                <img 
+                  src={selectedFileForPreview.content} 
+                  alt={selectedFileForPreview.name} 
+                  className="max-h-full max-w-full object-contain rounded"
+                />
+              ) : (
+                <pre className="w-full h-full font-mono text-xs whitespace-pre-wrap">
+                  {selectedFileForPreview.content || "Tidak ada pratonton teks tersedia untuk berkas ini."}
+                </pre>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-4">
@@ -353,7 +463,6 @@ export default function FileManagerPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -1,33 +1,60 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
 import { 
   FiImage, FiUpload, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiX, FiEye, FiDownload 
+  FiGrid, FiList, FiX, FiEye, FiClipboard, FiCheck 
 } from 'react-icons/fi';
 
 interface ImageItem {
   id: string;
   name: string;
-  url: string; // URL atau data gambar
+  url: string; 
   size: string;
   date: string;
   dimension?: string;
 }
 
-const initialImages: ImageItem[] = [
-  { id: '1', name: 'dashboard-preview.png', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80', size: '1.2 MB', date: '21 Sep 2026', dimension: '1920x1080' },
-  { id: '2', name: 'ui-component-dark.jpg', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80', size: '2.4 MB', date: '20 Sep 2026', dimension: '1280x720' },
-  { id: '3', name: 'supabase-schema.png', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80', size: '850 KB', date: '19 Sep 2026', dimension: '1440x900' },
-  { id: '4', name: 'tailwind-palette.jpg', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80', size: '1.5 MB', date: '18 Sep 2026', dimension: '1920x1200' },
-];
-
 export default function FileImagePage() {
   const { mode } = useTheme();
-  const [images, setImages] = useState<ImageItem[]>(initialImages);
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
+
+  // State untuk menampung gambar hasil Paste dari Clipboard
+  const [pastedImageBase64, setPastedImageBase64] = useState<string | null>(null);
+  const [pastedImageName, setPastedImageName] = useState<string>('');
+
+  const fetchImagesFromSupabase = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.from('image_items').select('*');
+      if (error) {
+        console.error('Gagal mengambil data gambar:', error.message);
+      } else if (data) {
+        const formattedData: ImageItem[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          date: item.date,
+          dimension: item.dimension
+        }));
+        setImages(formattedData);
+      }
+    } catch (err) {
+      console.error('Terjadi kesalahan:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchImagesFromSupabase();
+  }, []);
 
   const getCardStyle = () => {
     return mode === 'light' 
@@ -35,22 +62,96 @@ export default function FileImagePage() {
       : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
   };
 
-  // Handler Upload Gambar Lokal
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler Upload Gambar Lokal Langsung Simpan
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const imageUrl = URL.createObjectURL(file); // Membuat URL lokal untuk preview gambar
+      const reader = new FileReader();
+      reader.onload = async (uploadEvent) => {
+        const base64Url = uploadEvent.target?.result as string;
 
-      const newImage: ImageItem = {
-        id: Date.now().toString(),
-        name: file.name,
-        url: imageUrl,
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        date: 'Baru saja',
-        dimension: 'Original'
+        const newImage: ImageItem = {
+          id: Date.now().toString(),
+          name: file.name,
+          url: base64Url,
+          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          date: 'Baru saja',
+          dimension: 'Original'
+        };
+
+        setImages(prev => [newImage, ...prev]);
+
+        await supabase.from('image_items').insert([{
+          id: newImage.id,
+          name: newImage.name,
+          url: newImage.url,
+          size: newImage.size,
+          date: newImage.date,
+          dimension: newImage.dimension
+        }]);
       };
+      reader.readAsDataURL(file);
+    }
+  };
 
-      setImages([newImage, ...images]);
+  // Handler Event Paste Gambar dari Clipboard (Ctrl+V)
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setPastedImageBase64(event.target?.result as string);
+            setPastedImageName(`pasted-image-${Date.now()}.png`);
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    }
+  };
+
+  // Handler Simpan Gambar Hasil Paste ke Supabase
+  const handleSavePastedImage = async () => {
+    if (!pastedImageBase64) return;
+
+    const newImage: ImageItem = {
+      id: Date.now().toString(),
+      name: pastedImageName,
+      url: pastedImageBase64,
+      size: '1.0 MB',
+      date: 'Baru saja',
+      dimension: 'Original'
+    };
+
+    setImages(prev => [newImage, ...prev]);
+    setPastedImageBase64(null);
+    setPastedImageName('');
+
+    await supabase.from('image_items').insert([{
+      id: newImage.id,
+      name: newImage.name,
+      url: newImage.url,
+      size: newImage.size,
+      date: newImage.date,
+      dimension: newImage.dimension
+    }]);
+  };
+
+  const handleDeleteImage = async (id: string) => {
+    await supabase.from('image_items').delete().eq('id', id);
+    const updatedImages = images.filter(img => img.id !== id);
+    setImages(updatedImages);
+    
+    const remainingFiltered = updatedImages.filter(img => 
+      img.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (remainingFiltered.length > 0) {
+      setSelectedImage(remainingFiltered[0]);
+    } else {
+      setSelectedImage(null);
     }
   };
 
@@ -69,7 +170,7 @@ export default function FileImagePage() {
               File Image <span className="text-xs font-normal opacity-60">/ Galeri Media</span>
             </h1>
             <p className="text-xs opacity-70 mt-0.5">
-              Kelola tangkapan layar, aset visual, dan dokumentasi gambar Anda.
+              Kelola tangkapan layar, aset visual, dan dokumentasi gambar Anda (Sinkron Supabase).
             </p>
           </div>
 
@@ -91,16 +192,47 @@ export default function FileImagePage() {
           </div>
         </div>
 
-        {/* INPUT UPLOAD GAMBAR */}
-        <div className="mt-6 pt-6 border-t border-slate-700/20">
+        {/* INPUT DUA KOLOM: UPLOAD LOKAL & PASTE CLIPBOARD */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-700/20">
+          
+          {/* Opsi 1: Upload dari Lokal */}
           <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
             <FiUpload className="text-blue-500 text-xl" />
             <div className="text-left">
-              <p className="text-xs font-semibold">Upload Gambar Baru</p>
-              <p className="text-[10px] opacity-60">Pilih file gambar (PNG, JPG, JPEG, WEBP)</p>
+              <p className="text-xs font-semibold">Upload Gambar dari Lokal</p>
+              <p className="text-[10px] opacity-60">Pilih file gambar (PNG, JPG, WEBP)</p>
             </div>
             <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
           </label>
+
+          {/* Opsi 2: Paste Gambar dari Clipboard + Tombol Simpan */}
+          <div 
+            onPaste={handlePaste}
+            tabIndex={0}
+            className={`flex items-center justify-between p-4 rounded-xl border-2 border-dashed transition outline-none focus:border-blue-500 ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/30'}`}
+          >
+            <div className="flex items-center gap-3 overflow-hidden">
+              <FiClipboard className="text-emerald-500 text-xl flex-shrink-0" />
+              <div className="text-left truncate">
+                <p className="text-xs font-semibold">
+                  {pastedImageBase64 ? pastedImageName : "Klik di sini lalu Tekan Ctrl+V"}
+                </p>
+                <p className="text-[10px] opacity-60">
+                  {pastedImageBase64 ? "Gambar siap disimpan" : "Paste tangkapan layar / gambar yang disalin"}
+                </p>
+              </div>
+            </div>
+
+            {pastedImageBase64 && (
+              <button 
+                onClick={handleSavePastedImage}
+                className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex-shrink-0 ml-2"
+              >
+                <FiCheck size={14} /> Simpan
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -110,12 +242,14 @@ export default function FileImagePage() {
           <span>Total Koleksi: {filteredImages.length} Gambar</span>
         </div>
 
-        {filteredImages.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data dari Supabase...</div>
+        ) : filteredImages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
             <FiImage size={48} className="mb-2" />
             <p>Tidak ada gambar yang ditemukan.</p>
           </div>
-        ) : viewMode === 'grid' ? (
+) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {filteredImages.map((img) => (
               <div 
@@ -123,7 +257,6 @@ export default function FileImagePage() {
                 onClick={() => setSelectedImage(img)}
                 className="group flex flex-col rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-transparent hover:border-blue-500/40 cursor-pointer transition relative"
               >
-                {/* Thumbnail Gambar */}
                 <div className="h-36 w-full overflow-hidden relative bg-slate-800">
                   <img 
                     src={img.url} 
@@ -135,13 +268,27 @@ export default function FileImagePage() {
                   </div>
                 </div>
 
-                {/* Keterangan */}
                 <div className="p-3 flex flex-col justify-between flex-grow">
                   <span className="text-xs font-medium truncate w-full" title={img.name}>{img.name}</span>
+                  
+                  {/* BAGIAN INI YANG DIUBAH: Menambahkan tombol delete di samping tanggal */}
                   <div className="flex justify-between items-center text-[10px] opacity-50 mt-1">
                     <span>{img.size}</span>
-                    <span>{img.date}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{img.date}</span>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); // Mencegah modal preview ikut terbuka saat tombol delete diklik
+                          handleDeleteImage(img.id, img.url); 
+                        }}
+                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded transition opacity-0 group-hover:opacity-100"
+                        title="Hapus Gambar"
+                      >
+                        <FiTrash2 size={13} />
+                      </button>
+                    </div>
                   </div>
+
                 </div>
               </div>
             ))}
@@ -184,7 +331,7 @@ export default function FileImagePage() {
                         <FiEye size={14} />
                       </button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setImages(images.filter(item => item.id !== img.id)); }}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
                         className="p-1.5 hover:text-red-500 transition opacity-60 hover:opacity-100"
                         title="Hapus"
                       >
@@ -199,12 +346,11 @@ export default function FileImagePage() {
         )}
       </div>
 
-{/* MODAL LIGHTBOX / PREVIEW GAMBAR BESAR */}
+      {/* MODAL LIGHTBOX / PREVIEW GAMBAR BESAR */}
       {selectedImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className={`w-full max-w-4xl rounded-2xl p-5 border shadow-2xl relative flex flex-col max-h-[90vh] ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}>
             
-            {/* Tombol Tutup */}
             <button 
               onClick={() => setSelectedImage(null)}
               className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
@@ -217,22 +363,18 @@ export default function FileImagePage() {
               <p className="text-[10px] opacity-60">Ukuran: {selectedImage.size} • Dimensi: {selectedImage.dimension} • {selectedImage.date}</p>
             </div>
 
-            {/* Container Gambar Besar dengan Tombol Panah Navigasi */}
             <div className="flex-grow flex items-center justify-center overflow-hidden rounded-xl bg-black/20 p-2 min-h-[300px] relative group">
               
-              {/* Tombol Geser Kiri (Sebelumnya) */}
               <button 
                 onClick={() => {
                   const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
                   if (currentIndex > 0) {
                     setSelectedImage(filteredImages[currentIndex - 1]);
                   } else {
-                    // Jika di ujung kiri, looping ke gambar paling akhir
                     setSelectedImage(filteredImages[filteredImages.length - 1]);
                   }
                 }}
                 className="absolute left-3 z-10 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/80 transition opacity-70 group-hover:opacity-100 shadow-lg"
-                title="Sebelumnya"
               >
                 &larr;
               </button>
@@ -243,19 +385,16 @@ export default function FileImagePage() {
                 className="max-h-[60vh] max-w-full object-contain rounded-lg shadow-lg transition-all duration-300" 
               />
 
-              {/* Tombol Geser Kanan (Berikutnya) */}
               <button 
                 onClick={() => {
                   const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
                   if (currentIndex < filteredImages.length - 1) {
                     setSelectedImage(filteredImages[currentIndex + 1]);
                   } else {
-                    // Jika di ujung kanan, looping kembali ke gambar pertama
                     setSelectedImage(filteredImages[0]);
                   }
                 }}
                 className="absolute right-3 z-10 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/80 transition opacity-70 group-hover:opacity-100 shadow-lg"
-                title="Berikutnya"
               >
                 &rarr;
               </button>
@@ -264,20 +403,7 @@ export default function FileImagePage() {
 
             <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-700/20">
               <button 
-                onClick={() => {
-                  const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
-                  const updatedImages = images.filter(img => img.id !== selectedImage.id);
-                  setImages(updatedImages);
-
-                  // Pindah otomatis ke gambar sebelah atau tutup jika habis
-                  const remainingFiltered = updatedImages.filter(img => img.name.toLowerCase().includes(searchQuery.toLowerCase()));
-                  if (remainingFiltered.length > 0) {
-                    const nextIndex = currentIndex > 0 ? currentIndex - 1 : 0;
-                    setSelectedImage(remainingFiltered[nextIndex] || remainingFiltered[0]);
-                  } else {
-                    setSelectedImage(null);
-                  }
-                }}
+                onClick={() => handleDeleteImage(selectedImage.id)}
                 className="px-3 py-2 rounded-xl text-xs font-medium bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition flex items-center gap-1.5"
               >
                 <FiTrash2 size={14} /> Hapus Gambar

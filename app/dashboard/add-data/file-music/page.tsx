@@ -1,33 +1,29 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { 
   FiMusic, FiUpload, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc 
+  FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload 
 } from 'react-icons/fi';
+import { supabase } from '@/lib/supabase'; // Sesuaikan path supabase client Anda
 
 interface MusicItem {
-  id: string;
+  id: string | number;
   name: string;
   artist: string;
   duration: string;
-  url: string; // URL file audio
+  url: string;
   size: string;
   date: string;
 }
 
-const initialMusic: MusicItem[] = [
-  { id: '1', name: 'Lo-Fi Chill Session', artist: 'Background Beats', duration: '3:45', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', size: '3.5 MB', date: '22 Sep 2026' },
-  { id: '2', name: 'Cyberpunk Synthwave 2077', artist: 'Neon Runner', duration: '4:12', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', size: '4.1 MB', date: '21 Sep 2026' },
-  { id: '3', name: 'Ambient Coding Space', artist: 'Dev Focus', duration: '6:00', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', size: '5.8 MB', date: '20 Sep 2026' },
-  { id: '4', name: 'Acoustic Morning Vibe', artist: 'Coffee Break', duration: '2:55', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', size: '2.8 MB', date: '19 Sep 2026' },
-];
-
 export default function FileMusicPage() {
   const { mode } = useTheme();
-  const [musicList, setMusicList] = useState<MusicItem[]>(initialMusic);
+  const [musicList, setMusicList] = useState<MusicItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   
   // State untuk Pemutar Musik (Audio Player)
   const [activeAudio, setActiveAudio] = useState<MusicItem | null>(null);
@@ -40,23 +36,119 @@ export default function FileMusicPage() {
       : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
   };
 
-  // Handler Upload Berkas Musik Lokal
-  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const audioUrl = URL.createObjectURL(file);
+  // 1. Ambil Data dari Supabase saat komponen dimuat
+  useEffect(() => {
+    fetchMusicFromSupabase();
+  }, []);
 
-      const newMusic: MusicItem = {
-        id: Date.now().toString(),
-        name: file.name.replace(/\.[^/.]+$/, ""), // Hapus ekstensi file untuk nama
+  const fetchMusicFromSupabase = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('music_tracks')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) throw error;
+      if (data) setMusicList(data);
+    } catch (error) {
+      console.error('Gagal memuat musik:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Handler Upload File Audio ke Supabase Storage & Database
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      setUploading(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload file ke Supabase Storage (Bucket: music-files)
+      const { error: uploadError } = await supabase.storage
+        .from('music-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Ambil Public URL dari file yang di-upload
+      const { data: publicURLData } = supabase.storage
+        .from('music-files')
+        .getPublicUrl(filePath);
+
+      const formattedDate = new Date().toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      const newTrack = {
+        name: file.name.replace(/\.[^/.]+$/, ""),
         artist: 'Unknown Artist',
         duration: '--:--',
-        url: audioUrl,
+        url: publicURLData.publicUrl,
         size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        date: 'Baru saja'
+        date: formattedDate
       };
 
-      setMusicList([newMusic, ...musicList]);
+      // Simpan metadata ke tabel database Supabase
+      const { data, error: insertError } = await supabase
+        .from('music_tracks')
+        .insert([newTrack])
+        .select();
+
+      if (insertError) throw insertError;
+
+      if (data) {
+        setMusicList([data[0], ...musicList]);
+      }
+    } catch (error) {
+      console.error('Gagal mengupload musik:', error);
+      alert('Terjadi kesalahan saat mengupload musik.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // 3. Hapus Musik dari Supabase (Database & Storage)
+  const handleDeleteMusic = async (id: string | number, fileUrl: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus musik ini?')) return;
+
+    try {
+      // Hapus data dari tabel database
+      const { error } = await supabase
+        .from('music_tracks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Ekstrak path file dari URL untuk dihapus dari Storage (Opsional)
+      try {
+        const urlParts = fileUrl.split('/music-files/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('music-files').remove([filePath]);
+        }
+      } catch (storageErr) {
+        console.warn('File fisik di storage gagal dihapus atau sudah hilang:', storageErr);
+      }
+
+      // Perbarui state lokal
+      if (activeAudio?.id === id) {
+        audioRef.current?.pause();
+        setActiveAudio(null);
+        setIsPlaying(false);
+      }
+      setMusicList(musicList.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Gagal menghapus musik:', error);
+      alert('Gagal menghapus data musik.');
     }
   };
 
@@ -92,10 +184,10 @@ export default function FileMusicPage() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              File Music <span className="text-xs font-normal opacity-60">/ Pustaka Audio</span>
+              File Music <span className="text-xs font-normal opacity-60">/ Pustaka Audio Supabase</span>
             </h1>
             <p className="text-xs opacity-70 mt-0.5">
-              Kelola berkas audio, efek suara, dan trek musik latar Anda.
+              Kelola berkas audio dan trek musik latar yang tersimpan di Supabase.
             </p>
           </div>
 
@@ -122,10 +214,12 @@ export default function FileMusicPage() {
           <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
             <FiUpload className="text-blue-500 text-xl" />
             <div className="text-left">
-              <p className="text-xs font-semibold">Upload Musik Baru</p>
+              <p className="text-xs font-semibold">
+                {uploading ? 'Mengunggah ke Supabase...' : 'Upload Musik Baru ke Supabase'}
+              </p>
               <p className="text-[10px] opacity-60">Pilih file audio (.mp3, .wav, .aac, .ogg)</p>
             </div>
-            <input type="file" accept="audio/*" onChange={handleMusicUpload} className="hidden" />
+            <input type="file" accept="audio/*" onChange={handleMusicUpload} disabled={uploading} className="hidden" />
           </label>
         </div>
       </div>
@@ -141,7 +235,9 @@ export default function FileMusicPage() {
           )}
         </div>
 
-        {filteredMusic.length === 0 ? (
+       {loading ? (
+          <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data dari Supabase...</div>
+        ) : filteredMusic.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
             <FiMusic size={48} className="mb-2" />
             <p>Tidak ada berkas musik yang ditemukan.</p>
@@ -167,9 +263,34 @@ export default function FileMusicPage() {
                     <span className="text-xs font-bold truncate w-full" title={item.name}>{item.name}</span>
                     <span className="text-[11px] opacity-60 truncate w-full">{item.artist}</span>
                     <div className="flex justify-between items-center text-[10px] opacity-40 mt-1">
-                      <span>{item.duration}</span>
+                      <span>{item.date}</span>
                       <span>{item.size}</span>
                     </div>
+                  </div>
+
+                  {/* Tombol Aksi (Download & Hapus) di Grid */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <a 
+                      href={item.url} 
+                      download={item.name} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()} 
+                      className="p-1.5 bg-black/50 hover:bg-blue-600 text-white rounded-lg transition"
+                      title="Download Musik"
+                    >
+                      <FiDownload size={13} />
+                    </a>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleDeleteMusic(item.id, item.url); 
+                      }}
+                      className="p-1.5 bg-black/50 hover:bg-red-600 text-white rounded-lg transition"
+                      title="Hapus Musik"
+                    >
+                      <FiTrash2 size={13} />
+                    </button>
                   </div>
                 </div>
               );
@@ -183,7 +304,7 @@ export default function FileMusicPage() {
                   <th className="pb-3 font-semibold w-12">Status</th>
                   <th className="pb-3 font-semibold">Judul Trek</th>
                   <th className="pb-3 font-semibold">Artis</th>
-                  <th className="pb-3 font-semibold">Durasi</th>
+                  <th className="pb-3 font-semibold">Tanggal</th>
                   <th className="pb-3 font-semibold">Ukuran</th>
                   <th className="pb-3 font-semibold text-right">Aksi</th>
                 </tr>
@@ -204,20 +325,32 @@ export default function FileMusicPage() {
                       </td>
                       <td className="py-3 font-bold truncate max-w-xs">{item.name}</td>
                       <td className="py-3 opacity-70">{item.artist}</td>
-                      <td className="py-3 opacity-70">{item.duration}</td>
+                      <td className="py-3 opacity-70">{item.date}</td>
                       <td className="py-3 opacity-70">{item.size}</td>
                       <td className="py-3 text-right">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if(activeAudio?.id === item.id) setActiveAudio(null);
-                            setMusicList(musicList.filter(m => m.id !== item.id)); 
-                          }}
-                          className="p-1.5 hover:text-red-500 transition opacity-60 hover:opacity-100"
-                          title="Hapus"
-                        >
-                          <FiTrash2 size={14} />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <a 
+                            href={item.url} 
+                            download={item.name} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 hover:text-blue-500 transition opacity-60 hover:opacity-100"
+                            title="Download"
+                          >
+                            <FiDownload size={14} />
+                          </a>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleDeleteMusic(item.id, item.url); 
+                            }}
+                            className="p-1.5 hover:text-red-500 transition opacity-60 hover:opacity-100"
+                            title="Hapus"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -228,7 +361,7 @@ export default function FileMusicPage() {
         )}
       </div>
 
-      {/* FIXED AUDIO PLAYER BAR DI BAGIAN BAWAH (JIKA ADA YANG DIPUTAR) */}
+      {/* FIXED AUDIO PLAYER BAR DI BAGIAN BAWAH */}
       {activeAudio && (
         <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-xl p-4 rounded-2xl border shadow-2xl flex items-center justify-between gap-4 backdrop-blur-lg ${mode === 'light' ? 'bg-white/90 text-slate-900 border-slate-200' : 'bg-[#16222A]/90 text-slate-100 border-slate-700'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
@@ -241,7 +374,6 @@ export default function FileMusicPage() {
             </div>
           </div>
 
-          {/* Elemen Audio HTML5 */}
           <audio 
             ref={audioRef} 
             src={activeAudio.url} 
