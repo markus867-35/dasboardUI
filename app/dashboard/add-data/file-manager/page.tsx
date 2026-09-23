@@ -4,13 +4,13 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { 
   FiFolder, FiUpload, FiLink, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiFile, FiArrowLeft, FiX, FiEye 
+  FiGrid, FiList, FiFile, FiPackage, FiArchive, FiArrowLeft, FiX, FiEye 
 } from 'react-icons/fi';
 
 interface FileItem {
   id: string;
   name: string;
-  type: 'excel' | 'folder' | 'code' | 'archive' | 'app' | 'image' | 'json' | 'html' | 'python' | 'other';
+  type: 'excel' | 'image' | 'code' | 'python' | 'json' | 'html' | 'archive' | 'apk' | 'folder' | 'file' | 'other';
   size: string;
   date: string;
   parentFolder?: string;
@@ -64,8 +64,7 @@ export default function FileManagerPage() {
       : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
   };
 
-  // Deteksi Tipe Berdasarkan Ekstensi
-  const determineFileType = (filename: string): FileItem['type'] => {
+const determineFileType = (filename: string): FileItem['type'] => {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (['xlsx', 'xls'].includes(ext || '')) return 'excel';
     if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) return 'image';
@@ -73,11 +72,12 @@ export default function FileManagerPage() {
     if (['py'].includes(ext || '')) return 'python';
     if (['json'].includes(ext || '')) return 'json';
     if (['html', 'htm'].includes(ext || '')) return 'html';
-    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return 'archive';
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'xz'].includes(ext || '')) return 'archive';
+    if (['apk', 'exe', 'msi', 'msix'].includes(ext || '')) return 'app'; // <-- Ubah/tambahkan kategori 'app' untuk apk & exe
     return 'other';
   };
 
-  // Render Ikon Berdasarkan Tipe File
+// Render Ikon Berdasarkan Tipe File
   const getFileIcon = (type: FileItem['type'], fileName?: string) => {
     const ext = fileName ? fileName.split('.').pop()?.toLowerCase() : '';
 
@@ -87,11 +87,11 @@ export default function FileManagerPage() {
     if (type === 'folder') {
       return <FiFolder className="w-14 h-14 text-amber-400 fill-amber-400/20" />;
     }
-    if (type === 'image' || ['png', 'jpg', 'jpeg', 'webp'].includes(ext || '')) {
-      return <div className="w-12 h-14 bg-purple-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">PNG</div>;
+    if (type === 'image' || ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-purple-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">IMG</div>;
     }
     if (type === 'code' || ['js', 'ts', 'jsx', 'tsx'].includes(ext || '')) {
-      return <div className="w-12 h-14 bg-yellow-500 rounded flex flex-col items-center justify-center text-slate-900 font-bold text-xs shadow-md">JS</div>;
+      return <div className="w-12 h-14 bg-yellow-500 rounded flex flex-col items-center justify-center text-slate-900 font-bold text-xs shadow-md">CODE</div>;
     }
     if (type === 'python' || ext === 'py') {
       return <div className="w-12 h-14 bg-blue-500 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">PY</div>;
@@ -102,7 +102,12 @@ export default function FileManagerPage() {
     if (type === 'html' || ['html', 'htm'].includes(ext || '')) {
       return <div className="w-12 h-14 bg-orange-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">HTML</div>;
     }
-    if (type === 'archive' || ['zip', 'rar', '7z'].includes(ext || '')) {
+    // Tambahan untuk Installer / Aplikasi (.exe, .msi, .msix, .apk)
+    if (type === 'app' || ['exe', 'msi', 'msix', 'apk'].includes(ext || '')) {
+      return <div className="w-12 h-14 bg-sky-600 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">APP</div>;
+    }
+    // Arsip (.zip, .rar, .7z, .tar, .xz, .gz)
+    if (type === 'archive' || ['zip', 'rar', '7z', 'tar', 'xz', 'gz'].includes(ext || '')) {
       return <div className="w-12 h-14 bg-rose-700 rounded flex flex-col items-center justify-center text-white font-bold text-xs shadow-md">ZIP</div>;
     }
     
@@ -226,6 +231,47 @@ export default function FileManagerPage() {
     setFiles(files.filter(f => f.id !== id));
   };
 
+
+
+
+  // Fungsi untuk mendownload file kembali
+  const handleDownloadFile = (file: FileItem, e: React.MouseEvent) => {
+    e.stopPropagation(); // Mencegah card/folder terbuka saat tombol download diklik
+    
+    if (!file.content) {
+      alert('Konten file tidak tersedia untuk di-download.');
+      return;
+    }
+
+    // Buat elemen link sementara untuk men-download konten file
+    const element = document.createElement('a');
+    
+    // Cek apakah konten berupa base64 (gambar) atau teks biasa
+    let fileBlob;
+    if (file.content.startsWith('data:')) {
+      // Jika base64, ubah kembali ke Blob
+      const parts = file.content.split(',');
+      const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      fileBlob = new Blob([u8arr], { type: mime });
+    } else {
+      // Jika teks / kode program
+      fileBlob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
+    }
+
+    const fileUrl = URL.createObjectURL(fileBlob);
+    element.href = fileUrl;
+    element.download = file.name;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    URL.revokeObjectURL(fileUrl);
+  };
   return (
     <div className="p-6 space-y-6 relative">
       {/* HEADER & TOOLBAR */}
@@ -347,33 +393,44 @@ export default function FileManagerPage() {
 ) : viewMode === 'grid' ? (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
     {displayedFiles.map((file) => (
-      <div 
-        key={file.id} 
-        onClick={() => handleItemClick(file)}
-        className="group flex flex-col items-center p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-blue-500/30 relative"
+<div 
+  key={file.id} 
+  onClick={() => handleItemClick(file)}
+  className="group flex flex-col items-center p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-blue-500/30 relative"
+>
+  {/* Tombol Download & Delete Dibungkus dalam Satu Posisi Absolute di Kanan Atas */}
+  <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
+    {file.type !== 'folder' && (
+      <button 
+        onClick={(e) => handleDownloadFile(file, e)}
+        className="p-1.5 rounded-full bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition"
+        title="Download File"
       >
-        {/* Tombol Delete di Pojok Kanan Atas (Muncul saat Hover) */}
-        <button 
-          onClick={(e) => handleDeleteFile(file.id, e)}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition z-10"
-          title="Hapus"
-        >
-          <FiTrash2 size={12} />
-        </button>
+        📥
+      </button>
+    )}
+    <button 
+      onClick={(e) => handleDeleteFile(file.id, e)}
+      className="p-1.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition"
+      title="Hapus"
+    >
+      <FiTrash2 size={12} />
+    </button>
+  </div>
 
-        <div className="mb-2 transition transform group-hover:scale-105 relative">
-          {getFileIcon(file.type, file.name)}
-          {file.type !== 'folder' && (
-            <span className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
-              <FiEye size={10} />
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-center font-medium line-clamp-2 w-full mt-1" title={file.name}>
-          {file.name}
-        </span>
-        <span className="text-[10px] opacity-50 mt-0.5">{file.size}</span>
-      </div>
+  <div className="mb-2 transition transform group-hover:scale-105 relative">
+    {getFileIcon(file.type, file.name)}
+    {file.type !== 'folder' && (
+      <span className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
+        <FiEye size={10} />
+      </span>
+    )}
+  </div>
+  <span className="text-xs text-center font-medium line-clamp-2 w-full mt-1" title={file.name}>
+    {file.name}
+  </span>
+  <span className="text-[10px] opacity-50 mt-0.5">{file.size}</span>
+</div>
     ))}
   </div>
 ) : (
