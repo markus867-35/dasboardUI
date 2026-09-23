@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { 
   FiMusic, FiUpload, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload 
+  FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload, FiLink, FiSave 
 } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase'; // Sesuaikan path supabase client Anda
 
@@ -24,6 +24,10 @@ export default function FileMusicPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  
+  // State untuk Input Link Audio URL
+  const [audioUrlInput, setAudioUrlInput] = useState('');
+  const [savingUrl, setSavingUrl] = useState(false);
   
   // State untuk Pemutar Musik (Audio Player)
   const [activeAudio, setActiveAudio] = useState<MusicItem | null>(null);
@@ -115,12 +119,60 @@ export default function FileMusicPage() {
     }
   };
 
+  // 2b. Handler Simpan Musik Berdasarkan Link / URL
+  const handleUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!audioUrlInput.trim()) {
+      alert('Silakan masukkan link audio terlebih dahulu!');
+      return;
+    }
+
+    try {
+      setSavingUrl(true);
+      const formattedDate = new Date().toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      // Mengambil nama file atau domain dari URL sebagai judul default
+      const urlObj = new URL(audioUrlInput);
+      const defaultName = urlObj.pathname.split('/').pop() || 'External Audio Track';
+
+      const newTrack = {
+        name: decodeURIComponent(defaultName.replace(/\.[^/.]+$/, "")),
+        artist: urlObj.hostname,
+        duration: '--:--',
+        url: audioUrlInput.trim(),
+        size: 'Streaming',
+        date: formattedDate
+      };
+
+      const { data, error } = await supabase
+        .from('music_tracks')
+        .insert([newTrack])
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        setMusicList([data[0], ...musicList]);
+        setAudioUrlInput(''); // Reset input form
+        alert('Link audio berhasil disimpan!');
+      }
+    } catch (error) {
+      console.error('Gagal menyimpan link audio:', error);
+      alert('Format URL tidak valid atau gagal disimpan ke database.');
+    } finally {
+      setSavingUrl(false);
+    }
+  };
+
   // 3. Hapus Musik dari Supabase (Database & Storage)
   const handleDeleteMusic = async (id: string | number, fileUrl: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus musik ini?')) return;
 
     try {
-      // Hapus data dari tabel database
       const { error } = await supabase
         .from('music_tracks')
         .delete()
@@ -128,18 +180,19 @@ export default function FileMusicPage() {
 
       if (error) throw error;
 
-      // Ekstrak path file dari URL untuk dihapus dari Storage (Opsional)
+      // Jika file berasal dari storage bucket internal, hapus filenya
       try {
-        const urlParts = fileUrl.split('/music-files/');
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          await supabase.storage.from('music-files').remove([filePath]);
+        if (fileUrl.includes('/music-files/')) {
+          const urlParts = fileUrl.split('/music-files/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from('music-files').remove([filePath]);
+          }
         }
       } catch (storageErr) {
-        console.warn('File fisik di storage gagal dihapus atau sudah hilang:', storageErr);
+        console.warn('File fisik di storage gagal dihapus atau merupakan URL eksternal:', storageErr);
       }
 
-      // Perbarui state lokal
       if (activeAudio?.id === id) {
         audioRef.current?.pause();
         setActiveAudio(null);
@@ -209,18 +262,47 @@ export default function FileMusicPage() {
           </div>
         </div>
 
-        {/* INPUT UPLOAD MUSIK */}
-        <div className="mt-6 pt-6 border-t border-slate-700/20">
+        {/* AREA DUA KOLOM: UPLOAD FILE & INPUT LINK AUDIO */}
+        <div className="mt-6 pt-6 border-t border-slate-700/20 grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Kolom 1: Upload File Fisik ke Supabase */}
           <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
-            <FiUpload className="text-blue-500 text-xl" />
-            <div className="text-left">
-              <p className="text-xs font-semibold">
+            <FiUpload className="text-blue-500 text-xl shrink-0" />
+            <div className="text-left overflow-hidden">
+              <p className="text-xs font-semibold truncate">
                 {uploading ? 'Mengunggah ke Supabase...' : 'Upload Musik Baru ke Supabase'}
               </p>
               <p className="text-[10px] opacity-60">Pilih file audio (.mp3, .wav, .aac, .ogg)</p>
             </div>
             <input type="file" accept="audio/*" onChange={handleMusicUpload} disabled={uploading} className="hidden" />
           </label>
+
+          {/* Kolom 2: Input Link Audio & Tombol Simpan di Sampingnya */}
+          <form onSubmit={handleUrlSubmit} className={`flex flex-col justify-center p-4 rounded-xl border-2 border-dashed ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/20'}`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <FiLink className="text-indigo-500 shrink-0" size={14} />
+              <span className="text-xs font-semibold">Simpan dari Link Audio / URL</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input 
+                type="url" 
+                placeholder="https://contoh.com/audio.mp3"
+                value={audioUrlInput}
+                onChange={(e) => setAudioUrlInput(e.target.value)}
+                disabled={savingUrl}
+                className={`flex-grow px-3 py-2 rounded-lg border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+              />
+              <button 
+                type="submit" 
+                disabled={savingUrl}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shrink-0 transition"
+              >
+                <FiSave size={13} />
+                <span>{savingUrl ? '...' : 'Simpan'}</span>
+              </button>
+            </div>
+          </form>
+
         </div>
       </div>
 
@@ -303,7 +385,7 @@ export default function FileMusicPage() {
                 <tr className="border-b border-slate-700/20 opacity-60">
                   <th className="pb-3 font-semibold w-12">Status</th>
                   <th className="pb-3 font-semibold">Judul Trek</th>
-                  <th className="pb-3 font-semibold">Artis</th>
+                  <th className="pb-3 font-semibold">Artis / Sumber</th>
                   <th className="pb-3 font-semibold">Tanggal</th>
                   <th className="pb-3 font-semibold">Ukuran</th>
                   <th className="pb-3 font-semibold text-right">Aksi</th>
@@ -324,7 +406,7 @@ export default function FileMusicPage() {
                         </button>
                       </td>
                       <td className="py-3 font-bold truncate max-w-xs">{item.name}</td>
-                      <td className="py-3 opacity-70">{item.artist}</td>
+                      <td className="py-3 opacity-70 truncate max-w-[150px]">{item.artist}</td>
                       <td className="py-3 opacity-70">{item.date}</td>
                       <td className="py-3 opacity-70">{item.size}</td>
                       <td className="py-3 text-right">
