@@ -6,6 +6,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useSidebarTheme } from '@/app/context/SidebarThemeContext'; // Sesuaikan path-nya
 import { MouseEvent } from 'react'; // Pastikan MouseEvent sudah diimport
+import { FiShare2, FiDatabase, FiBarChart2,FiGlobe,FiBell,FiSettings, FiLogOut,FiHome,FiGrid,FiPieChart,FiShield, FiUser } from 'react-icons/fi';
 
 
 export default function Sidebar() {
@@ -54,6 +55,8 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         pathname.startsWith('/dashboard/directory'),
 
   report: pathname.startsWith('/dashboard/report'),
+  shopping: pathname?.startsWith('/dashboard/produk'),
+  medsos: pathname?.startsWith('/dashboard/sosmed'),
   notifications: pathname.startsWith('/dashboard/notifications'),
   setting: pathname.startsWith('/dashboard/setting'),
 });
@@ -121,13 +124,13 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
       {/* Menu Navigasi */}
       <nav className="flex-1  px-4 space-y-1.5 overflow-y-auto">
-        <Link 
-          href="/dashboard" 
-          className={getLinkStyle('/dashboard')}
-          onClick={handleMenuClick}
-        >
-          <span className="mr-3 text-[16px] ">📊</span> Dashboard
-        </Link>
+<Link 
+  href="/dashboard" 
+  className={getLinkStyle('/dashboard')} 
+  onClick={handleMenuClick}
+>
+  <FiGrid size={18} className="mr-3" /> Dashboard
+</Link>
         
         {/* 1. Add Data */}
         <div>
@@ -135,9 +138,10 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
             onClick={() => toggleMenu('visitor')}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
-            <div className="flex items-center">
-              <span className="mr-4 text-[16px">➕</span> Add Data
-            </div>
+<div className="flex items-center gap-3">
+  <FiDatabase size={18} /> 
+  <span>Manager Data</span>
+</div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.visitor ? 'rotate-90' : ''}`}>
               &gt;
             </span>
@@ -177,9 +181,10 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
             }}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
-            <div className="flex items-center">
-              <span className="mr-4 text-[16px]">🌐</span> Global Atlas
-            </div>
+<div className="flex items-center gap-3">
+  <FiGlobe size={18} /> 
+  <span>Global Atlas</span>
+</div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.list ? 'rotate-90' : ''}`}>
               &gt;
             </span>
@@ -219,9 +224,10 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
             onClick={() => toggleMenu('report')}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
-            <div className="flex items-center">
-              <span className="mr-3 text-[16px] ">📈</span> Report
-            </div>
+<div className="flex items-center gap-3">
+  <FiBarChart2 size={18} /> 
+  <span>Report</span>
+</div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.report ? 'rotate-90' : ''}`}>
               &gt;
             </span>
@@ -241,15 +247,102 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           )}
         </div>
 
+
+
+        {/* 3. Report */}
+        <div>
+          <button
+            onClick={() => toggleMenu('shopping')}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
+          >
+<div className="flex items-center gap-3">
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="18" 
+    height="18" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className="feather feather-shopping-cart"
+  >
+    <circle cx="9" cy="21" r="1"></circle>
+    <circle cx="20" cy="21" r="1"></circle>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+  </svg>
+  <span>Shopping</span>
+</div>
+            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.shopping ? 'rotate-90' : ''}`}>
+              &gt;
+            </span>
+          </button>
+          {openMenus.shopping && (
+            <div className="pl-11 pr-2 py-1 space-y-1">
+              <Link href="/dashboard/shoping/produk" className={getSubLinkStyle('/dashboard/shoping/produk')} onClick={handleMenuClick}>
+                Produk
+              </Link>
+              <Link href="/dashboard/shoping/detail-produk" className={getSubLinkStyle('/dashboard/shoping/detail-produk"')} onClick={handleMenuClick}>
+                Product detail
+              </Link>
+              <Link href="/dashboard/shoping/order" className={getSubLinkStyle('/dashboard/shoping/order')} onClick={handleMenuClick}>
+                Orders
+              </Link>
+              <Link href="/dashboard/shoping/detail-order" className={getSubLinkStyle('/dashboard/shoping/detail-order')} onClick={handleMenuClick}>
+               Detail Orders
+              </Link>
+              <Link href="/dashboard/shoping/shoping-cart" className={getSubLinkStyle('/dashboard/shoping/shoping-cart')} onClick={handleMenuClick}>
+               Shopping Cart
+              </Link>
+            </div>
+          )}
+        </div>
+
+
+
+
+        {/* 4. Notifications */}
+        <div>
+          <button
+            onClick={() => toggleMenu('medsos')}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
+          >
+<div className="flex items-center gap-3">
+  <FiShare2 size={18} /> 
+  <span>Medsos</span>
+</div>
+            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.medsos ? 'rotate-90' : ''}`}>
+              &gt;
+            </span>
+          </button>
+          {openMenus.medsos && (
+            <div className="pl-11 pr-2 py-1 space-y-1">
+              <Link href="/dashboard/medsos" className={getSubLinkStyle('/dashboard/medsos')} onClick={handleMenuClick}>
+                Sosmed
+              </Link>
+              <Link href="/dashboard/notifications/settings" className={getSubLinkStyle('/dashboard/notifications/settings')} onClick={handleMenuClick}>
+                Alert Preferences
+              </Link>
+            </div>
+          )}
+        </div>
+
+
+
+
+
+
         {/* 4. Notifications */}
         <div>
           <button
             onClick={() => toggleMenu('notifications')}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
-            <div className="flex items-center">
-              <span className="mr-3 text-[16px]">🔔</span> Notifications
-            </div>
+<div className="flex items-center gap-3">
+  <FiBell size={18} /> 
+  <span>Notifications</span>
+</div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.notifications ? 'rotate-90' : ''}`}>
               &gt;
             </span>
@@ -266,15 +359,22 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           )}
         </div>
 
+
+
+
+
+        
+
         {/* 5. Setting */}
         <div>
           <button
             onClick={() => toggleMenu('setting')}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
-            <div className="flex items-center">
-              <span className="mr-3 text-[16px]">⚙️</span> Setting
-            </div>
+<div className="flex items-center gap-3">
+  <FiSettings size={18} /> 
+  <span>Setting</span>
+</div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.setting ? 'rotate-90' : ''}`}>
               &gt;
             </span>
@@ -291,9 +391,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           )}
         </div>
 
-        <Link href="/logout" className= {getLinkStyle('/logout')}  onClick={handleMenuClick}>
-          <span className="mr-3 text-[16px]">🚪</span> Login/Logout
-        </Link>
+<Link href="/logout" className={getLinkStyle('/logout')} onClick={handleMenuClick}>
+  <FiLogOut size={18} className="mr-3" /> Login/Logout
+</Link>
       </nav>
 
 
@@ -342,21 +442,23 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     {/* DROPDOWN MENU PENGATURAN ADMIN */}
     {isAdminMenuOpen && (
       <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-1">
-        <Link 
-          href="/admin/profile"
-          onClick={() => setIsAdminMenuOpen(false)}
-          className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
-        >
-          <span>👤 Profil Akun</span>
-        </Link>
+<Link 
+  href="/admin/profile"
+  onClick={() => setIsAdminMenuOpen(false)}
+  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
+>
+  <FiUser size={16} /> 
+  <span>Profil Akun</span>
+</Link>
 
-        <Link 
-          href="/admin/security"
-          onClick={() => setIsAdminMenuOpen(false)}
-          className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
-        >
-          <span>🔒 Keamanan & Sandi</span>
-        </Link>
+<Link 
+  href="/admin/security"
+  onClick={() => setIsAdminMenuOpen(false)}
+  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
+>
+  <FiShield size={16} /> 
+  <span>Keamanan & Sandi</span>
+</Link>
 
         <div className="border-t border-white/10 my-1"></div>
 
@@ -366,6 +468,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           }}
           className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
         >
+          <FiLogOut size={16} /> 
           <span>🚪 Keluar (Logout)</span>
         </button>
       </div>
