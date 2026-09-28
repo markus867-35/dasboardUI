@@ -10,12 +10,25 @@ import {
 interface FileItem {
   id: string;
   name: string;
-  type: 'excel' | 'image' | 'code' | 'python' | 'json' | 'html' | 'archive' | 'apk' | 'folder' | 'file' | 'other';
+  type: 'excel' | 'image' | 'code' | 'python' | 'json' | 'html' | 'archive' | 'apk' | 'app' | 'folder' | 'file' | 'other'; // <-- Tambahkan '| 'app'' di sini
   size: string;
   date: string;
   parentFolder?: string;
   content?: string;
 }
+
+const determineFileType = (filename: string): FileItem['type'] => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (['xlsx', 'xls'].includes(ext || '')) return 'excel';
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) return 'image';
+    if (['js', 'ts', 'jsx', 'tsx'].includes(ext || '')) return 'code';
+    if (['py'].includes(ext || '')) return 'python';
+    if (['json'].includes(ext || '')) return 'json';
+    if (['html', 'htm'].includes(ext || '')) return 'html';
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'xz'].includes(ext || '')) return 'archive';
+    if (['apk', 'exe', 'msi', 'msix'].includes(ext || '')) return 'apk'; // <-- Ubah kembali jadi 'apk'
+    return 'other';
+};
 
 export default function FileManagerPage() {
   const { mode } = useTheme();
@@ -74,9 +87,9 @@ const determineFileType = (filename: string): FileItem['type'] => {
     if (['json'].includes(ext || '')) return 'json';
     if (['html', 'htm'].includes(ext || '')) return 'html';
     if (['zip', 'rar', '7z', 'tar', 'gz', 'xz'].includes(ext || '')) return 'archive';
-    if (['apk', 'exe', 'msi', 'msix'].includes(ext || '')) return 'app'; // <-- Ubah/tambahkan kategori 'app' untuk apk & exe
+    if (['apk', 'exe', 'msi', 'msix'].includes(ext || '')) return 'apk'; // <-- Ubah kembali jadi 'apk'
     return 'other';
-  };
+};
 
 // Render Ikon Berdasarkan Tipe File
   const getFileIcon = (type: FileItem['type'], fileName?: string) => {
