@@ -219,6 +219,18 @@ const newVideo = {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
                   <FiFilm className="text-white/20 absolute" size={64} />
                   
+                  {/* Tombol Hapus di Mode Grid (Sudut Kanan Atas) */}
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      handleDeleteVideo(item.id, item.url); 
+                    }}
+                    className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 text-white hover:bg-red-600 transition opacity-0 group-hover:opacity-100 shadow-md"
+                    title="Hapus Video"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
+
                   {/* Tombol Play Hover */}
                   <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center z-20 shadow-lg transform transition group-hover:scale-110">
                     <FiPlay size={20} className="ml-0.5" />
