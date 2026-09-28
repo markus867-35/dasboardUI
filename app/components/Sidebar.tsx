@@ -83,7 +83,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   };
 
   return (
-<aside className={`fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 flex flex-col justify-between ${getSidebarStyle()} ${
+<aside className={`fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${getSidebarStyle()} ${
+  // sisa kode Anda di sini
+  // sisa kode Anda di sini
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
     }`}>
 <div className="p-6 flex items-center justify-between relative z-50">
@@ -186,20 +188,20 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 {openMenus.list && (
             <div className="pl-11 pr-2 py-1 space-y-1">
               <Link 
-                href="/dashboard/countries" 
-                className={getSubLinkStyle('/dashboard/countries')}
+                href="/dashboard/global/countries" 
+                className={getSubLinkStyle('/dashboard/global/countries')}
               >
-                Country List
+                Countries
               </Link>
               <Link 
-                href="/dashboard/currencies" 
-                className={getSubLinkStyle('/dashboard/currencies')}
+                href="/dashboard/global/currencies" 
+                className={getSubLinkStyle('/dashboard/globalcurrencies')}
               >
                 Currencies
               </Link>
               <Link 
-                href="/dashboard/directory" 
-                className={getSubLinkStyle('/dashboard/directory')}
+                href="/dashboard/global/name-directory" 
+                className={getSubLinkStyle('/dashboard/global/name-directory')}
               >
                 Name Directory
               </Link>
@@ -227,10 +229,13 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           {openMenus.report && (
             <div className="pl-11 pr-2 py-1 space-y-1">
               <Link href="/dashboard/report/editor" className={getSubLinkStyle('/dashboard/report/editor')} onClick={handleMenuClick}>
-                Daily Summary
+                Editor
               </Link>
-              <Link href="/dashboard/report/monthly" className={getSubLinkStyle('/dashboard/report/monthly')} onClick={handleMenuClick}>
-                Monthly Report
+              <Link href="/dashboard/report/icon" className={getSubLinkStyle('/dashboard/report/monthly')} onClick={handleMenuClick}>
+                Icon
+              </Link>
+              <Link href="/dashboard/report/gif" className={getSubLinkStyle('/dashboard/report/gif')} onClick={handleMenuClick}>
+                Gif
               </Link>
             </div>
           )}

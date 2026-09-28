@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import ReactECharts from 'echarts-for-react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,LineChart,  // <--- Tambahkan ini
   Line, LabelList } from 'recharts';
@@ -30,6 +31,136 @@ const monthData = [
   { date: 'May', Desktops: 40, Laptops: 65, Mobiles: 77 },
   { date: 'Jun', Desktops: 35, Laptops: 69, Mobiles: 91 },
 ];
+
+const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c}'
+    },
+    series: {
+      type: 'sunburst',
+      // Data bertingkat (Parent -> Children)
+      data: [
+        {
+          name: 'Central China',
+          itemStyle: { color: '#3b82f6' },
+          children: [
+            {
+              name: 'Hubei',
+              children: [
+                { name: 'Wuhan', value: 300 },
+                { name: 'Xianning', value: 200 },
+                { name: 'Huangshi', value: 150 },
+                { name: 'Xiangfan', value: 180 },
+                { name: 'Yichang', value: 207 }
+              ]
+            },
+            {
+              name: 'Hunan',
+              children: [
+                { name: 'Changsha', value: 220 },
+                { name: 'Zhuzhou', value: 150 },
+                { name: 'Xiangtan', value: 130 },
+                { name: 'Henyang', value: 170 },
+                { name: 'Changde', value: 190 },
+                { name: 'Yiyang', value: 110 },
+                { name: 'Loudi', value: 90 },
+                { name: 'Huaihua', value: 100 }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'South China',
+          itemStyle: { color: '#10b981' },
+          children: [
+            {
+              name: 'Guangdong',
+              children: [
+                { name: 'Guangzhou', value: 400 },
+                { name: 'Shantou', value: 200 },
+                { name: 'Shenzhen', value: 350 },
+                { name: 'Foshan', value: 250 },
+                { name: 'Zhuhai', value: 180 },
+                { name: 'Dongguan', value: 220 },
+                { name: 'Huizhou', value: 150 }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'Northwest China',
+          itemStyle: { color: '#f59e0b' },
+          children: [
+            {
+              name: 'Xinjiang',
+              children: [
+                { name: 'Wulumuqi', value: 250 },
+                { name: 'Hami', value: 120 },
+                { name: 'Tulufan', value: 90 },
+                { name: 'Atushi', value: 110 },
+                { name: 'Kashi', value: 140 },
+                { name: 'Yining', value: 130 },
+                { name: 'Haerbin', value: 160 }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'Northeast China',
+          itemStyle: { color: '#f43f5e' },
+          children: [
+            {
+              name: 'Heilingjiang',
+              children: [
+                { name: 'Heihe', value: 100 },
+                { name: 'Mudanjiang', value: 120 },
+                { name: 'Jiamusi', value: 110 },
+                { name: 'Jixi', value: 95 },
+                { name: 'Qiqihaer', value: 130 },
+                { name: 'Shangzhi', value: 85 }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'Southwest China',
+          itemStyle: { color: '#06b6d4' },
+          children: [
+            {
+              name: 'Yunnan',
+              children: [
+                { name: 'Kunming', value: 300 },
+                { name: 'Yuxi', value: 150 },
+                { name: 'Lijiang', value: 180 },
+                { name: 'Dali', value: 160 },
+                { name: 'Wenshan', value: 130 },
+                { name: 'Xishuangbanna', value: 140 },
+                { name: 'Qujing', value: 170 },
+                { name: 'Diqin', value: 90 }
+              ]
+            }
+          ]
+        }
+      ],
+      radius: ['15%', '85%'],
+      center: ['50%', '50%'],
+      sort: function (a: any, b: any) {
+        return a.value - b.value;
+      },
+      label: {
+        rotate: 'radial',
+        color: '#fff',
+        fontSize: 10
+      },
+      itemStyle: {
+        borderColor: '#1e293b',
+        borderWidth: 2,
+        borderRadius: 4
+      }
+    }
+  };
 
 interface AnimatedCounterProps {
   value: number | string;
@@ -391,7 +522,29 @@ useEffect(() => {
 
 
 
-      {/* 3. Area Tabel Recent Visitor */}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+      {/* 1. Area Tabel Recent Visitor */}
       <div 
         style={{ transitionDelay: '800ms' }}
         className={`w-full rounded-2xl p-4 sm:p-6 box-border transition-all duration-1000 transform ${getCardStyle()} ${
@@ -417,6 +570,7 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody className={`divide-y ${mode === 'light' ? 'divide-black/5 text-slate-700' : 'divide-white/10 text-slate-200'}`}>
+              {/* Baris Data 1 */}
               <tr>
                 <td className={`py-3 font-medium ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>John Smith</td>
                 <td className="py-3">Jane Doe</td>
@@ -425,20 +579,75 @@ useEffect(() => {
                 <td className="py-3">johno@gmail.com</td>
                 <td className="py-3">+147855898</td>
               </tr>
+
+              {/* Baris Data 2 */}
+              <tr>
+                <td className={`py-3 font-medium ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>Sarah Jenkins</td>
+                <td className="py-3">Michael Brown</td>
+                <td className="py-3">Sept 10, 10:15 AM</td>
+                <td className="py-3">Sept 10, 2:00 PM</td>
+                <td className="py-3">sarah.j@gmail.com</td>
+                <td className="py-3">+198765432</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* 4. Bagian Widget Berita */}
+      {/* 2. Area Tabel Tambahan di Sampingnya (Contoh: Active System Logs / Data Lain) */}
       <div 
         style={{ transitionDelay: '1000ms' }}
-        className={`w-full transition-all duration-1000 transform ${
+        className={`w-full rounded-2xl p-4 sm:p-6 box-border transition-all duration-1000 transform ${getCardStyle()} ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
       >
-        <NewsWidget />
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Active Sessions</h3>
+          <span className={`text-xs px-3 py-1 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
+            Live View
+          </span>
+        </div>
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left text-sm min-w-[500px]">
+            <thead>
+              <tr className={`border-b ${mode === 'light' ? 'border-black/10 text-slate-600' : 'border-white/10 text-slate-300'}`}>
+                <th className="pb-3 font-semibold">User</th>
+                <th className="pb-3 font-semibold">Role</th>
+                <th className="pb-3 font-semibold">IP Address</th>
+                <th className="pb-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${mode === 'light' ? 'divide-black/5 text-slate-700' : 'divide-white/10 text-slate-200'}`}>
+              <tr>
+                <td className={`py-3 font-medium ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>Alex Turner</td>
+                <td className="py-3">Administrator</td>
+                <td className="py-3">192.168.1.15</td>
+                <td className="py-3 text-emerald-500 font-medium">Online</td>
+              </tr>
+              <tr>
+                <td className={`py-3 font-medium ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>Clara Oswald</td>
+                <td className="py-3">Moderator</td>
+                <td className="py-3">192.168.1.42</td>
+                <td className="py-3 text-emerald-500 font-medium">Online</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     </div>
   );

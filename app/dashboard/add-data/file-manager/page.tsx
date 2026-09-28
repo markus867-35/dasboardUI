@@ -21,7 +21,8 @@ export default function FileManagerPage() {
   const { mode } = useTheme();
   
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [currentFolder, setCurrentFolder] = useState<string>('root');
+  const [currentFolderStack, setCurrentFolderStack] = useState<string[]>(['root']);
+  const currentFolder = currentFolderStack[currentFolderStack.length - 1];
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -114,63 +115,86 @@ const determineFileType = (filename: string): FileItem['type'] => {
     return <FiFile className="w-12 h-14 text-slate-400" />;
   };
 
-  const handleItemClick = (item: FileItem) => {
-    if (item.type === 'folder') {
-      setCurrentFolder(item.name);
-      setSearchQuery('');
-    } else {
-      setSelectedFileForPreview(item);
-    }
-  };
+// Saat folder diklik untuk masuk ke dalam
+const handleItemClick = (item: FileItem) => {
+  if (item.type === 'folder') {
+    setCurrentFolderStack(prev => [...prev, item.name]); // Masuk ke sub-folder
+    setSearchQuery('');
+  } else {
+    setSelectedFileForPreview(item);
+  }
+};
 
-// Handler Upload Folder & File (Mendukung Folder Bersarang / Sub-folder)
-  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const uploadedFiles = Array.from(e.target.files);
-      const newEntries: FileItem[] = [];
-      const discoveredFolders = new Map<string, string>(); // Map<namaFolder, parentFolder>
+// Saat tombol kembali diklik (mundur 1 tingkat)
+const handleGoBack = () => {
+  setCurrentFolderStack(prev => prev.slice(0, prev.length - 1));
+  setSearchQuery('');
+};
 
-      for (const file of uploadedFiles as any[]) {
-        const relativePath = file.webkitRelativePath || file.name;
-        const pathSegments = relativePath.split('/');
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        const fileType = determineFileType(file.name);
-        const fileSizeFormatted = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+// Perbaikan pada handler upload folder & file
+const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const uploadedFiles = Array.from(e.target.files);
+    const newEntries: FileItem[] = [];
+    const discoveredFolders = new Map<string, string>(); // Map<namaFolder, parentFolder>
 
-        // 1. Baca isi file (Base64 untuk gambar, teks untuk kode)
-        let fileContent = `File upload: ${file.name}`;
-        try {
-          if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) {
-            fileContent = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (uploadEvent) => resolve(uploadEvent.target?.result as string);
-              reader.readAsDataURL(file);
-            });
-          } else if (['js', 'json', 'html', 'py', 'txt', 'css', 'ts', 'htm'].includes(ext || '')) {
+    for (const file of uploadedFiles as any[]) {
+      const relativePath = file.webkitRelativePath || file.name;
+      const pathSegments = relativePath.split('/');
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const fileType = determineFileType(file.name);
+      
+      const fileSizeFormatted = file.size < 1024 * 1024 
+        ? `${(file.size / 1024).toFixed(1)} KB` 
+        : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      // 1. Baca isi file (Base64 untuk gambar, teks untuk kode/dokumen teks)
+      let fileContent = `File upload: ${file.name}`;
+      try {
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) {
+          fileContent = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (uploadEvent) => resolve(uploadEvent.target?.result as string);
+            reader.onerror = () => resolve(`Gagal memuat gambar: ${file.name}`);
+            reader.readAsDataURL(file);
+          });
+        } else {
+          const textExtensions = ['js', 'ts', 'jsx', 'tsx', 'json', 'html', 'htm', 'py', 'txt', 'css', 'md', 'env', 'sql', 'csv', 'xml', 'yml', 'yaml'];
+          if (textExtensions.includes(ext || '')) {
             fileContent = await file.text();
+            if (!fileContent.trim()) {
+              fileContent = `// File kosong: ${file.name}`;
+            }
           }
-        } catch (err) {
-          console.error('Gagal membaca isi file:', err);
         }
+      } catch (err) {
+        console.error('Gagal membaca isi file:', err);
+        fileContent = `// Error membaca file: ${file.name}`;
+      }
 
-        // 2. Petak hierarchical folder (Folder di dalam folder)
-        let targetParentFolder = currentFolder;
+      // 2. Tentukan targetParentFolder terlebih dahulu SEBELUM pengecekan duplikat
+      let targetParentFolder = currentFolder;
 
-        if (pathSegments.length > 1) {
-          // Loop untuk mendaftarkan setiap tingkat folder ke dalam discoveredFolders
-          for (let i = 0; i < pathSegments.length - 1; i++) {
-            const folderName = pathSegments[i];
-            const parentOfThisFolder = i === 0 ? (currentFolder === 'root' ? 'root' : currentFolder) : pathSegments[i - 1];
-            
-            // Simpan relasi folder
-            discoveredFolders.set(folderName, parentOfThisFolder);
-          }
-
-          // Parent langsung dari file ini adalah folder tepat di atasnya (elemen sebelum nama file)
-          targetParentFolder = pathSegments[pathSegments.length - 2];
+      if (pathSegments.length > 1) {
+        for (let i = 0; i < pathSegments.length - 1; i++) {
+          const folderName = pathSegments[i];
+          const parentOfThisFolder = i === 0 ? currentFolder : pathSegments[i - 1];
+          discoveredFolders.set(folderName, parentOfThisFolder);
         }
+        targetParentFolder = pathSegments[pathSegments.length - 2];
+      }
 
-        // Masukkan file ke daftar entri baru
+      // 3. Cek duplikat menggunakan targetParentFolder yang sudah valid
+      const isDuplicateInState = files.some(
+        f => f.name === file.name && f.parentFolder === targetParentFolder
+      );
+
+      const isDuplicateInNew = newEntries.some(
+        f => f.name === file.name && f.parentFolder === targetParentFolder
+      );
+
+      // 4. Masukkan ke newEntries hanya jika belum ada (Tanpa ada push duplikat di bawahnya lagi)
+      if (!isDuplicateInState && !isDuplicateInNew) {
         newEntries.push({
           id: `${Date.now()}-${Math.random()}`,
           name: file.name,
@@ -181,44 +205,49 @@ const determineFileType = (filename: string): FileItem['type'] => {
           content: fileContent
         });
       }
+    } // Akhir dari perulangan for...of
 
-      // 3. Buat objek item folder untuk setiap folder & sub-folder yang ditemukan
-      discoveredFolders.forEach((parent, folderName) => {
-        // Cek apakah folder ini sudah ada di state utama atau di newEntries
-        const folderExists = files.some(f => f.name === folderName && f.parentFolder === parent) ||
-                             newEntries.some(f => f.name === folderName && f.type === 'folder' && f.parentFolder === parent);
-        
-        if (!folderExists) {
-          newEntries.push({
-            id: `${Date.now()}-dir-${Math.random()}`,
-            name: folderName,
-            type: 'folder',
-            size: '--',
-            date: 'Baru saja',
-            parentFolder: parent
-          });
-        }
-      });
-
-      setFiles(prev => [...newEntries, ...prev]);
-
-      // Sinkronisasi otomatis ke Supabase
-      const dbPayload = newEntries.map(item => ({
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        size: item.size,
-        date: item.date,
-        parent_folder: item.parentFolder,
-        content: item.content
-      }));
+    // 5. Buat objek item folder untuk setiap folder & sub-folder yang ditemukan
+    discoveredFolders.forEach((parent, folderName) => {
+      const folderExists = 
+        files.some(f => f.name === folderName && f.parentFolder === parent) ||
+        newEntries.some(f => f.name === folderName && f.type === 'folder' && f.parentFolder === parent);
       
+      if (!folderExists) {
+        newEntries.push({
+          id: `${Date.now()}-dir-${Math.random()}`,
+          name: folderName,
+          type: 'folder',
+          size: '--',
+          date: 'Baru saja',
+          parentFolder: parent
+        });
+      }
+    });
+
+    setFiles(prev => [...newEntries, ...prev]);
+
+    // Sinkronisasi otomatis ke Supabase
+    const dbPayload = newEntries.map(item => ({
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      size: item.size,
+      date: item.date,
+      parent_folder: item.parentFolder,
+      content: item.content
+    }));
+    
+    if (dbPayload.length > 0) {
       const { error } = await supabase.from('file_items').insert(dbPayload);
       if (error) {
         console.error('Gagal menyimpan ke Supabase:', error.message);
       }
     }
-  };
+  }
+};
+
+  
   const displayedFiles = files.filter(f => {
     const matchesFolder = f.parentFolder === currentFolder;
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -372,13 +401,18 @@ const determineFileType = (filename: string): FileItem['type'] => {
         </div>
       </div>
 
-      {/* AREA KONTEN FILE */}
+{/* AREA KONTEN FILE */}
       <div className={`min-h-[400px] p-6 rounded-2xl border transition-all ${getCardStyle()}`}>
         <div className="mb-4 flex justify-between items-center text-xs opacity-70 font-medium">
           <span>Direktori: {currentFolder} ({displayedFiles.length} item)</span>
-          {currentFolder !== 'root' && (
-            <button onClick={() => setCurrentFolder('root')} className="text-blue-500 hover:underline">
-              &larr; Kembali ke Utama
+          
+          {/* Tombol kembali mundur satu tingkat */}
+          {currentFolderStack.length > 1 && (
+            <button 
+              onClick={handleGoBack} 
+              className="text-blue-500 hover:underline flex items-center gap-1"
+            >
+              &larr; Kembali
             </button>
           )}
         </div>

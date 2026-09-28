@@ -7,6 +7,7 @@ import Sidebar from "@/app/components/Sidebar";
 import Header from "@/app/components/Header";
 import TagsView from "@/app/components/TagsView";
 import { FontSizeProvider, useFontSize, FontSizeContextType } from '@/app/context/FontSizeContext';
+
 import { LanguageProvider } from "@/app/context/LanguageContext";
 import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 
