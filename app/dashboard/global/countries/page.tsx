@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { FiSearch, FiGlobe, FiMapPin, FiFlag, FiSun, FiMoon } from 'react-icons/fi';
+import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
+import { FiSearch, FiGlobe, FiMapPin, FiFlag, FiPlus } from 'react-icons/fi';
+import { useTheme } from '@/app/context/ThemeContext';
 import Swal from 'sweetalert2';
+import { createClient } from '@supabase/supabase-js';
+
+// Inisialisasi Supabase Client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface CountryItem {
+  id?: string;
   name: string;
   capital: string;
   region: string;
@@ -14,111 +23,99 @@ interface CountryItem {
   flagUrl: string;
 }
 
-const ALL_COUNTRIES: CountryItem[] = [
-  { name: "Afghanistan", capital: "Kabul", region: "Asia", subregion: "Southern Asia", code: "af", phoneCode: "+93", flagUrl: "https://flagcdn.com/af.svg" },
-  { name: "Albania", capital: "Tirana", region: "Europe", subregion: "Southern Europe", code: "al", phoneCode: "+355", flagUrl: "https://flagcdn.com/al.svg" },
-  { name: "Algeria", capital: "Algiers", region: "Africa", subregion: "Northern Africa", code: "dz", phoneCode: "+213", flagUrl: "https://flagcdn.com/dz.svg" },
-  { name: "Andorra", capital: "Andorra la Vella", region: "Europe", subregion: "Southern Europe", code: "ad", phoneCode: "+376", flagUrl: "https://flagcdn.com/ad.svg" },
-  { name: "Angola", capital: "Luanda", region: "Africa", subregion: "Middle Africa", code: "ao", phoneCode: "+244", flagUrl: "https://flagcdn.com/ao.svg" },
-  { name: "Argentina", capital: "Buenos Aires", region: "Americas", subregion: "South America", code: "ar", phoneCode: "+54", flagUrl: "https://flagcdn.com/ar.svg" },
-  { name: "Armenia", capital: "Yerevan", region: "Asia", subregion: "Western Asia", code: "am", phoneCode: "+374", flagUrl: "https://flagcdn.com/am.svg" },
-  { name: "Australia", capital: "Canberra", region: "Oceania", subregion: "Australia and New Zealand", code: "au", phoneCode: "+61", flagUrl: "https://flagcdn.com/au.svg" },
-  { name: "Austria", capital: "Vienna", region: "Europe", subregion: "Western Europe", code: "at", phoneCode: "+43", flagUrl: "https://flagcdn.com/at.svg" },
-  { name: "Azerbaijan", capital: "Baku", region: "Asia", subregion: "Western Asia", code: "az", phoneCode: "+994", flagUrl: "https://flagcdn.com/az.svg" },
-  { name: "Bahamas", capital: "Nassau", region: "Americas", subregion: "Caribbean", code: "bs", phoneCode: "+1242", flagUrl: "https://flagcdn.com/bs.svg" },
-  { name: "Bahrain", capital: "Manama", region: "Asia", subregion: "Western Asia", code: "bh", phoneCode: "+973", flagUrl: "https://flagcdn.com/bh.svg" },
-  { name: "Bangladesh", capital: "Dhaka", region: "Asia", subregion: "Southern Asia", code: "bd", phoneCode: "+880", flagUrl: "https://flagcdn.com/bd.svg" },
-  { name: "Belarus", capital: "Minsk", region: "Europe", subregion: "Eastern Europe", code: "by", phoneCode: "+375", flagUrl: "https://flagcdn.com/by.svg" },
-  { name: "Belgium", capital: "Brussels", region: "Europe", subregion: "Western Europe", code: "be", phoneCode: "+32", flagUrl: "https://flagcdn.com/be.svg" },
-  { name: "Belize", capital: "Belmopan", region: "Americas", subregion: "Central America", code: "bz", phoneCode: "+501", flagUrl: "https://flagcdn.com/bz.svg" },
-  { name: "Benin", capital: "Porto-Novo", region: "Africa", subregion: "Western Africa", code: "bj", phoneCode: "+229", flagUrl: "https://flagcdn.com/bj.svg" },
-  { name: "Bhutan", capital: "Thimphu", region: "Asia", subregion: "Southern Asia", code: "bt", phoneCode: "+975", flagUrl: "https://flagcdn.com/bt.svg" },
-  { name: "Bolivia", capital: "Sucre", region: "Americas", subregion: "South America", code: "bo", phoneCode: "+591", flagUrl: "https://flagcdn.com/bo.svg" },
-  { name: "Bosnia and Herzegovina", capital: "Sarajevo", region: "Europe", subregion: "Southern Europe", code: "ba", phoneCode: "+387", flagUrl: "https://flagcdn.com/ba.svg" },
-  { name: "Botswana", capital: "Gaborone", region: "Africa", subregion: "Southern Africa", code: "bw", phoneCode: "+267", flagUrl: "https://flagcdn.com/bw.svg" },
-  { name: "Brazil", capital: "Brasília", region: "Americas", subregion: "South America", code: "br", phoneCode: "+55", flagUrl: "https://flagcdn.com/br.svg" },
-  { name: "Brunei", capital: "Bandar Seri Begawan", region: "Asia", subregion: "South-Eastern Asia", code: "bn", phoneCode: "+673", flagUrl: "https://flagcdn.com/bn.svg" },
-  { name: "Bulgaria", capital: "Sofia", region: "Europe", subregion: "Eastern Europe", code: "bg", phoneCode: "+359", flagUrl: "https://flagcdn.com/bg.svg" },
-  { name: "Cambodia", capital: "Phnom Penh", region: "Asia", subregion: "South-Eastern Asia", code: "kh", phoneCode: "+855", flagUrl: "https://flagcdn.com/kh.svg" },
-  { name: "Cameroon", capital: "Yaoundé", region: "Africa", subregion: "Middle Africa", code: "cm", phoneCode: "+237", flagUrl: "https://flagcdn.com/cm.svg" },
-  { name: "Canada", capital: "Ottawa", region: "Americas", subregion: "Northern America", code: "ca", phoneCode: "+1", flagUrl: "https://flagcdn.com/ca.svg" },
-  { name: "Chile", capital: "Santiago", region: "Americas", subregion: "South America", code: "cl", phoneCode: "+56", flagUrl: "https://flagcdn.com/cl.svg" },
-  { name: "China", capital: "Beijing", region: "Asia", subregion: "Eastern Asia", code: "cn", phoneCode: "+86", flagUrl: "https://flagcdn.com/cn.svg" },
-  { name: "Colombia", capital: "Bogotá", region: "Americas", subregion: "South America", code: "co", phoneCode: "+57", flagUrl: "https://flagcdn.com/co.svg" },
-  { name: "Croatia", capital: "Zagreb", region: "Europe", subregion: "Southern Europe", code: "hr", phoneCode: "+385", flagUrl: "https://flagcdn.com/hr.svg" },
-  { name: "Cuba", capital: "Havana", region: "Americas", subregion: "Caribbean", code: "cu", phoneCode: "+53", flagUrl: "https://flagcdn.com/cu.svg" },
-  { name: "Cyprus", capital: "Nicosia", region: "Europe", subregion: "Southern Europe", code: "cy", phoneCode: "+357", flagUrl: "https://flagcdn.com/cy.svg" },
-  { name: "Czech Republic", capital: "Prague", region: "Europe", subregion: "Eastern Europe", code: "cz", phoneCode: "+420", flagUrl: "https://flagcdn.com/cz.svg" },
-  { name: "Denmark", capital: "Copenhagen", region: "Europe", subregion: "Northern Europe", code: "dk", phoneCode: "+45", flagUrl: "https://flagcdn.com/dk.svg" },
-  { name: "Ecuador", capital: "Quito", region: "Americas", subregion: "South America", code: "ec", phoneCode: "+593", flagUrl: "https://flagcdn.com/ec.svg" },
-  { name: "Egypt", capital: "Cairo", region: "Africa", subregion: "Northern Africa", code: "eg", phoneCode: "+20", flagUrl: "https://flagcdn.com/eg.svg" },
-  { name: "Estonia", capital: "Tallinn", region: "Europe", subregion: "Northern Europe", code: "ee", phoneCode: "+372", flagUrl: "https://flagcdn.com/ee.svg" },
-  { name: "Ethiopia", capital: "Addis Ababa", region: "Africa", subregion: "Eastern Africa", code: "et", phoneCode: "+251", flagUrl: "https://flagcdn.com/et.svg" },
-  { name: "Fiji", capital: "Suva", region: "Oceania", subregion: "Melanesia", code: "fj", phoneCode: "+679", flagUrl: "https://flagcdn.com/fj.svg" },
-  { name: "Finland", capital: "Helsinki", region: "Europe", subregion: "Northern Europe", code: "fi", phoneCode: "+358", flagUrl: "https://flagcdn.com/fi.svg" },
-  { name: "France", capital: "Paris", region: "Europe", subregion: "Western Europe", code: "fr", phoneCode: "+33", flagUrl: "https://flagcdn.com/fr.svg" },
-  { name: "Germany", capital: "Berlin", region: "Europe", subregion: "Western Europe", code: "de", phoneCode: "+49", flagUrl: "https://flagcdn.com/de.svg" },
-  { name: "Greece", capital: "Athens", region: "Europe", subregion: "Southern Europe", code: "gr", phoneCode: "+30", flagUrl: "https://flagcdn.com/gr.svg" },
-  { name: "Hungary", capital: "Budapest", region: "Europe", subregion: "Eastern Europe", code: "hu", phoneCode: "+36", flagUrl: "https://flagcdn.com/hu.svg" },
-  { name: "India", capital: "New Delhi", region: "Asia", subregion: "Southern Asia", code: "in", phoneCode: "+91", flagUrl: "https://flagcdn.com/in.svg" },
+const INITIAL_COUNTRIES: CountryItem[] = [
   { name: "Indonesia", capital: "Jakarta", region: "Asia", subregion: "South-Eastern Asia", code: "id", phoneCode: "+62", flagUrl: "https://flagcdn.com/id.svg" },
-  { name: "Iran", capital: "Tehran", region: "Asia", subregion: "Southern Asia", code: "ir", phoneCode: "+98", flagUrl: "https://flagcdn.com/ir.svg" },
-  { name: "Iraq", capital: "Baghdad", region: "Asia", subregion: "Western Asia", code: "iq", phoneCode: "+964", flagUrl: "https://flagcdn.com/iq.svg" },
-  { name: "Ireland", capital: "Dublin", region: "Europe", subregion: "Northern Europe", code: "ie", phoneCode: "+353", flagUrl: "https://flagcdn.com/ie.svg" },
-  { name: "Israel", capital: "Jerusalem", region: "Asia", subregion: "Western Asia", code: "il", phoneCode: "+972", flagUrl: "https://flagcdn.com/il.svg" },
-  { name: "Italy", capital: "Rome", region: "Europe", subregion: "Southern Europe", code: "it", phoneCode: "+39", flagUrl: "https://flagcdn.com/it.svg" },
   { name: "Japan", capital: "Tokyo", region: "Asia", subregion: "Eastern Asia", code: "jp", phoneCode: "+81", flagUrl: "https://flagcdn.com/jp.svg" },
-  { name: "Jordan", capital: "Amman", region: "Asia", subregion: "Western Asia", code: "jo", phoneCode: "+962", flagUrl: "https://flagcdn.com/jo.svg" },
-  { name: "Kazakhstan", capital: "Astana", region: "Asia", subregion: "Central Asia", code: "kz", phoneCode: "+7", flagUrl: "https://flagcdn.com/kz.svg" },
-  { name: "Kenya", capital: "Nairobi", region: "Africa", subregion: "Eastern Africa", code: "ke", phoneCode: "+254", flagUrl: "https://flagcdn.com/ke.svg" },
-  { name: "Kuwait", capital: "Kuwait City", region: "Asia", subregion: "Western Asia", code: "kw", phoneCode: "+965", flagUrl: "https://flagcdn.com/kw.svg" },
-  { name: "Laos", capital: "Vientiane", region: "Asia", subregion: "South-Eastern Asia", code: "la", phoneCode: "+856", flagUrl: "https://flagcdn.com/la.svg" },
-  { name: "Malaysia", capital: "Kuala Lumpur", region: "Asia", subregion: "South-Eastern Asia", code: "my", phoneCode: "+60", flagUrl: "https://flagcdn.com/my.svg" },
-  { name: "Mexico", capital: "Mexico City", region: "Americas", subregion: "North America", code: "mx", phoneCode: "+52", flagUrl: "https://flagcdn.com/mx.svg" },
-  { name: "Morocco", capital: "Rabat", region: "Africa", subregion: "Northern Africa", code: "ma", phoneCode: "+212", flagUrl: "https://flagcdn.com/ma.svg" },
-  { name: "Myanmar", capital: "Naypyidaw", region: "Asia", subregion: "South-Eastern Asia", code: "mm", phoneCode: "+95", flagUrl: "https://flagcdn.com/mm.svg" },
-  { name: "Netherlands", capital: "Amsterdam", region: "Europe", subregion: "Western Europe", code: "nl", phoneCode: "+31", flagUrl: "https://flagcdn.com/nl.svg" },
-  { name: "New Zealand", capital: "Wellington", region: "Oceania", subregion: "Australia and New Zealand", code: "nz", phoneCode: "+64", flagUrl: "https://flagcdn.com/nz.svg" },
-  { name: "Nigeria", capital: "Abuja", region: "Africa", subregion: "Western Africa", code: "ng", phoneCode: "+234", flagUrl: "https://flagcdn.com/ng.svg" },
-  { name: "North Korea", capital: "Pyongyang", region: "Asia", subregion: "Eastern Asia", code: "kp", phoneCode: "+850", flagUrl: "https://flagcdn.com/kp.svg" },
-  { name: "Norway", capital: "Oslo", region: "Europe", subregion: "Northern Europe", code: "no", phoneCode: "+47", flagUrl: "https://flagcdn.com/no.svg" },
-  { name: "Oman", capital: "Muscat", region: "Asia", subregion: "Western Asia", code: "om", phoneCode: "+968", flagUrl: "https://flagcdn.com/om.svg" },
-  { name: "Pakistan", capital: "Islamabad", region: "Asia", subregion: "Southern Asia", code: "pk", phoneCode: "+92", flagUrl: "https://flagcdn.com/pk.svg" },
-  { name: "Palestine", capital: "Ramallah", region: "Asia", subregion: "Western Asia", code: "ps", phoneCode: "+970", flagUrl: "https://flagcdn.com/ps.svg" },
-  { name: "Philippines", capital: "Manila", region: "Asia", subregion: "South-Eastern Asia", code: "ph", phoneCode: "+63", flagUrl: "https://flagcdn.com/ph.svg" },
-  { name: "Poland", capital: "Warsaw", region: "Europe", subregion: "Eastern Europe", code: "pl", phoneCode: "+48", flagUrl: "https://flagcdn.com/pl.svg" },
-  { name: "Portugal", capital: "Lisbon", region: "Europe", subregion: "Southern Europe", code: "pt", phoneCode: "+351", flagUrl: "https://flagcdn.com/pt.svg" },
-  { name: "Qatar", capital: "Doha", region: "Asia", subregion: "Western Asia", code: "qa", phoneCode: "+974", flagUrl: "https://flagcdn.com/qa.svg" },
-  { name: "Romania", capital: "Bucharest", region: "Europe", subregion: "Eastern Europe", code: "ro", phoneCode: "+40", flagUrl: "https://flagcdn.com/ro.svg" },
-  { name: "Russia", capital: "Moscow", region: "Europe", subregion: "Eastern Europe", code: "ru", phoneCode: "+7", flagUrl: "https://flagcdn.com/ru.svg" },
-  { name: "Saudi Arabia", capital: "Riyadh", region: "Asia", subregion: "Western Asia", code: "sa", phoneCode: "+966", flagUrl: "https://flagcdn.com/sa.svg" },
-  { name: "Singapore", capital: "Singapore", region: "Asia", subregion: "South-Eastern Asia", code: "sg", phoneCode: "+65", flagUrl: "https://flagcdn.com/sg.svg" },
-  { name: "South Africa", capital: "Pretoria", region: "Africa", subregion: "Southern Africa", code: "za", phoneCode: "+27", flagUrl: "https://flagcdn.com/za.svg" },
-  { name: "South Korea", capital: "Seoul", region: "Asia", subregion: "Eastern Asia", code: "kr", phoneCode: "+82", flagUrl: "https://flagcdn.com/kr.svg" },
-  { name: "Spain", capital: "Madrid", region: "Europe", subregion: "Southern Europe", code: "es", phoneCode: "+34", flagUrl: "https://flagcdn.com/es.svg" },
-  { name: "Sweden", capital: "Stockholm", region: "Europe", subregion: "Northern Europe", code: "se", phoneCode: "+46", flagUrl: "https://flagcdn.com/se.svg" },
-  { name: "Switzerland", capital: "Bern", region: "Europe", subregion: "Western Europe", code: "ch", phoneCode: "+41", flagUrl: "https://flagcdn.com/ch.svg" },
-  { name: "Syria", capital: "Damascus", region: "Asia", subregion: "Western Asia", code: "sy", phoneCode: "+963", flagUrl: "https://flagcdn.com/sy.svg" },
-  { name: "Taiwan", capital: "Taipei", region: "Asia", subregion: "Eastern Asia", code: "tw", phoneCode: "+886", flagUrl: "https://flagcdn.com/tw.svg" },
-  { name: "Thailand", capital: "Bangkok", region: "Asia", subregion: "South-Eastern Asia", code: "th", phoneCode: "+66", flagUrl: "https://flagcdn.com/th.svg" },
-  { name: "Turkey", capital: "Ankara", region: "Asia", subregion: "Western Asia", code: "tr", phoneCode: "+90", flagUrl: "https://flagcdn.com/tr.svg" },
-  { name: "Ukraine", capital: "Kyiv", region: "Europe", subregion: "Eastern Europe", code: "ua", phoneCode: "+380", flagUrl: "https://flagcdn.com/ua.svg" },
-  { name: "United Arab Emirates", capital: "Abu Dhabi", region: "Asia", subregion: "Western Asia", code: "ae", phoneCode: "+971", flagUrl: "https://flagcdn.com/ae.svg" },
-  { name: "United Kingdom", capital: "London", region: "Europe", subregion: "Northern Europe", code: "gb", phoneCode: "+44", flagUrl: "https://flagcdn.com/gb.svg" },
-  { name: "United States", capital: "Washington, D.C.", region: "Americas", subregion: "Northern America", code: "us", phoneCode: "+1", flagUrl: "https://flagcdn.com/us.svg" },
-  { name: "Vatican City", capital: "Vatican City", region: "Europe", subregion: "Southern Europe", code: "va", phoneCode: "+379", flagUrl: "https://flagcdn.com/va.svg" },
-  { name: "Vietnam", capital: "Hanoi", region: "Asia", subregion: "South-Eastern Asia", code: "vn", phoneCode: "+84", flagUrl: "https://flagcdn.com/vn.svg" },
-  { name: "Yemen", capital: "Sana'a", region: "Asia", subregion: "Western Asia", code: "ye", phoneCode: "+967", flagUrl: "https://flagcdn.com/ye.svg" }
+  { name: "United States", capital: "Washington, D.C.", region: "Americas", subregion: "Northern America", code: "us", phoneCode: "+1", flagUrl: "https://flagcdn.com/us.svg" }
 ];
 
 export default function CountryList() {
+  const themeContext = useTheme() as any;
+  const { mode } = useTheme(); 
+
+  // Penentuan mode gelap yang bersumber langsung dari mode context atau DOM class secara reaktif
+  const isDarkMode = mode === 'dark' || themeContext?.theme === 'dark' || themeContext?.isDarkMode === true;
+
+  const [countries, setCountries] = useState<CountryItem[]>(INITIAL_COUNTRIES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default mode gelap
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [form, setForm] = useState<CountryItem>({
+    name: '',
+    capital: '',
+    region: 'Asia',
+    subregion: '',
+    code: '',
+    phoneCode: '',
+    flagUrl: ''
+  });
 
   const regions = ['All', 'Asia', 'Europe', 'Americas', 'Africa', 'Oceania'];
 
-  // Fungsi SweetAlert2 dengan warna yang menyesuaikan tema terang/gelap
+  useEffect(() => {
+    fetchCountries();
+  }, []);
+
+  const fetchCountries = async () => {
+    try {
+      const { data, error } = await supabase.from('countries').select('*');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const formattedData: CountryItem[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          capital: item.capital,
+          region: item.region,
+          subregion: item.subregion,
+          code: item.code,
+          phoneCode: item.phone_code,
+          flagUrl: item.flag_url,
+        }));
+        setCountries(formattedData);
+      }
+    } catch (err) {
+      console.error("Gagal memuat data dari Supabase:", err);
+    }
+  };
+
+  const handleAddCountry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('countries').insert([
+        {
+          name: form.name,
+          capital: form.capital,
+          region: form.region,
+          subregion: form.subregion,
+          code: form.code.toLowerCase(),
+          phone_code: form.phoneCode,
+          flag_url: form.flagUrl,
+        }
+      ]).select();
+
+      if (error) throw error;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Negara baru berhasil ditambahkan ke database.',
+        background: isDarkMode ? '#1e293b' : '#ffffff',
+        color: isDarkMode ? '#f8fafc' : '#0f172a',
+      });
+
+      setIsModalOpen(false);
+      setForm({ name: '', capital: '', region: 'Asia', subregion: '', code: '', phoneCode: '', flagUrl: '' });
+      fetchCountries();
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: err.message || 'Terjadi kesalahan saat menyimpan data.',
+      });
+    }
+  };
+
   const handleFlagClick = (item: CountryItem) => {
     Swal.fire({
       title: `<span class="${isDarkMode ? 'text-sky-400' : 'text-sky-600'}">${item.name}</span>`,
@@ -144,7 +141,7 @@ export default function CountryList() {
   };
 
   const filteredCountries = useMemo(() => {
-    return ALL_COUNTRIES.filter((item) => {
+    return countries.filter((item) => {
       const matchesSearch =
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.capital.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,40 +152,30 @@ export default function CountryList() {
 
       return matchesSearch && matchesRegion;
     });
-  }, [searchQuery, selectedRegion]);
+  }, [searchQuery, selectedRegion, countries]);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
+      <div className="max-w-10xl mx-auto p-4 md:p-8">
         
-        {/* Header & Tombol Toggle Dark/Light Mode */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b pb-6 transition-colors duration-300 border-slate-700/50">
+        {/* Header & Tombol Aksi */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b pb-6 border-slate-700/50">
           <div>
             <h1 className={`text-2xl md:text-3xl font-extrabold flex items-center gap-3 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`}>
               <FiGlobe /> Direktori Negara di Dunia
             </h1>
             <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Klik pada bendera negara untuk melihat detail informasi lengkap.
+              Kelola dan cari informasi direktori negara.
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
-            {/* Tombol Toggle Mode */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition border shadow-sm ${
-                isDarkMode 
-                  ? 'bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700' 
-                  : 'bg-white text-sky-600 border-slate-300 hover:bg-slate-100'
-              }`}
-            >
-              {isDarkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
-              <span>{isDarkMode ? 'Mode Terang' : 'Mode Gelap'}</span>
-            </button>
-
-            <div className={`px-4 py-2 rounded-xl text-sm border transition-colors duration-300 ${isDarkMode ? 'bg-slate-800/80 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-sm'}`}>
-              Total: <strong className={isDarkMode ? 'text-white' : 'text-slate-900'}>{filteredCountries.length} Negara</strong>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+<Link
+  href="/dashboard/global/countries/add"
+  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-500 transition shadow-sm"
+>
+  <FiPlus size={16} /> Tambah Negara
+</Link>
           </div>
         </div>
 
@@ -200,13 +187,11 @@ export default function CountryList() {
             </span>
             <input
               type="text"
-              placeholder="Cari berdasarkan nama negara, ibu kota, atau kode telepon (contoh: +62)..."
+              placeholder="Cari berdasarkan nama negara, ibu kota, atau kode telepon..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full border rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none transition shadow-sm ${
-                isDarkMode 
-                  ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-500 focus:border-sky-500' 
-                  : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-sky-600'
+                isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-500 focus:border-sky-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-sky-600'
               }`}
             />
           </div>
@@ -218,10 +203,8 @@ export default function CountryList() {
                 onClick={() => setSelectedRegion(region)}
                 className={`px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm ${
                   selectedRegion === region
-                    ? 'bg-sky-600 text-white shadow-sky-600/30'
-                    : isDarkMode 
-                      ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700' 
-                      : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-300'
+                    ? 'bg-sky-600 text-white'
+                    : isDarkMode ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-300'
                 }`}
               >
                 {region}
@@ -232,70 +215,37 @@ export default function CountryList() {
 
         {/* Grid List Negara */}
         {filteredCountries.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredCountries.map((item, index) => (
-              <div
-                key={index}
-                className={`border rounded-2xl p-5 transition duration-200 hover:shadow-lg flex flex-col justify-between ${
-                  isDarkMode 
-                    ? 'bg-slate-800/60 border-slate-700/70 hover:border-sky-500/50' 
-                    : 'bg-white border-slate-200 hover:border-sky-400 shadow-sm'
-                }`}
-              >
+              <div key={item.id || index} className={`border rounded-2xl p-5 transition duration-200 hover:shadow-lg flex flex-col justify-between ${
+                isDarkMode ? 'bg-slate-800/60 border-slate-700/70' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
                 <div>
                   <div className="flex justify-between items-start mb-3">
                     <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${
-                      isDarkMode 
-                        ? 'bg-slate-700/60 text-sky-400 border-slate-600/50' 
-                        : 'bg-sky-50 text-sky-700 border-sky-100'
+                      isDarkMode ? 'bg-slate-700/60 text-sky-400 border-slate-600/50' : 'bg-sky-50 text-sky-700 border-sky-100'
                     }`}>
                       {item.region}
                     </span>
-                    
-                    {/* Kotak Bendera yang bisa diklik */}
-                    <div 
-                      onClick={() => handleFlagClick(item)}
-                      title="Klik untuk melihat detail"
-                      className={`w-12 h-9 rounded-lg overflow-hidden border shadow-sm flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition transform duration-150 ${
-                        isDarkMode ? 'bg-slate-700 border-slate-600 hover:border-sky-400' : 'bg-slate-100 border-slate-300 hover:border-sky-500'
-                      }`}
-                    >
-                      {item.flagUrl ? (
-                        <img
-                          src={item.flagUrl}
-                          alt={`Bendera ${item.name}`}
-                          className="w-full h-full object-cover pointer-events-none"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="text-xs text-slate-400">{item.code.toUpperCase()}</span>
-                      )}
+                    <div onClick={() => handleFlagClick(item)} className="w-12 h-9 rounded-lg overflow-hidden border shadow-sm flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition">
+                      <img src={item.flagUrl} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                   </div>
-
                   <h3 className={`text-lg font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{item.name}</h3>
-                  
                   <div className={`mt-3 space-y-1.5 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                     <div className="flex items-center gap-2">
                       <FiMapPin className="text-sky-500 shrink-0" size={14} />
-                      <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Ibu Kota:</span>
-                      <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-800'}>{item.capital}</strong>
+                      <span>Ibu Kota:</span> <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-800'}>{item.capital}</strong>
                     </div>
                     <div className="flex items-center gap-2">
                       <FiFlag className="text-emerald-500 shrink-0" size={14} />
-                      <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Sub-kawasan:</span>
-                      <span className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{item.subregion}</span>
+                      <span>Sub-kawasan:</span> <span>{item.subregion}</span>
                     </div>
                   </div>
                 </div>
-
                 <div className={`mt-5 pt-3 border-t flex justify-between items-center text-xs ${isDarkMode ? 'border-slate-700/50' : 'border-slate-100'}`}>
-                  <span className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>Kode Telepon:</span>
-                  <span className={`font-mono px-2.5 py-1 rounded font-semibold border ${
-                    isDarkMode 
-                      ? 'bg-slate-900 text-sky-400 border-slate-800' 
-                      : 'bg-slate-100 text-sky-600 border-slate-200'
-                  }`}>
+                  <span className="text-slate-400">Kode Telepon:</span>
+                  <span className={`font-mono px-2.5 py-1 rounded font-semibold border ${isDarkMode ? 'bg-slate-900 text-sky-400 border-slate-800' : 'bg-slate-100 text-sky-600 border-slate-200'}`}>
                     {item.phoneCode}
                   </span>
                 </div>
@@ -306,9 +256,58 @@ export default function CountryList() {
           <div className={`text-center py-16 border rounded-2xl ${isDarkMode ? 'bg-slate-800/30 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
             <FiGlobe className="mx-auto text-slate-400 text-5xl mb-3" />
             <p className={`font-medium text-lg ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Negara tidak ditemukan</p>
-            <p className="text-slate-400 text-sm mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
           </div>
         )}
+
+        {/* Modal Tambah Negara */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className={`w-full max-w-lg rounded-2xl p-6 border shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+              <h2 className="text-xl font-bold mb-4">Tambah Direktori Negara Baru</h2>
+              <form onSubmit={handleAddCountry} className="space-y-4 text-xs">
+                <div>
+                  <label className="block mb-1 font-semibold">Nama Negara</label>
+                  <input type="text" required value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="Contoh: Indonesia" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block mb-1 font-semibold">Ibu Kota</label>
+                    <input type="text" required value={form.capital} onChange={(e) => setForm({...form, capital: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="Contoh: Jakarta" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-semibold">Kawasan (Region)</label>
+                    <select value={form.region} onChange={(e) => setForm({...form, region: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`}>
+                      {regions.filter(r => r !== 'All').map(reg => <option key={reg} value={reg}>{reg}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block mb-1 font-semibold">Sub-kawasan</label>
+                    <input type="text" required value={form.subregion} onChange={(e) => setForm({...form, subregion: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="South-Eastern Asia" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-semibold">Kode (cth: id)</label>
+                    <input type="text" required value={form.code} onChange={(e) => setForm({...form, code: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="id" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-semibold">Kode Telp</label>
+                    <input type="text" required value={form.phoneCode} onChange={(e) => setForm({...form, phoneCode: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="+62" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold">URL Bendera (SVG/PNG)</label>
+                  <input type="url" required value={form.flagUrl} onChange={(e) => setForm({...form, flagUrl: e.target.value})} className={`w-full p-2.5 border rounded-xl ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} placeholder="https://flagcdn.com/id.svg" />
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-600 font-semibold">Batal</button>
+                  <button type="submit" className="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500">Simpan ke Supabase</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
