@@ -42,6 +42,14 @@ export default function FileManagerPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedFileForPreview, setSelectedFileForPreview] = useState<FileItem | null>(null);
 
+
+  // ---> LETAKKAN KODE FILTER DI SINI <---
+  const filteredFiles = files.filter(file => {
+    const matchesFolder = file.parentFolder === currentFolder;
+    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFolder && matchesSearch;
+  });
+
   // Ambil Data dari Supabase saat awal dimuat
   const fetchFilesFromSupabase = async () => {
     try {
@@ -49,7 +57,8 @@ export default function FileManagerPage() {
       const { data, error } = await supabase.from('file_items').select('*');
       if (error) {
         console.error('Gagal mengambil data file:', error.message);
-      } else if (data) {
+} else if (data) {
+        console.log("Semua data mentah dari Supabase:", data); // <-- Cek di Console Browser (F12)
         const formattedData: FileItem[] = data.map((item: any) => ({
           id: item.id,
           name: item.name,
@@ -59,6 +68,7 @@ export default function FileManagerPage() {
           parentFolder: item.parent_folder,
           content: item.content
         }));
+        console.log("Data setelah diformat:", formattedData); // <-- Cek isinya lengkap atau tidak
         setFiles(formattedData);
       }
     } catch (err) {
@@ -139,9 +149,10 @@ const handleItemClick = (item: FileItem) => {
 };
 
 // Saat tombol kembali diklik (mundur 1 tingkat)
-const handleGoBack = () => {
-  setCurrentFolderStack(prev => prev.slice(0, prev.length - 1));
-  setSearchQuery('');
+const handleBackFolder = () => {
+  if (currentFolderStack.length > 1) {
+    setCurrentFolderStack(prev => prev.slice(0, -1)); // Mundur satu tingkat ke folder sebelumnya
+  }
 };
 
 // Perbaikan pada handler upload folder & file
@@ -422,7 +433,7 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           {/* Tombol kembali mundur satu tingkat */}
           {currentFolderStack.length > 1 && (
             <button 
-              onClick={handleGoBack} 
+              onClick={handleBackFolder} 
               className="text-blue-500 hover:underline flex items-center gap-1"
             >
               &larr; Kembali
