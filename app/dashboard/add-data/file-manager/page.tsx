@@ -333,7 +333,7 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           <div className="flex items-center gap-3">
             {currentFolder !== 'root' && (
               <button 
-                onClick={() => setCurrentFolderStack('root')} 
+                onClick={() => setCurrentFolderStack(['root'])}
                 className="p-2 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 transition"
                 title="Kembali"
               >
