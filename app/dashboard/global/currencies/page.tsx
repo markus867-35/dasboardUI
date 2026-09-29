@@ -37,7 +37,7 @@ export default function WorldCurrencies({ initialDarkMode }: WorldCurrenciesProp
   const [currenciesData, setCurrenciesData] = useState<CurrencyItem[]>(defaultCurrencies);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
-  
+  const [editingCurrency, setEditingCurrency] = useState(null); // Menyimpan data item yang mau diedit
   const [internalIsDark, setInternalIsDark] = useState(false);
   
   // Ambil dari context tema dashboard Anda
@@ -186,6 +186,12 @@ export default function WorldCurrencies({ initialDarkMode }: WorldCurrenciesProp
       }
     }
   };
+
+
+
+  
+
+
 
   const openModalForEdit = (item: CurrencyItem) => {
     setEditingId(item.id || null);
@@ -347,7 +353,124 @@ export default function WorldCurrencies({ initialDarkMode }: WorldCurrenciesProp
           </div>
         )}
 
-       
+{/* --- MODAL FORM TAMBAH / EDIT --- */}
+{isModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+    <div className={`w-full max-w-md p-6 rounded-2xl shadow-2xl border space-y-4 ${
+      isDark ? 'bg-[#16222A] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+    }`}>
+      <h3 className="text-base font-bold">
+        {editingCurrency ? 'Edit Mata Uang' : 'Edit Mata'}
+      </h3>
+
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        
+        if (editingCurrency) {
+          // LOGIKA EDIT: Kirim data update berdasarkan editingCurrency.id
+          console.log("Update data:", formData);
+        } else {
+          // LOGIKA TAMBAH BARU: Kirim data insert baru
+          console.log("Tambah data baru:", formData);
+        }
+
+        // Tutup modal setelah disimpan
+        setIsModalOpen(false);
+      }} className="space-y-3">
+
+        <div>
+          <label className="text-xs text-slate-400">Region / Kawasan</label>
+          <input 
+            type="text" 
+            value={formData.region}
+            onChange={(e) => setFormData({...formData, region: e.target.value})}
+            className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+              isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-300'
+            }`}
+            placeholder="Contoh: Asia"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400">Negara</label>
+          <input 
+            type="text" 
+            value={formData.country}
+            onChange={(e) => setFormData({...formData, country: e.target.value})}
+            className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+              isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-300'
+            }`}
+            placeholder="Contoh: Indonesia"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400">Nama Mata Uang</label>
+          <input 
+            type="text" 
+            value={formData.currency}
+            onChange={(e) => setFormData({...formData, currency: e.target.value})}
+            className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+              isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-300'
+            }`}
+            placeholder="Contoh: Indonesian Rupiah"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-slate-400">Kode (Code)</label>
+            <input 
+              type="text" 
+              value={formData.code}
+              onChange={(e) => setFormData({...formData, code: e.target.value})}
+              className={`w-full px-3 py-2 text-xs border rounded-xl outline-none uppercase ${
+                isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-300'
+              }`}
+              placeholder="IDR"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400">Simbol</label>
+            <input 
+              type="text" 
+              value={formData.symbol}
+              onChange={(e) => setFormData({...formData, symbol: e.target.value})}
+              className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+                isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-300'
+              }`}
+              placeholder="Rp"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <button 
+            type="button" 
+            onClick={() => setIsModalOpen(false)}
+            className={`px-4 py-2 text-xs rounded-xl border transition ${
+              isDark ? 'border-slate-600 hover:bg-slate-700/20 text-slate-300' : 'border-slate-300 hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            Batal
+          </button>
+          <button 
+            type="submit"
+            className="px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition"
+          >
+            Simpan
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+)}
 
       </div>
     </div>
