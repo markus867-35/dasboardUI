@@ -35,6 +35,8 @@ export default function FileManagementPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pasteAreaRef = useRef<HTMLDivElement>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -459,70 +461,119 @@ export default function FileManagementPage() {
         )}
       </div>
 
-      {/* POP-UP / MODAL DETAIL PRATINJAU */}
-      {selectedFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className={`w-full max-w-lg p-6 rounded-2xl shadow-2xl border space-y-4 relative ${
-            isDark ? 'bg-[#16222A] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-700/50">
-              <h3 className="text-sm font-bold truncate flex items-center gap-2">
-                <FiImage className="w-4 h-4 text-indigo-500" /> {selectedFile.name}
-              </h3>
-              <button 
-                onClick={() => setSelectedFile(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-700/20 text-slate-400 hover:text-white"
+{/* POP-UP / MODAL DETAIL PRATINJAU */}
+{selectedFile && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+    <div className={`transition-all duration-300 rounded-2xl shadow-2xl border overflow-hidden relative flex flex-col ${
+      isMaximized 
+        ? 'w-full h-full max-w-none max-h-none rounded-none' 
+        : 'w-full max-w-lg'
+    } ${
+      isDark ? 'bg-[#16222A] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+    }`}>
+      
+      {/* HEADER MODAL */}
+      <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${
+        isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-slate-100 border-slate-200'
+      }`}>
+        <h3 className="text-xs font-bold truncate flex items-center gap-2">
+          <FiImage className="w-4 h-4 text-indigo-500" /> {selectedFile.name}
+        </h3>
+
+        {/* Kumpulan Tombol Kontrol */}
+        <div className="flex items-center gap-3 text-slate-400">
+          <button 
+            onClick={() => {
+              setIsMinimized(false);
+              setIsMaximized(false);
+            }} 
+            className="hover:text-indigo-500 transition-colors p-1"
+            title="Beranda / Reset"
+          >
+            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          </button>
+          
+          {/* Tombol Minimize */}
+          <button 
+            onClick={() => setIsMinimized(!isMinimized)} 
+            className="hover:text-indigo-500 transition-colors p-1"
+            title="Minimize"
+          >
+            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4"/></svg>
+          </button>
+
+          {/* Tombol Maximize / Fullscreen */}
+          <button 
+            onClick={() => setIsMaximized(!isMaximized)} 
+            className="hover:text-indigo-500 transition-colors p-1"
+            title="Maximize"
+          >
+            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          </button>
+
+          {/* Tombol Close */}
+          <button 
+            onClick={() => setSelectedFile(null)} 
+            className="hover:text-red-500 transition-colors p-1"
+            title="Tutup"
+          >
+            <FiX className="w-4 h-4 pointer-events-none" />
+          </button>
+        </div>
+      </div>
+
+      {/* KONTEN UTAMA MODAL (Disembunyikan jika di-minimize) */}
+      {!isMinimized && (
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
+          {selectedFile.url && (
+            <div className={`w-full bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800 ${
+              isMaximized ? 'h-[60vh]' : 'h-64'
+            }`}>
+              <img src={selectedFile.url} alt={selectedFile.name} className="max-h-full max-w-full object-contain" />
+            </div>
+          )}
+
+          <div className="space-y-1 text-xs text-slate-400">
+            <p>Ukuran: <span className="text-slate-200 font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
+            <p>Dibuat: <span className="text-slate-200 font-medium">{selectedFile.created_at}</span></p>
+          </div>
+
+          {selectedFile.url && (
+            <div className="flex items-center gap-2 pt-2">
+              <input 
+                type="text" 
+                readOnly 
+                value={selectedFile.url} 
+                className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+                  isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
+                }`}
+              />
+              <button
+                onClick={() => copyToClipboard(selectedFile.url!)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
               >
-                <FiX className="w-5 h-5" />
+                {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
+                {copied ? 'Disalin' : 'Salin URL'}
               </button>
             </div>
+          )}
 
-            <div className="space-y-3">
-              {selectedFile.url && (
-                <div className="w-full h-64 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
-                  <img src={selectedFile.url} alt={selectedFile.name} className="max-h-full max-w-full object-contain" />
-                </div>
-              )}
-
-              <div className="space-y-1 text-xs text-slate-400">
-                <p>Ukuran: <span className="text-slate-200 font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
-                <p>Dibuat: <span className="text-slate-200 font-medium">{selectedFile.created_at}</span></p>
-              </div>
-
-              {selectedFile.url && (
-                <div className="flex items-center gap-2 pt-2">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={selectedFile.url} 
-                    className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
-                      isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
-                    }`}
-                  />
-                  <button
-                    onClick={() => copyToClipboard(selectedFile.url!)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
-                  >
-                    {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
-                    {copied ? 'Disalin' : 'Salin URL'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <a 
-                href={selectedFile.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-              >
-                <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
-              </a>
-            </div>
+          <div className="flex justify-end pt-2">
+            <a 
+              href={selectedFile.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+            >
+              <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
+            </a>
           </div>
         </div>
       )}
+
+    </div>
+  </div>
+)}
 
     </div>
   );
