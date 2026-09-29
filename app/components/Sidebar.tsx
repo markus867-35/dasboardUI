@@ -164,6 +164,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
               <Link href="/dashboard/add-data/file-ulr" className={getSubLinkStyle('/dashboard/add-data/file-ulr')} onClick={handleMenuClick}>
                 Manager Url
               </Link>
+                <Link href="/dashboard/add-data/manager-data" className={getSubLinkStyle('/dashboard/add-data/manager-data')} onClick={handleMenuClick}>
+                Manager Data
+              </Link>
             </div>
           )}
         </div>

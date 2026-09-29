@@ -1,6 +1,7 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
 import { 
   FiUpload, FiLink, FiSearch, FiGrid, FiList, 
   FiImage, FiTrash2, FiX, FiCheck, FiExternalLink, FiCopy, FiPlus 
@@ -15,12 +16,10 @@ interface GifItem {
 export default function GifManagerPage() {
   const { mode } = useTheme();
   const isDark = mode === 'dark';
+  
 
-  const [gifs, setGifs] = useState<GifItem[]>([
-    { id: '1', name: 'Cat Coding.gif', url: 'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2RjNWZlNmMwNWFlYmIwYzRiYjE0YTZmZTU5Y2Y4OWY5YjIzNjY5NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/JIX9t2j0ZTN9S/giphy.gif' },
-    { id: '2', name: 'Hacker Typing.gif', url: 'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjNhMWNkYmQ0OGYxYjU2YjE0YjE0YjE0YjE0YjE0YjE0JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/L05HgB2h6qICd5SmsJ/giphy.gif' },
-    { id: '3', name: 'Success Dance.gif', url: 'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGYxYjE0YjE0YjE0YjE0YjE0YjE0YjE0YjE0YjE0YjE0JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3oKIPnAiaMCws8nOsE/giphy.gif' },
-  ]);
+  const [gifs, setGifs] = useState<GifItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -34,37 +33,107 @@ export default function GifManagerPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 1. Ambil data dari Supabase saat komponen dimuat
+  useEffect(() => {
+    fetchGifs();
+  }, []);
+
+  const fetchGifs = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('gifs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setGifs(data);
+    } catch (error) {
+      console.error('Gagal mengambil data GIF:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Upload file lokal ke Supabase Storage (atau simpan URL blob-nya / langsung ke database)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    const localUrl = URL.createObjectURL(file);
+    const fileName = `${Date.now()}-${file.name}`;
 
-    const newGif: GifItem = {
-      id: Date.now().toString(),
-      name: file.name,
-      url: localUrl,
-    };
+    try {
+      // Opsi A: Jika Anda menggunakan Supabase Storage untuk upload file fisik
+      /*
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('gifs-bucket') // Ganti dengan nama bucket storage Anda
+        .upload(fileName, file);
 
-    setGifs([newGif, ...gifs]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('gifs-bucket')
+        .getPublicUrl(fileName);
+      */
+
+      // Opsi B: Untuk pengujian cepat (simpan URL lokal sementara atau konversi), 
+      // namun idealnya file di-upload ke Supabase Storage seperti di atas.
+      const localUrl = URL.createObjectURL(file); 
+
+      const newGifData = {
+        name: file.name,
+        url: localUrl, // Ganti dengan `publicUrl` jika menggunakan Supabase Storage
+      };
+
+      const { data, error } = await supabase
+        .from('gifs')
+        .insert([newGifData])
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        setGifs([data[0], ...gifs]);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      console.error('Gagal mengupload GIF:', error);
+      alert('Terjadi kesalahan saat mengupload GIF.');
+    }
   };
 
-  // Fungsi untuk menyimpan GIF via input Link URL
-  const handleAddUrlGif = (e: React.FormEvent) => {
+  // 3. Simpan GIF via input Link URL ke Supabase
+  const handleAddUrlGif = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim()) return;
 
-    const newGif: GifItem = {
-      id: Date.now().toString(),
-      name: urlNameInput.trim() ? (urlNameInput.endsWith('.gif') ? urlNameInput : `${urlNameInput}.gif`) : `GIF-${Date.now()}.gif`,
-      url: urlInput.trim(),
-    };
+    const formattedName = urlNameInput.trim() 
+      ? (urlNameInput.endsWith('.gif') ? urlNameInput : `${urlNameInput}.gif`) 
+      : `GIF-${Date.now()}.gif`;
 
-    setGifs([newGif, ...gifs]);
-    setUrlInput('');
-    setUrlNameInput('');
+    try {
+      const newGifData = {
+        name: formattedName,
+        url: urlInput.trim(),
+      };
+
+      const { data, error } = await supabase
+        .from('gifs')
+        .insert([newGifData])
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        setGifs([data[0], ...gifs]);
+        setUrlInput('');
+        setUrlNameInput('');
+      }
+    } catch (error) {
+      console.error('Gagal menyimpan URL GIF:', error);
+      alert('Gagal menyimpan ke database.');
+    }
   };
 
   const handleCopyUrl = (url: string) => {
@@ -73,10 +142,24 @@ export default function GifManagerPage() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleDeleteGif = (e: React.MouseEvent, id: string) => {
+  // 4. Hapus data dari Supabase
+  const handleDeleteGif = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    setGifs(gifs.filter((item) => item.id !== id));
-    if (selectedGif?.id === id) setSelectedGif(null);
+    
+    try {
+      const { error } = await supabase
+        .from('gifs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setGifs(gifs.filter((item) => item.id !== id));
+      if (selectedGif?.id === id) setSelectedGif(null);
+    } catch (error) {
+      console.error('Gagal menghapus GIF:', error);
+      alert('Gagal menghapus data.');
+    }
   };
 
   const filteredGifs = gifs.filter((item) => 
@@ -247,7 +330,11 @@ export default function GifManagerPage() {
           Total Koleksi: {filteredGifs.length} GIF
         </div>
 
-        {filteredGifs.length === 0 ? (
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center text-xs text-slate-400 py-20">
+            <span>Memuat data dari database...</span>
+          </div>
+        ) : filteredGifs.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-xs text-slate-400 py-20 space-y-2">
             <FiImage className="w-8 h-8 opacity-40" />
             <span>Belum ada GIF yang tersimpan atau ditemukan.</span>
