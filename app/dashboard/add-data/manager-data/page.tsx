@@ -4,7 +4,9 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { 
   FiFolder, FiFolderPlus, FiFile, FiUpload, FiTrash2, 
-  FiChevronRight, FiArrowLeft, FiExternalLink, FiGrid, FiList, FiSearch, FiCopy, FiCheck, FiX, FiImage, FiClipboard 
+  FiChevronRight, FiArrowLeft, FiExternalLink, FiGrid, FiList, 
+  FiSearch, FiCopy, FiCheck, FiX, FiImage, FiClipboard,
+  FiFileText, FiCode, FiMusic, FiVideo, FiArchive
 } from 'react-icons/fi';
 
 interface ItemNode {
@@ -42,7 +44,7 @@ export default function FileManagementPage() {
     fetchItems();
   }, []);
 
-  // Tangkap event Paste (Ctrl+V) baik secara global atau langsung pada area khusus
+  // Tangkap event Paste (Ctrl+V) secara global
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const clipboardItems = e.clipboardData?.items;
@@ -122,23 +124,37 @@ export default function FileManagementPage() {
   };
 
   const uploadFileToSupabase = async (file: File) => {
-    const localUrl = URL.createObjectURL(file);
-
     try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: storageError } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file);
+
+      if (storageError) throw storageError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+
+      const filePublicUrl = publicUrlData.publicUrl;
+
       const newFileData = {
         name: file.name || `Pasted-Image-${Date.now()}.png`,
         type: 'file' as const,
         parent_id: currentFolderId,
         size: `${(file.size / 1024).toFixed(1)} KB`,
-        url: localUrl,
+        url: filePublicUrl,
       };
 
-      const { data, error } = await supabase
+      const { data, error: dbError } = await supabase
         .from('file_managers')
         .insert([newFileData])
         .select();
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       if (data) {
         setItems([data[0], ...items]);
@@ -186,14 +202,54 @@ export default function FileManagementPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+      case 'svg':
+        return <FiImage className="w-7 h-7 text-emerald-500" />;
+      case 'pdf':
+      case 'doc':
+      case 'docx':
+      case 'txt':
+        return <FiFileText className="w-7 h-7 text-blue-500" />;
+      case 'js':
+      case 'ts':
+      case 'tsx':
+      case 'jsx':
+      case 'html':
+      case 'css':
+      case 'bat':
+      case 'json':
+        return <FiCode className="w-7 h-7 text-amber-500" />;
+      case 'mp3':
+      case 'wav':
+        return <FiMusic className="w-7 h-7 text-purple-500" />;
+      case 'mp4':
+      case 'mkv':
+        return <FiVideo className="w-7 h-7 text-rose-500" />;
+      case 'zip':
+      case 'rar':
+      case 'tar':
+        return <FiArchive className="w-7 h-7 text-yellow-500" />;
+      default:
+        return <FiFile className="w-7 h-7 text-blue-400" />;
+    }
+  };
+
   return (
-    <div className={`p-6 space-y-6 max-w-10xl mx-auto min-h-screen transition-colors ${
+    <div className={`p-6 space-y-6 max-w-7xl mx-auto min-h-screen transition-colors ${
       isDark ? 'text-slate-100 bg-slate-950' : 'text-slate-800 bg-white'
     }`}>
       
       {/* HEADER & BREADCRUMB */}
-      <div className={`p-6 border rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-        isDark ? 'bg-[#16222A] border-slate-800' : 'bg-white border-slate-200'
+      <div className={`p-6 border rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -207,7 +263,7 @@ export default function FileManagementPage() {
               </>
             )}
           </div>
-          <h1 className="text-lg font-bold">Penyimpanan Berkas & Direktori</h1>
+          <h1 className="text-xl font-bold">Penyimpanan Berkas & Direktori</h1>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -245,15 +301,14 @@ export default function FileManagementPage() {
         </div>
       </div>
 
-      {/* KOTAK KHUSUS PASTE GAMBAR / DROPZONE */}
+      {/* DROPZONE / AREA PASTE GAMBAR */}
       <div 
         ref={pasteAreaRef}
         tabIndex={0}
         className={`p-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
-          isDark ? 'bg-[#16222A]/60 border-slate-700 hover:border-indigo-500' : 'bg-slate-50 border-slate-300 hover:border-indigo-500'
+          isDark ? 'bg-slate-900/50 border-slate-700 hover:border-indigo-500' : 'bg-slate-50 border-slate-300 hover:border-indigo-500'
         }`}
         onClick={() => {
-          // Fokuskan agar langsung bisa terima paste, atau klik untuk pilih file
           if (fileInputRef.current) fileInputRef.current.click();
         }}
       >
@@ -268,7 +323,7 @@ export default function FileManagementPage() {
 
       {/* FILTER BAR: PENCARIAN & TOGGLE */}
       <div className={`p-4 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 ${
-        isDark ? 'bg-[#16222A] border-slate-800' : 'bg-white border-slate-200'
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="relative w-full sm:w-80">
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -278,19 +333,19 @@ export default function FileManagementPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full pl-10 pr-4 py-2 text-xs border rounded-xl outline-none ${
-              isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300'
+              isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300'
             }`}
           />
         </div>
 
         <div className={`flex items-center p-1 border rounded-xl ${
-          isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-300'
+          isDark ? 'bg-slate-950 border-slate-700' : 'bg-slate-100 border-slate-300'
         }`}>
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded-lg text-xs font-medium transition-all ${
               viewMode === 'grid' 
-                ? 'bg-blue-600 text-white shadow-xs' 
+                ? 'bg-blue-600 text-white shadow-sm' 
                 : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-black')
             }`}
             title="Tampilan Grid"
@@ -301,7 +356,7 @@ export default function FileManagementPage() {
             onClick={() => setViewMode('list')}
             className={`p-2 rounded-lg text-xs font-medium transition-all ${
               viewMode === 'list' 
-                ? 'bg-blue-600 text-white shadow-xs' 
+                ? 'bg-blue-600 text-white shadow-sm' 
                 : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-black')
             }`}
             title="Tampilan List"
@@ -314,7 +369,7 @@ export default function FileManagementPage() {
       {/* MODAL BUAT FOLDER */}
       {isCreatingFolder && (
         <div className={`p-4 border rounded-2xl flex items-center justify-between gap-4 ${
-          isDark ? 'bg-[#1e2d38] border-indigo-500/50' : 'bg-indigo-50/50 border-indigo-200'
+          isDark ? 'bg-slate-900 border-indigo-500/50' : 'bg-indigo-50/50 border-indigo-200'
         }`}>
           <form onSubmit={handleCreateFolder} className="flex items-center gap-3 w-full">
             <FiFolder className="w-5 h-5 text-indigo-500 shrink-0" />
@@ -326,7 +381,7 @@ export default function FileManagementPage() {
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
-                isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'
+                isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'
               }`}
             />
             <button
@@ -349,11 +404,11 @@ export default function FileManagementPage() {
       )}
 
       {/* KONTEN UTAMA: FOLDER & FILE */}
-      <div className={`p-6 border rounded-2xl shadow-xs space-y-4 min-h-[400px] flex flex-col ${
-        isDark ? 'bg-[#16222A] border-slate-800' : 'bg-white border-slate-200'
+      <div className={`p-6 border rounded-2xl shadow-sm space-y-4 min-h-[400px] flex flex-col ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className={`text-xs font-medium pb-3 border-b flex justify-between items-center ${
-          isDark ? 'text-slate-400 border-slate-800/80' : 'text-slate-500 border-slate-100'
+          isDark ? 'text-slate-400 border-slate-800' : 'text-slate-500 border-slate-100'
         }`}>
           <span>Lokasi: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{getCurrentFolderName()}</strong></span>
           <span>Total Item: {currentItems.length}</span>
@@ -380,8 +435,8 @@ export default function FileManagementPage() {
                     setSelectedFile(item);
                   }
                 }}
-                className={`group relative p-4 border rounded-2xl flex items-center justify-between transition-all shadow-xs cursor-pointer ${
-                  isDark ? 'bg-[#1e2d38] border-slate-700/70 hover:border-indigo-500' : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
+                className={`group relative p-4 border rounded-2xl flex items-center justify-between transition-all shadow-sm cursor-pointer ${
+                  isDark ? 'bg-slate-950 border-slate-800 hover:border-indigo-500' : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
@@ -390,7 +445,7 @@ export default function FileManagementPage() {
                       ? (isDark ? 'bg-amber-950/40 text-amber-400' : 'bg-amber-50 text-amber-600')
                       : (isDark ? 'bg-blue-950/40 text-blue-400' : 'bg-blue-50 text-blue-600')
                   }`}>
-                    {item.type === 'folder' ? <FiFolder className="w-5 h-5" /> : <FiFile className="w-5 h-5" />}
+                    {item.type === 'folder' ? <FiFolder className="w-10 h-10" /> : getFileIcon(item.name)}
                   </div>
                   <div className="truncate">
                     <h3 className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
@@ -426,7 +481,7 @@ export default function FileManagementPage() {
                   <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/20">
+              <tbody className="divide-y divide-slate-800/10">
                 {currentItems.map((item) => (
                   <tr 
                     key={item.id} 
@@ -439,7 +494,7 @@ export default function FileManagementPage() {
                     }`}
                   >
                     <td className="py-3 px-4 flex items-center gap-3 font-medium">
-                      {item.type === 'folder' ? <FiFolder className="w-4 h-4 text-amber-500" /> : <FiFile className="w-4 h-4 text-blue-500" />}
+                      {item.type === 'folder' ? <FiFolder className="w-4 h-4 text-amber-500" /> : getFileIcon(item.name)}
                       <span className={isDark ? 'text-slate-200' : 'text-slate-800'}>{item.name}</span>
                     </td>
                     <td className="py-3 px-4 text-slate-400 uppercase">{item.type}</td>
@@ -461,119 +516,132 @@ export default function FileManagementPage() {
         )}
       </div>
 
-{/* POP-UP / MODAL DETAIL PRATINJAU */}
-{selectedFile && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-    <div className={`transition-all duration-300 rounded-2xl shadow-2xl border overflow-hidden relative flex flex-col ${
-      isMaximized 
-        ? 'w-full h-full max-w-none max-h-none rounded-none' 
-        : 'w-full max-w-lg'
-    } ${
-      isDark ? 'bg-[#16222A] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
-    }`}>
-      
-      {/* HEADER MODAL */}
-      <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${
-        isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-slate-100 border-slate-200'
-      }`}>
-        <h3 className="text-xs font-bold truncate flex items-center gap-2">
-          <FiImage className="w-4 h-4 text-indigo-500" /> {selectedFile.name}
-        </h3>
-
-        {/* Kumpulan Tombol Kontrol */}
-        <div className="flex items-center gap-3 text-slate-400">
-          <button 
-            onClick={() => {
-              setIsMinimized(false);
-              setIsMaximized(false);
-            }} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Beranda / Reset"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          </button>
-          
-          {/* Tombol Minimize */}
-          <button 
-            onClick={() => setIsMinimized(!isMinimized)} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Minimize"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4"/></svg>
-          </button>
-
-          {/* Tombol Maximize / Fullscreen */}
-          <button 
-            onClick={() => setIsMaximized(!isMaximized)} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Maximize"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          </button>
-
-          {/* Tombol Close */}
-          <button 
-            onClick={() => setSelectedFile(null)} 
-            className="hover:text-red-500 transition-colors p-1"
-            title="Tutup"
-          >
-            <FiX className="w-4 h-4 pointer-events-none" />
-          </button>
-        </div>
-      </div>
-
-      {/* KONTEN UTAMA MODAL (Disembunyikan jika di-minimize) */}
-      {!isMinimized && (
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {selectedFile.url && (
-            <div className={`w-full bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800 ${
-              isMaximized ? 'h-[60vh]' : 'h-64'
+      {/* POP-UP / MODAL DETAIL PRATINJAU */}
+      {selectedFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className={`transition-all duration-300 rounded-2xl shadow-2xl border overflow-hidden relative flex flex-col ${
+            isMaximized 
+              ? 'w-full h-full max-w-none max-h-none rounded-none' 
+              : 'w-full max-w-lg'
+          } ${
+            isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            
+            {/* HEADER MODAL */}
+            <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${
+              isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
             }`}>
-              <img src={selectedFile.url} alt={selectedFile.name} className="max-h-full max-w-full object-contain" />
+              <h3 className="text-xs font-bold truncate flex items-center gap-2">
+                <span className="scale-75 origin-left inline-block">
+                  {getFileIcon(selectedFile.name)}
+                </span> 
+                {selectedFile.name}
+              </h3>
+
+              {/* Kumpulan Tombol Kontrol */}
+              <div className="flex items-center gap-3 text-slate-400">
+                <button 
+                  onClick={() => {
+                    setIsMinimized(false);
+                    setIsMaximized(false);
+                  }} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Beranda / Reset"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </button>
+                
+                {/* Tombol Minimize */}
+                <button 
+                  onClick={() => setIsMinimized(!isMinimized)} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Minimize"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4"/></svg>
+                </button>
+
+                {/* Tombol Maximize / Fullscreen */}
+                <button 
+                  onClick={() => setIsMaximized(!isMaximized)} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Maximize"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </button>
+
+                {/* Tombol Close */}
+                <button 
+                  onClick={() => setSelectedFile(null)} 
+                  className="hover:text-red-500 transition-colors p-1"
+                  title="Tutup"
+                >
+                  <FiX className="w-4 h-4 pointer-events-none" />
+                </button>
+              </div>
             </div>
-          )}
 
-          <div className="space-y-1 text-xs text-slate-400">
-            <p>Ukuran: <span className="text-slate-200 font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
-            <p>Dibuat: <span className="text-slate-200 font-medium">{selectedFile.created_at}</span></p>
-          </div>
+            {/* KONTEN UTAMA MODAL */}
+            {!isMinimized && (
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {selectedFile.url && (
+                  <div className={`w-full bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800 ${
+                    isMaximized ? 'h-[60vh]' : 'h-64'
+                  }`}>
+                    {['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(selectedFile.name?.split('.').pop()?.toLowerCase() || '') ? (
+                      <img src={selectedFile.url} alt={selectedFile.name} className="max-h-full max-w-full object-contain" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-6 text-center">
+                        <div className="mb-3 scale-150">
+                          {getFileIcon(selectedFile.name)}
+                        </div>
+                        <p className="text-xs text-slate-300 font-medium mb-1">Pratinjau visual tidak tersedia untuk jenis file ini</p>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Format .{selectedFile.name?.split('.').pop()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-          {selectedFile.url && (
-            <div className="flex items-center gap-2 pt-2">
-              <input 
-                type="text" 
-                readOnly 
-                value={selectedFile.url} 
-                className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
-                  isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
-                }`}
-              />
-              <button
-                onClick={() => copyToClipboard(selectedFile.url!)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
-              >
-                {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
-                {copied ? 'Disalin' : 'Salin URL'}
-              </button>
-            </div>
-          )}
+                <div className="space-y-1 text-xs text-slate-400">
+                  <p>Ukuran: <span className="text-slate-200 font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
+                  <p>Dibuat: <span className="text-slate-200 font-medium">{selectedFile.created_at}</span></p>
+                </div>
 
-          <div className="flex justify-end pt-2">
-            <a 
-              href={selectedFile.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-            >
-              <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
-            </a>
+                {selectedFile.url && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={selectedFile.url} 
+                      className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+                        isDark ? 'bg-slate-950 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
+                      }`}
+                    />
+                    <button
+                      onClick={() => copyToClipboard(selectedFile.url!)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
+                    >
+                      {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
+                      {copied ? 'Disalin' : 'Salin URL'}
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-2">
+                  <a 
+                    href={selectedFile.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+                  >
+                    <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
+                  </a>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
-
-    </div>
-  </div>
-)}
 
     </div>
   );
