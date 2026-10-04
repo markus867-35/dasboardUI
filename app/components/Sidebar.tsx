@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Home, User, Settings, Activity } from 'lucide-react'; // Tambahkan Activity di sini
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -48,11 +49,13 @@ const handleMenuClick = (e?: MouseEvent<HTMLAnchorElement>, path?: string) => {
 const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   visitor: pathname.startsWith('/dashboard/add'),
   
-  // Perbarui bagian 'list' ini agar mengenali rute-rute baru Anda
   list: pathname.startsWith('/dashboard/list') || 
         pathname.startsWith('/dashboard/countries') || 
         pathname.startsWith('/dashboard/currencies') || 
         pathname.startsWith('/dashboard/directory'),
+
+  // TAMBAHKAN KATEGORI INI UNTUK AKTIVITAS & PROFIL
+  activityCenter: pathname.startsWith('/activity') || pathname.startsWith('/profile'),
 
   report: pathname.startsWith('/dashboard/report'),
   shopping: pathname?.startsWith('/dashboard/produk'),
@@ -174,6 +177,40 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
+        {/* 3. Report */}
+        <div>
+          <button
+            onClick={() => toggleMenu('report')}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
+          >
+<div className="flex items-center gap-3">
+  <FiBarChart2 size={18} /> 
+  <span>Report</span>
+</div>
+            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.report ? 'rotate-90' : ''}`}>
+              &gt;
+            </span>
+          </button>
+          {openMenus.report && (
+            <div className="pl-11 pr-2 py-1 space-y-1">
+              <Link href="/dashboard/report/editor" className={getSubLinkStyle('/dashboard/report/editor')} onClick={handleMenuClick}>
+                Editor
+              </Link>
+              <Link href="/dashboard/report/icon" className={getSubLinkStyle('/dashboard/report/monthly')} onClick={handleMenuClick}>
+                Icon
+              </Link>
+              <Link href="/dashboard/report/gif" className={getSubLinkStyle('/dashboard/report/gif')} onClick={handleMenuClick}>
+                Gif
+              </Link>
+                <Link href="/dashboard/report/notepad" className={getSubLinkStyle('/dashboard/report/notepad')} onClick={handleMenuClick}>
+                notepad
+              </Link>
+            </div>
+          )}
+        </div>
+
+
+
 
 {/* 2. Global Atlas */}
         <div>
@@ -221,38 +258,11 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
-        {/* 3. Report */}
-        <div>
-          <button
-            onClick={() => toggleMenu('report')}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
-          >
-<div className="flex items-center gap-3">
-  <FiBarChart2 size={18} /> 
-  <span>Report</span>
-</div>
-            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.report ? 'rotate-90' : ''}`}>
-              &gt;
-            </span>
-          </button>
-          {openMenus.report && (
-            <div className="pl-11 pr-2 py-1 space-y-1">
-              <Link href="/dashboard/report/editor" className={getSubLinkStyle('/dashboard/report/editor')} onClick={handleMenuClick}>
-                Editor
-              </Link>
-              <Link href="/dashboard/report/icon" className={getSubLinkStyle('/dashboard/report/monthly')} onClick={handleMenuClick}>
-                Icon
-              </Link>
-              <Link href="/dashboard/report/gif" className={getSubLinkStyle('/dashboard/report/gif')} onClick={handleMenuClick}>
-                Gif
-              </Link>
-            </div>
-          )}
-        </div>
 
 
 
-        {/* 3. Report */}
+
+     
         <div>
           <button
             onClick={() => toggleMenu('shopping')}
@@ -305,7 +315,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
-        {/* 4. Notifications */}
+        {/* 4. medsos */}
         <div>
           <button
             onClick={() => toggleMenu('medsos')}
@@ -325,7 +335,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
                 Sosmed
               </Link>
               <Link href="/dashboard/notifications/settings" className={getSubLinkStyle('/dashboard/notifications/settings')} onClick={handleMenuClick}>
-                Alert Preferences
+                Setting
               </Link>
             </div>
           )}
@@ -387,7 +397,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
               <Link href="/dashboard/setting/profile" className={getSubLinkStyle('/dashboard/setting/profile')} onClick={handleMenuClick}>
                 Profile
               </Link>
-              <Link href="/dashboard/setting/others" className={getSubLinkStyle('/dashboard/setting/others')} onClick={handleMenuClick}>
+              <Link href="/dashboard/setting/activity" className={getSubLinkStyle('/dashboard/setting/activity')} onClick={handleMenuClick}>
                 Lain-lain
               </Link>
             </div>
@@ -446,7 +456,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     {isAdminMenuOpen && (
       <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-1">
 <Link 
-  href="/admin/profile"
+  href="/dashboard/setting/profile"
   onClick={() => setIsAdminMenuOpen(false)}
   className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
 >

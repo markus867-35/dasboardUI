@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { supabase } from '@/lib/supabase';
 import { 
   FiFolder, FiFolderPlus, FiFile, FiUpload, FiTrash2, 
@@ -47,6 +48,12 @@ export default function FileManagementPage() {
   const handleRename = async (id: string, e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
+
+    logActivity(
+      'Manager data',
+      `Informasi nama folder berhasil di ubah.`,
+      'update'
+    );
 
     try {
       const { error } = await supabase
@@ -119,17 +126,19 @@ export default function FileManagementPage() {
     return matchesFolder && matchesSearch;
   });
 
-  const handleCreateFolder = async (e: React.FormEvent) => {
+const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
     try {
+      const folderNameClean = newFolderName.trim();
       const newFolderData = {
-        name: newFolderName.trim(),
+        name: folderNameClean,
         type: 'folder' as const,
         parent_id: currentFolderId,
       };
 
+      // 1. Kirim data ke Supabase terlebih dahulu
       const { data, error } = await supabase
         .from('file_managers')
         .insert([newFolderData])
@@ -141,6 +150,13 @@ export default function FileManagementPage() {
         setItems([data[0], ...items]);
         setNewFolderName('');
         setIsCreatingFolder(false);
+
+        // 2. CATAT KE LOG HANYA KETIKA BERHASIL TERSIMPAN DI DATABASE
+        logActivity(
+          'Manager Data',
+          `Berhasil membuat folder dengan nama: "${folderNameClean}"`,
+          'update'
+        );
       }
     } catch (error: any) {
       console.error('Gagal membuat folder:', error);
@@ -186,6 +202,12 @@ export default function FileManagementPage() {
         content: fileContent,
       };
 
+      logActivity(
+      'Manager data',
+      `Informasi berhasil upload file .`,
+      'update'
+    );
+
       const { data, error: dbError } = await supabase
         .from('file_managers')
         .insert([newFileData])
@@ -219,6 +241,13 @@ export default function FileManagementPage() {
 
       if (error) throw error;
 
+    logActivity(
+      'Manager data',
+      `Informasi berhasil delete item`,
+      'update'
+    );
+
+
       setItems(items.filter(item => item.id !== id));
       if (selectedFile?.id === id) setSelectedFile(null);
     } catch (error: any) {
@@ -226,6 +255,9 @@ export default function FileManagementPage() {
       alert(`Gagal menghapus: ${error.message || 'Terjadi kesalahan'}`);
     }
   };
+
+
+
 
   const handleBackNavigation = () => {
     if (currentFolderId === null) return;
