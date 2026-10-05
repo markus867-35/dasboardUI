@@ -1,5 +1,3 @@
-'use client';
-
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -12,7 +10,6 @@ export const metadata: Metadata = {
   description: 'Aplikasi Dashboard & Manajemen Data',
 };
 
-// 🔴 PASTIKAN ADA KATA "default" DI SINI
 export default function RootLayout({
   children,
 }: {
