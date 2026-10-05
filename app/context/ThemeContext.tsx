@@ -17,14 +17,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState<boolean>(false); // 1. Tambah state mounted
   const [mode, setMode] = useState<ThemeMode>('dark');
   const [colorTheme, setColorTheme] = useState<ColorTheme>('navy');
-  
-  // 1. Definisikan state isSidebarOpen di sini
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
-  // Ambil data dari localStorage saat pertama kali dimuat di browser
+  // Ambil data dari localStorage setelah komponen dimuat di browser
   useEffect(() => {
+    setMounted(true); // 2. Tandai bahwa komponen sudah terpasang di client
     const savedMode = localStorage.getItem('app_mode') as ThemeMode;
     const savedTheme = localStorage.getItem('app_color_theme') as ColorTheme;
 
@@ -40,18 +40,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Bungkus fungsi setColorTheme agar otomatis menyimpan ke localStorage
   const handleSetColorTheme = (theme: ColorTheme) => {
     setColorTheme(theme);
     localStorage.setItem('app_color_theme', theme);
   };
 
-  // 2. Perbaiki fungsi toggleSidebar
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Kamus warna latar belakang berdasarkan tema yang dipilih
   const getThemeClasses = () => {
     if (mode === 'light') {
       return {
@@ -84,8 +81,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 3. Cegah render tampilan tema sebelum mounted untuk menghindari Error #418
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#222D3D]" />; 
+  }
+
   return (
-    // 3. Masukkan isSidebarOpen dan toggleSidebar ke dalam value Provider
     <ThemeContext.Provider value={{ mode, toggleMode, colorTheme, setColorTheme: handleSetColorTheme, isSidebarOpen, toggleSidebar, setIsSidebarOpen }}>
       <div className={`${getThemeClasses().bgMain} min-h-screen transition-colors duration-300`}>
         {children}
