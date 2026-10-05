@@ -315,21 +315,29 @@ function NewsWidget() {
 // ==========================================
 export default function DashboardPage() {
   const [chartData, setChartData] = useState<any[]>([]);
-  
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [isMounted, setIsMounted] = useState(false);
   const { mode, colorTheme } = useTheme();
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-useEffect(() => {
-    // 2. Ubah isLoaded menjadi true agar animasi fade-in berjalan
+  useEffect(() => {
+    setIsMounted(true);
     setIsLoaded(true);
+    
+    // Contoh pengecekan sesi aman di client
+    const adminId = localStorage.getItem('adminId');
+    if (!adminId) {
+      window.location.href = '/login';
+      return;
+    }
+
     setChartData(visitorData);
   }, []);
-useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  
+
+  // 🔴 PENTING: Cegah render awal server-side agar tidak blank / error hydration
+  if (!isMounted) {
+    return null;
+  }
 
   const getCardStyle = () => {
     if (mode === 'light') {
