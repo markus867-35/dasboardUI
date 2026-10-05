@@ -56,8 +56,8 @@ const [formData, setFormData] = useState<AdminProfile>({
 
   // Avatar & History State
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [avatarHistory, setAvatarHistory] = useState([]);
-  const fileInputRef = useRef(null);
+const [avatarHistory, setAvatarHistory] = useState<string[]>([]);
+const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Ambil data dari Supabase saat halaman dimuat
 useEffect(() => {
@@ -179,7 +179,7 @@ const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
 
 
   // Handle Ubah Password
-  const handleUpdatePassword = async (e) => {
+  const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
       return Swal.fire('Oops!', 'Konfirmasi password baru tidak cocok.', 'warning');
@@ -214,9 +214,9 @@ const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
 
       Swal.fire('Berhasil!', 'Password berhasil diubah.', 'success');
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      Swal.fire('Gagal!', err.message, 'error');
-    }
+} catch (err: any) {
+  Swal.fire('Gagal!', err.message || 'Terjadi kesalahan', 'error');
+}
   };
 
 
@@ -344,7 +344,7 @@ preConfirm: () => {
 
 
   // Upload Avatar ke Storage Supabase & Perbarui Riwayat
-const uploadAndSaveAvatar = async (file) => {
+const uploadAndSaveAvatar = async (file: File) => {
   try {
     // 1. Ambil ID admin yang sedang aktif dari localStorage
     const currentAdminId = localStorage.getItem('adminId');
