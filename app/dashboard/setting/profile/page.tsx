@@ -13,9 +13,9 @@ interface AdminProfile {
   name?: string;
   username?: string;
   email?: string;
-  birth_day?: string;
-  birth_month?: string;
-  birth_year?: string;
+  birth_day?: number | string;    // Ubah menjadi number | string
+  birth_month?: number | string;  // Ubah menjadi number | string
+  birth_year?: number | string;   // Ubah menjadi number | string
   status?: string;
   bio?: string;
   avatar_url?: string;
