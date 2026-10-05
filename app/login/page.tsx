@@ -121,7 +121,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
                 placeholder="Enter Password" 
                 required
                 value={signInData.password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignInData({ ...signInData, email: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignInData({ ...signInData, password: e.target.value })}
                 className={`w-full pl-10 pr-10 py-3 rounded-lg text-sm focus:outline-none border ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-100 border-gray-200 text-gray-800'}`}
               />
               <button
