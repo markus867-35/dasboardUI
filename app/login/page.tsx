@@ -23,38 +23,38 @@ export default function AuthPage() {
   const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-  // Handler Sign In
+// Handler Sign In
 const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      // Contoh validasi dari tabel admins Supabase
-      const { data, error } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('email', signInData.email)
-        .single();
+  e.preventDefault();
+  setLoading(true);
+  try {
+    // Contoh validasi dari tabel admins Supabase
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', signInData.email)
+      .single();
 
-      if (error || !data) {
-        throw new Error('Email atau akun tidak ditemukan.');
-      }
-
-      if (data.password !== signInData.password) {
-        throw new Error('Password yang Anda masukkan salah.');
-      }
-
-Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
-        // Simpan ID admin yang sedang login ke browser localStorage
-        localStorage.setItem('adminId', data.id);
-        
-        router.push('/dashboard');
-      });
-    } catch (err) {
-      Swal.fire('Gagal!', err.message, 'error');
-    } finally {
-      setLoading(false);
+    if (error || !data) {
+      throw new Error('Email atau akun tidak ditemukan.');
     }
-  };
+
+    if (data.password !== signInData.password) {
+      throw new Error('Password yang Anda masukkan salah.');
+    }
+
+    Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
+      // Simpan ID admin yang sedang login ke browser localStorage
+      localStorage.setItem('adminId', String(data.id)); // Pastikan dikonversi ke string
+      
+      router.push('/dashboard');
+    });
+  } catch (err: any) { // 👈 Tambahkan : any di sini
+    Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat login.', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Handler Sign Up
   const handleSignUp = async (e) => {
@@ -107,7 +107,7 @@ Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
                 placeholder="Enter E-mail"
                 required
                 value={signInData.email}
-                onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignInData({ ...signInData, email: e.target.value })}
                 className={`w-full pl-10 pr-4 py-3 rounded-lg text-sm focus:outline-none border ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-100 border-gray-200 text-gray-800'}`}
               />
             </div>
@@ -119,7 +119,7 @@ Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
                 placeholder="Enter Password" 
                 required
                 value={signInData.password}
-                onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignInData({ ...signInData, email: e.target.value })}
                 className={`w-full pl-10 pr-10 py-3 rounded-lg text-sm focus:outline-none border ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-100 border-gray-200 text-gray-800'}`}
               />
               <button

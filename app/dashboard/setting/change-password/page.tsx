@@ -25,15 +25,16 @@ const ChangePassword = () => {
 
   // Asumsi mengambil ID Admin yang sedang login
   const ADMIN_ID = '11111111-1111-1111-1111-111111111111'; 
-
-  const handleChange = (e) => {
+// 1. Berikan tipe React.ChangeEvent<HTMLInputElement> pada parameter e
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordData({
       ...passwordData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleUpdatePassword = async (e) => {
+  // 2. Berikan tipe React.FormEvent<HTMLFormElement> pada parameter e
+  const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Validasi kecocokan password baru
@@ -84,8 +85,8 @@ const ChangePassword = () => {
         confirmPassword: '',
       });
 
-    } catch (err) {
-      Swal.fire('Gagal!', err.message, 'error');
+    } catch (err: any) { // 3. Ubah menjadi catch (err: any) agar properti .message bisa dibaca
+      Swal.fire('Gagal!', err.message || 'Terjadi kesalahan', 'error');
     } finally {
       setLoading(false);
     }
