@@ -112,12 +112,11 @@ const checkUserAndFetchProfile = async () => {
 };
 
 
-  // Handle perubahan input text detail profil
-  const handleInputChange = (e) => {
+// Handle perubahan input text detail profil
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
 
 
 
@@ -135,7 +134,7 @@ const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
       if (String(formData.email || '') !== String(initialAdminData.email || '')) changedFields.push('Email');
       if (String(formData.status || '') !== String(initialAdminData.status || '')) changedFields.push('Status');
       if (String(formData.bio || '') !== String(initialAdminData.bio || '')) changedFields.push('Bio');
-      if (String(formData.birth_date || '') !== String(initialAdminData.birth_date || '')) changedFields.push('Tanggal Lahir');
+      if (String(formData.birth_day || '') !== String(initialAdminData.birth_day || '')) changedFields.push('Tanggal Lahir');
 
       // Buat deskripsi: jika ada field spesifik yang berubah, sebutkan. Jika tidak ada, tulis umum.
       const description = changedFields.length > 0 
@@ -232,17 +231,25 @@ const [showPassword, setShowPassword] = useState({
 });
 
   // Trigger pemilihan file foto
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+// Trigger pemilihan file foto
+const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Image = event.target.result;
+  const reader = new FileReader();
+  
+  // Berikan tipe ProgressEvent<FileReader> pada event reader
+  reader.onload = (event: ProgressEvent<FileReader>) => {
+    const base64Image = event.target?.result;
+    
+    // Pastikan result bertipe string sebelum diteruskan
+    if (typeof base64Image === 'string') {
       openCropSweetAlert(base64Image, file);
-    };
-    reader.readAsDataURL(file);
+    }
   };
+  
+  reader.readAsDataURL(file);
+};
 
   // SweetAlert interaktif untuk mengatur posisi foto (geser kiri, kanan, atas, bawah)
   const openCropSweetAlert = (imageSrc, fileObject) => {

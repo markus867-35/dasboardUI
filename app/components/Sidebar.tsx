@@ -111,7 +111,7 @@ useEffect(() => {
             avatar_url: data.avatar_url || '',
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Gagal memuat info admin:', err.message);
       }
     };
