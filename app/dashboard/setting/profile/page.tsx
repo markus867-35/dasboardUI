@@ -115,9 +115,15 @@ const checkUserAndFetchProfile = async () => {
 // Handle perubahan input text detail profil
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    
+    // Cek apakah field saat ini adalah field angka tanggal lahir
+    const isNumberField = ['birth_day', 'birth_month', 'birth_year'].includes(name);
 
+    setFormData((prev) => ({
+      ...prev,
+      [name]: isNumberField ? (value === '' ? '' : Number(value)) : value,
+    }));
+  };
 
 
 
