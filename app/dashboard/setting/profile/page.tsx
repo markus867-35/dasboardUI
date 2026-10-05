@@ -34,16 +34,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
  const [initialAdminData, setInitialAdminData] = useState<AdminProfile>({});
 
-const [formData, setFormData] = useState<{
-  name?: string;
-  username?: string;
-  email?: string;
-  birth_day?: number | string;
-  birth_month?: number | string;
-  birth_year?: number | string;
-  status?: string;
-  bio?: string;
-}>({
+const [formData, setFormData] = useState<AdminProfile>({
   name: '',
   username: '',
   email: '',
@@ -53,7 +44,6 @@ const [formData, setFormData] = useState<{
   status: '',
   bio: '',
 });
-
   // Password State
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -646,14 +636,14 @@ const uploadAndSaveAvatar = async (file: File) => {
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1">Bio</label>
-              <textarea
-                name="bio"
-                rows="3"
-                value={formData.bio}
-                onChange={handleInputChange}
-                placeholder="Tuliskan sedikit tentang diri Anda..."
-                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-              ></textarea>
+<textarea
+  name="bio"
+  rows={3}  {/* Ubah dari rows="3" menjadi rows={3} */}
+  value={formData.bio || ''}
+  onChange={handleInputChange}
+  placeholder="Tuliskan sedikit tentang diri Anda..."
+  className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+></textarea>
             </div>
           </div>
 
