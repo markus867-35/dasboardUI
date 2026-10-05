@@ -255,37 +255,56 @@ const [showPassword, setShowPassword] = useState({
       showCancelButton: true,
       confirmButtonText: 'Simpan Foto',
       cancelButtonText: 'Batal',
-      didOpen: () => {
-        const imgEl = document.getElementById('swal-crop-img');
-        const zoomEl = document.getElementById('zoom-range');
+didOpen: () => {
+  // 1. Berikan tipe eksplisit (HTMLInputElement / HTMLElement)
+  const imgEl = document.getElementById('swal-crop-img') as HTMLImageElement | null;
+  const zoomEl = document.getElementById('zoom-range') as HTMLInputElement | null;
 
-        const updateStyle = () => {
-          if (imgEl) {
-            imgEl.style.transform = `translate(-${posX}%, -${posY}%) scale(${zoom / 100})`;
-            // Menggunakan teknik object-position CSS
-            imgEl.style.objectPosition = `${posX}% ${posY}%`;
-          }
-        };
+  const btnUp = document.getElementById('btn-up');
+  const btnDown = document.getElementById('btn-down');
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+  const btnReset = document.getElementById('btn-reset');
 
-        document.getElementById('btn-up').onclick = () => { posY = Math.max(0, posY - 10); updateStyle(); };
-        document.getElementById('btn-down').onclick = () => { posY = Math.min(100, posY + 10); updateStyle(); };
-        document.getElementById('btn-left').onclick = () => { posX = Math.max(0, posX - 10); updateStyle(); };
-        document.getElementById('btn-right').onclick = () => { posX = Math.min(100, posX + 10); updateStyle(); };
-        document.getElementById('btn-reset').onclick = () => { posX = 50; posY = 50; zoom = 100; zoomEl.value = 100; updateStyle(); };
-        
-        zoomEl.oninput = (e) => {
-          zoom = e.target.value;
-          updateStyle();
-        };
-      },
-      preConfirm: () => {
-        return { posX, posY, zoom };
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await uploadAndSaveAvatar(fileObject);
-      }
-    });
+  const updateStyle = () => {
+    if (imgEl) {
+      imgEl.style.transform = `translate(-${posX}%, -${posY}%) scale(${zoom / 100})`;
+      imgEl.style.objectPosition = `${posX}% ${posY}%`;
+    }
+  };
+
+  if (btnUp) btnUp.onclick = () => { posY = Math.max(0, posY - 10); updateStyle(); };
+  if (btnDown) btnDown.onclick = () => { posY = Math.min(100, posY + 10); updateStyle(); };
+  if (btnLeft) btnLeft.onclick = () => { posX = Math.max(0, posX - 10); updateStyle(); };
+  if (btnRight) btnRight.onclick = () => { posX = Math.min(100, posX + 10); updateStyle(); };
+  
+  if (btnReset && zoomEl) {
+    btnReset.onclick = () => { 
+      posX = 50; 
+      posY = 50; 
+      zoom = 100; 
+      zoomEl.value = '100'; // Diubah menjadi string agar sesuai tipe input value
+      updateStyle(); 
+    };
+  }
+  
+  if (zoomEl) {
+    zoomEl.oninput = (e: Event) => {
+      // 2. Cast e.target menjadi HTMLInputElement agar properti .value bisa diakses
+      const target = e.target as HTMLInputElement;
+      zoom = Number(target.value);
+      updateStyle();
+    };
+  }
+},
+preConfirm: () => {
+  return { posX, posY, zoom };
+}
+}).then(async (result) => {
+  if (result.isConfirmed) {
+    await uploadAndSaveAvatar(fileObject);
+  }
+});
   };
 
 
