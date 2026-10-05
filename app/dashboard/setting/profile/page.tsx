@@ -3,6 +3,7 @@
 import React, { useState ,useEffect} from 'react';
 import { useTheme } from '@/app/context/ThemeContext'; 
 import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
+import { supabase } from '@/lib/supabase';
 import { 
   User, Mail, Calendar, GraduationCap, 
   Lock, Camera, Save, Edit3, Move, X 
@@ -47,56 +48,62 @@ export default function ProfilePage() {
     }
     return age;
   };
-// --- HANDLER SIMPAN PROFIL ---
-// --- HANDLER SIMPAN PROFIL DENGAN DETEKSI PERUBAHAN SPESIFIK ---
-const handleSaveProfile = (e: React.FormEvent) => {
+
+
+
+
+const handleSaveProfile = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  // 1. Cari field mana saja yang nilainya berubah
-  const changes: string[] = [];
-  
-  if (tempProfile.name !== profile.name) {
-    changes.push(`Nama Lengkap dari "${profile.name}" menjadi "${tempProfile.name}"`);
-  }
-  if (tempProfile.username !== profile.username) {
-    changes.push(`Username dari "${profile.username}" menjadi "${tempProfile.username}"`);
-  }
-  if (tempProfile.email !== profile.email) {
-    changes.push(`Email dari "${profile.email}" menjadi "${tempProfile.email}"`);
-  }
-  if (tempProfile.birthDate !== profile.birthDate) {
-    changes.push(`Tanggal Lahir diubah`);
-  }
-  if (tempProfile.graduationYear !== profile.graduationYear) {
-    changes.push(`Tahun Kelulusan dari "${profile.graduationYear}" menjadi "${tempProfile.graduationYear}"`);
-  }
-  if (tempProfile.bio !== profile.bio) {
-    changes.push(`Bio/Deskripsi diperbarui`);
-  }
+  try {
+    // 1. Deteksi perubahan field untuk log aktivitas
+    const changes: string[] = [];
+    if (tempProfile.name !== profile.name) changes.push(`Nama Lengkap dari "${profile.name}" menjadi "${tempProfile.name}"`);
+    if (tempProfile.username !== profile.username) changes.push(`Username dari "${profile.username}" menjadi "${tempProfile.username}"`);
+    if (tempProfile.email !== profile.email) changes.push(`Email dari "${profile.email}" menjadi "${tempProfile.email}"`);
+    if (tempProfile.birthDate !== profile.birthDate) changes.push(`Tanggal Lahir diubah`);
+    if (tempProfile.graduationYear !== profile.graduationYear) changes.push(`Tahun Kelulusan dari "${profile.graduationYear}" menjadi "${tempProfile.graduationYear}"`);
+    if (tempProfile.bio !== profile.bio) changes.push(`Bio/Deskripsi diperbarui`);
 
-  // 2. Simpan perubahan ke state utama
-  setProfile(tempProfile);
-  setIsEditing(false);
+    if (changes.length === 0) {
+      setIsEditing(false);
+      alert('Tidak ada perubahan data.');
+      return;
+    }
 
-  // 3. Catat ke log hanya jika ada perubahan yang terjadi
-  if (changes.length > 0) {
+    // 2. Kirim update ke Supabase berdasarkan email profil saat ini
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        full_name: tempProfile.name,
+        username: tempProfile.username,
+        email: tempProfile.email,
+        birth_date: tempProfile.birthDate,
+        graduation_year: tempProfile.graduationYear,
+        bio: tempProfile.bio,
+        avatar: tempProfile.avatar,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('email', profile.email); // Menggunakan email untuk mencocokkan data yang diupdate
+
+    if (updateError) throw updateError;
+
+    setProfile(tempProfile);
+    setIsEditing(false);
+
     logActivity(
       'Pembaruan Informasi Pribadi',
       `Mengubah ${changes.join(', ')}`,
       'update'
     );
-  } else {
-    logActivity(
-      'Pembaruan Informasi Pribadi',
-      'Menyimpan profil tanpa ada perubahan data.',
-      'update'
-    );
+
+    alert('Profil berhasil diperbarui dan disimpan ke database!');
+
+  } catch (error: any) {
+    console.error('Gagal menyimpan profil:', error);
+    alert(`Gagal memperbarui profil: ${error.message || 'Terjadi kesalahan'}`);
   }
-
-  alert('Profil berhasil diperbarui!');
 };
-
-
 
 
   // --- FUNGSI MODAL SWEETALERT UNTUK MELIHAT FOTO BESAR & ATUR POSISI ---
