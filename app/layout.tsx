@@ -1,28 +1,33 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { ThemeProvider } from '@/app/context/ThemeContext'; // Sesuaikan path import jika berbeda
+'use client';
 
-const inter = Inter({ subsets: ['latin'] });
+import { createContext, useContext, useState, useEffect } from 'react';
 
-export const metadata: Metadata = {
-  title: 'Data-save-Markus',
-  description: 'Aplikasi Dashboard & Manajemen Data',
-};
+const ThemeContext = createContext<any>(null);
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState('dark');
+  const [colorTheme, setColorTheme] = useState('navy');
+  const [mounted, setMounted] = useState(false);
+
+  // Jalankan pembacaan localStorage HANYA setelah komponen terpasang di klien
+  useEffect(() => {
+    setMounted(true);
+    const savedMode = localStorage.getItem('theme_mode');
+    const savedColor = localStorage.getItem('color_theme');
+    if (savedMode) setMode(savedMode);
+    if (savedColor) setColorTheme(savedColor);
+  }, []);
+
+  // Mencegah render tema mentah di server yang memicu Error #418
+  if (!mounted) {
+    return <>{children}</>; 
+  }
+
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        {/* Bungkus dengan ThemeProvider agar semua halaman (termasuk /login) bisa akses useTheme() */}
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <ThemeContext.Provider value={{ mode, setMode, colorTheme, setColorTheme }}>
+      {children}
+    </ThemeContext.Provider>
   );
 }
+
+export const useTheme = () => useContext(ThemeContext);
