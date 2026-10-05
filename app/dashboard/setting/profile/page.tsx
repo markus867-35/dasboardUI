@@ -638,7 +638,7 @@ const uploadAndSaveAvatar = async (file: File) => {
               <label className="block text-sm font-medium mb-1">Bio</label>
 <textarea
   name="bio"
-  rows={3}  {/* Ubah dari rows="3" menjadi rows={3} */}
+  rows={3}
   value={formData.bio || ''}
   onChange={handleInputChange}
   placeholder="Tuliskan sedikit tentang diri Anda..."
