@@ -8,14 +8,13 @@ import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import Swal from 'sweetalert2';
 
 
-// 1. Definisikan interface profil admin
 interface AdminProfile {
   name?: string;
   username?: string;
   email?: string;
-  birth_day?: number | string;    // Ubah menjadi number | string
-  birth_month?: number | string;  // Ubah menjadi number | string
-  birth_year?: number | string;   // Ubah menjadi number | string
+  birth_day?: number | string;    // Pastikan ada '| string'
+  birth_month?: number | string;  // Pastikan ada '| string'
+  birth_year?: number | string;   // Pastikan ada '| string'
   status?: string;
   bio?: string;
   avatar_url?: string;
@@ -95,16 +94,16 @@ const checkUserAndFetchProfile = async () => {
     if (dbError) throw dbError;
 
     if (data) {
-      setFormData({
-        name: data.name || '',
-        username: data.username || '',
-        email: data.email || '',
-        birth_day: data.birth_day || '',
-        birth_month: data.birth_month || '',
-        birth_year: data.birth_year || '',
-        status: data.status || '',
-        bio: data.bio || '',
-      });
+setFormData({
+  name: data.name || '',
+  username: data.username || '',
+  email: data.email || '',
+  birth_day: data.birth_day ?? '',     // Gunakan ?? '' jika nilainya null/undefined
+  birth_month: data.birth_month ?? '', 
+  birth_year: data.birth_year ?? '',   
+  status: data.status || '',
+  bio: data.bio || '',
+});
       setInitialAdminData(data);
       setAvatarUrl(data.avatar_url || '');
       setAvatarHistory(data.avatar_history || []);
