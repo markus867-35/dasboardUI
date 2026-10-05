@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
 export default function Home() {
-  // Langsung arahkan ke halaman login tanpa jeda atau merender dashboard
+  // Otomatis arahkan ke halaman login saat aplikasi pertama kali dibuka
   redirect('/login');
 }

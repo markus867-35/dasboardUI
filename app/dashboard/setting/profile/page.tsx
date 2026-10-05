@@ -1,193 +1,289 @@
 'use client';
 
-import React, { useState ,useEffect} from 'react';
-import { useTheme } from '@/app/context/ThemeContext'; 
-import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
+import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '@/app/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
-import { 
-  User, Mail, Calendar, GraduationCap, 
-  Lock, Camera, Save, Edit3, Move, X 
-} from 'lucide-react';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import Swal from 'sweetalert2';
 
 export default function ProfilePage() {
-  
-  const { mode } = useTheme(); 
+  const { mode } = useTheme();
   const isDark = mode === 'dark';
+  const [adminId, setAdminId] = useState(null);
 
-  // --- STATE DATA PROFIL ---
-  const [profile, setProfile] = useState({
-    name: 'Ahmad Developer',
-    username: 'ahmad_dev',
-    email: 'ahmad.dev@example.com',
-    birthDate: '1998-05-15',
-    graduationYear: '2020',
-    bio: 'Seorang Full-Stack Web Developer yang antusias dengan teknologi Next.js, React, dan Tailwind CSS. Suka membangun aplikasi web yang bersih dan interaktif.',
+  // ID Dummy tetap (karena belum ada pengecekan Auth sesuai permintaan)
+  const ADMIN_ID = '11111111-1111-1111-1111-111111111111';
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [initialAdminData, setInitialAdminData] = useState({});
+
+  // Form State Detail Profil
+  const [formData, setFormData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    birth_day: '',
+    birth_month: '',
+    birth_year: '',
+    status: '',
+    bio: '',
   });
 
-  // --- STATE EDIT MODE & PASSWORD ---
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempProfile, setTempProfile] = useState(profile);
-  
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Password State
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
-  // --- STATE FOTO PROFIL & POSISI ---
+  // Avatar & History State
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
+  const [avatarHistory, setAvatarHistory] = useState([]);
+  const fileInputRef = useRef(null);
 
-  // --- HITUNG UMUR OTOMATIS ---
-  const calculateAge = (birthDateString: string) => {
-    const today = new Date();
-    const birthDate = new Date(birthDateString);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  // Ambil data dari Supabase saat halaman dimuat
+useEffect(() => {
+    checkUserAndFetchProfile();
+  }, []);
+
+const checkUserAndFetchProfile = async () => {
+  try {
+    setLoading(true);
+
+    // Ambil ID dari localStorage yang disimpan saat login
+    const currentUserId = localStorage.getItem('adminId');
+
+    if (!currentUserId) {
+      throw new Error('Sesi login tidak ditemukan. Silakan login kembali.');
     }
-    return age;
+
+    setAdminId(currentUserId);
+
+    // Ambil data dari tabel admins berdasarkan ID tersebut
+    const { data, error: dbError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('id', currentUserId)
+      .single();
+
+    if (dbError) throw dbError;
+
+    if (data) {
+      setFormData({
+        name: data.name || '',
+        username: data.username || '',
+        email: data.email || '',
+        birth_day: data.birth_day || '',
+        birth_month: data.birth_month || '',
+        birth_year: data.birth_year || '',
+        status: data.status || '',
+        bio: data.bio || '',
+      });
+      setInitialAdminData(data);
+      setAvatarUrl(data.avatar_url || '');
+      setAvatarHistory(data.avatar_history || []);
+    }
+  } catch (err) {
+    console.error('Gagal memuat profil:', err.message);
+    Swal.fire('Oops!', err.message, 'error').then(() => {
+      router.push('/login');
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // Handle perubahan input text detail profil
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
 
 
 
-const handleSaveProfile = async (e: React.FormEvent) => {
+
+
+const handleSaveProfile = async (e) => {
   e.preventDefault();
-
+  if (!adminId) return; // Pastikan ID ada
+  setSaving(true);
   try {
-    // 1. Deteksi perubahan field untuk log aktivitas
-    const changes: string[] = [];
-    if (tempProfile.name !== profile.name) changes.push(`Nama Lengkap dari "${profile.name}" menjadi "${tempProfile.name}"`);
-    if (tempProfile.username !== profile.username) changes.push(`Username dari "${profile.username}" menjadi "${tempProfile.username}"`);
-    if (tempProfile.email !== profile.email) changes.push(`Email dari "${profile.email}" menjadi "${tempProfile.email}"`);
-    if (tempProfile.birthDate !== profile.birthDate) changes.push(`Tanggal Lahir diubah`);
-    if (tempProfile.graduationYear !== profile.graduationYear) changes.push(`Tahun Kelulusan dari "${profile.graduationYear}" menjadi "${tempProfile.graduationYear}"`);
-    if (tempProfile.bio !== profile.bio) changes.push(`Bio/Deskripsi diperbarui`);
+      // 1. Deteksi perubahan dengan membandingkan string secara aman (mengatasi perbedaan tipe data/null/undefined)
+      const changedFields = [];
+      
+      if (String(formData.name || '') !== String(initialAdminData.name || '')) changedFields.push('Nama Lengkap');
+      if (String(formData.username || '') !== String(initialAdminData.username || '')) changedFields.push('Username');
+      if (String(formData.email || '') !== String(initialAdminData.email || '')) changedFields.push('Email');
+      if (String(formData.status || '') !== String(initialAdminData.status || '')) changedFields.push('Status');
+      if (String(formData.bio || '') !== String(initialAdminData.bio || '')) changedFields.push('Bio');
+      if (String(formData.birth_date || '') !== String(initialAdminData.birth_date || '')) changedFields.push('Tanggal Lahir');
 
-    if (changes.length === 0) {
-      setIsEditing(false);
-      alert('Tidak ada perubahan data.');
-      return;
+      // Buat deskripsi: jika ada field spesifik yang berubah, sebutkan. Jika tidak ada, tulis umum.
+      const description = changedFields.length > 0 
+        ? `Memperbarui bagian: ${changedFields.join(', ')}`
+        : 'Memperbarui informasi profil admin';
+
+const { error } = await supabase
+      .from('admins')
+      .update({
+        ...formData,
+        updated_at: new Date(),
+      })
+      .eq('id', adminId); // 👈 Gunakan adminId dinamis
+
+    if (error) throw error;
+
+      // 2. Catat log dengan teks deskripsi yang sudah difilter akurat
+      logActivity(
+        'Profile',
+        description,
+        'update'
+      );
+
+      // 3. Perbarui initialAdminData agar setelah disimpan, data ini jadi acuan baru lagi
+      setInitialAdminData({ ...formData });
+
+      Swal.fire('Berhasil!', 'Detail profil berhasil diperbarui.', 'success');
+    } catch (err) {
+      Swal.fire('Gagal!', err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Ubah Password
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return Swal.fire('Oops!', 'Konfirmasi password baru tidak cocok.', 'warning');
     }
 
-    // 2. Kirim update ke Supabase berdasarkan email profil saat ini
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        full_name: tempProfile.name,
-        username: tempProfile.username,
-        email: tempProfile.email,
-        birth_date: tempProfile.birthDate,
-        graduation_year: tempProfile.graduationYear,
-        bio: tempProfile.bio,
-        avatar: tempProfile.avatar,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('email', profile.email); // Menggunakan email untuk mencocokkan data yang diupdate
+    try {
+      // Validasi password lama
+      const { data, error: fetchErr } = await supabase
+        .from('admins')
+        .select('password')
+        .eq('id', ADMIN_ID)
+        .single();
 
-    if (updateError) throw updateError;
+      if (fetchErr) throw fetchErr;
 
-    setProfile(tempProfile);
-    setIsEditing(false);
+      if (data.password && data.password !== passwords.currentPassword) {
+        return Swal.fire('Gagal!', 'Password saat ini salah.', 'error');
+      }
 
     logActivity(
-      'Pembaruan Informasi Pribadi',
-      `Mengubah ${changes.join(', ')}`,
+      'Profile',
+      `Informasi Password berhasil di ubah.`,
       'update'
     );
+      // Update password baru ke Supabase
+      const { error: updateErr } = await supabase
+        .from('admins')
+        .update({ password: passwords.newPassword })
+        .eq('id', ADMIN_ID);
 
-    alert('Profil berhasil diperbarui dan disimpan ke database!');
+      if (updateErr) throw updateErr;
 
-  } catch (error: any) {
-    console.error('Gagal menyimpan profil:', error);
-    alert(`Gagal memperbarui profil: ${error.message || 'Terjadi kesalahan'}`);
-  }
-};
+      Swal.fire('Berhasil!', 'Password berhasil diubah.', 'success');
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      Swal.fire('Gagal!', err.message, 'error');
+    }
+  };
 
 
-  // --- FUNGSI MODAL SWEETALERT UNTUK MELIHAT FOTO BESAR & ATUR POSISI ---
-  const handleOpenPhotoModal = () => {
-    let tempX = imagePosition.x;
-    let tempY = imagePosition.y;
+
+
+
+  // State untuk mengatur mata (show/hide password)
+const [showPassword, setShowPassword] = useState({
+  current: false,
+  new: false,
+  confirm: false,
+});
+
+  // Trigger pemilihan file foto
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Image = event.target.result;
+      openCropSweetAlert(base64Image, file);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // SweetAlert interaktif untuk mengatur posisi foto (geser kiri, kanan, atas, bawah)
+  const openCropSweetAlert = (imageSrc, fileObject) => {
+    let posX = 50; // posisi persentase X (0-100)
+    let posY = 50; // posisi persentase Y (0-100)
+    let zoom = 100; // skala zoom (%)
 
     Swal.fire({
-      title: '<span style="font-size: 18px; font-weight: 600;">Foto Profil</span>',
+      title: 'Atur Posisi Foto Profil',
       html: `
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px;">
-          <!-- TAMPILAN GAMBAR UKURAN BESAR -->
-          <div style="width: 240px; height: 240px; border-radius: 50%; overflow: hidden; border: 4px solid #6366f1; box-shadow: 0 15px 25px -5px rgba(0,0,0,0.4); background: #0f172a;">
-            <img id="swal-img-preview" src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover; object-position: ${tempX}% ${tempY}%;" />
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+          <div style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; border: 3px solid #3b82f6; position: relative; background: #000;">
+            <img id="swal-crop-img" src="${imageSrc}" style="position: absolute; left: ${posX}%; top: ${posY}%; transform: translate(--${posX}%, --${posY}%) scale(${zoom / 100}); width: 100%; height: 100%; object-fit: cover; transition: transform 0.1s ease;" />
           </div>
-
-          <p style="font-size: 12px; color: #94a3b8; margin: 0;">Geser slider di bawah jika ingin menyesuaikan posisi foto:</p>
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Gunakan tombol di bawah untuk menggeser posisi gambar:</p>
           
-          <div style="width: 100%; text-align: left;">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 4px;">
-              <span>Geser Horizontal (X)</span>
-              <span id="val-x" style="font-weight: 600; color: #818cf8;">${tempX}%</span>
-            </div>
-            <input id="swal-range-x" type="range" min="0" max="100" value="${tempX}" style="width: 100%; accent-color: #6366f1; cursor: pointer;" />
+          <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 6px;">
+            <div></div>
+            <button type="button" id="btn-up" class="swal2-confirm swal2-styled" style="margin:0; padding:6px;">⬆️</button>
+            <div></div>
+            <button type="button" id="btn-left" class="swal2-confirm swal2-styled" style="margin:0; padding:6px;">⬅️</button>
+            <button type="button" id="btn-reset" class="swal2-deny swal2-styled" style="margin:0; padding:6px; background:#64748b;">🔄</button>
+            <button type="button" id="btn-right" class="swal2-confirm swal2-styled" style="margin:0; padding:6px;">➡️</button>
+            <div></div>
+            <button type="button" id="btn-down" class="swal2-confirm swal2-styled" style="margin:0; padding:6px;">⬇️</button>
+            <div></div>
           </div>
-
-          <div style="width: 100%; text-align: left;">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 4px;">
-              <span>Geser Vertikal (Y)</span>
-              <span id="val-y" style="font-weight: 600; color: #818cf8;">${tempY}%</span>
-            </div>
-            <input id="swal-range-y" type="range" min="0" max="100" value="${tempY}" style="width: 100%; accent-color: #6366f1; cursor: pointer;" />
+          
+          <div style="display: flex; align-items: center; gap: 8px; width: 80%; margin-top: 8px;">
+            <span style="font-size: 12px;">Zoom:</span>
+            <input type="range" id="zoom-range" min="100" max="250" value="${zoom}" style="width: 100%; cursor: pointer;" />
           </div>
         </div>
       `,
-      background: isDark ? '#1F2937' : '#ffffff',
-      color: isDark ? '#f8fafc' : '#0f172a',
       showCancelButton: true,
-      confirmButtonText: 'Simpan Posisi',
-      cancelButtonText: 'Tutup',
-      confirmButtonColor: '#4f46e5',
-      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Simpan Foto',
+      cancelButtonText: 'Batal',
       didOpen: () => {
-        const rangeX = document.getElementById('swal-range-x') as HTMLInputElement;
-        const rangeY = document.getElementById('swal-range-y') as HTMLInputElement;
-        const imgPreview = document.getElementById('swal-img-preview') as HTMLImageElement;
-        const valX = document.getElementById('val-x');
-        const valY = document.getElementById('val-y');
+        const imgEl = document.getElementById('swal-crop-img');
+        const zoomEl = document.getElementById('zoom-range');
 
-        rangeX?.addEventListener('input', (e) => {
-          tempX = Number((e.target as HTMLInputElement).value);
-          if (imgPreview) imgPreview.style.objectPosition = `${tempX}% ${tempY}%`;
-          if (valX) valX.innerText = `${tempX}%`;
-        });
+        const updateStyle = () => {
+          if (imgEl) {
+            imgEl.style.transform = `translate(-${posX}%, -${posY}%) scale(${zoom / 100})`;
+            // Menggunakan teknik object-position CSS
+            imgEl.style.objectPosition = `${posX}% ${posY}%`;
+          }
+        };
 
-        rangeY?.addEventListener('input', (e) => {
-          tempY = Number((e.target as HTMLInputElement).value);
-          if (imgPreview) imgPreview.style.objectPosition = `${tempX}% ${tempY}%`;
-          if (valY) valY.innerText = `${tempY}%`;
-        });
+        document.getElementById('btn-up').onclick = () => { posY = Math.max(0, posY - 10); updateStyle(); };
+        document.getElementById('btn-down').onclick = () => { posY = Math.min(100, posY + 10); updateStyle(); };
+        document.getElementById('btn-left').onclick = () => { posX = Math.max(0, posX - 10); updateStyle(); };
+        document.getElementById('btn-right').onclick = () => { posX = Math.min(100, posX + 10); updateStyle(); };
+        document.getElementById('btn-reset').onclick = () => { posX = 50; posY = 50; zoom = 100; zoomEl.value = 100; updateStyle(); };
+        
+        zoomEl.oninput = (e) => {
+          zoom = e.target.value;
+          updateStyle();
+        };
       },
       preConfirm: () => {
-        const rangeX = (document.getElementById('swal-range-x') as HTMLInputElement)?.value;
-        const rangeY = (document.getElementById('swal-range-y') as HTMLInputElement)?.value;
-        return { x: Number(rangeX), y: Number(rangeY) };
+        return { posX, posY, zoom };
       }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        setImagePosition(result.value);
-
-logActivity(
-    'Penyesuaian Posisi Foto',
-    `Mengatur koordinat fokus bingkai foto profil pada titik X: ${result.value.x}%, Y: ${result.value.y}%`,
-    'update'
-  );
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Posisi foto berhasil disimpan!',
-          showConfirmButton: false,
-          timer: 1200,
-          background: isDark ? '#1F2937' : '#ffffff',
-          color: isDark ? '#f8fafc' : '#0f172a'
-        });
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await uploadAndSaveAvatar(fileObject);
       }
     });
   };
@@ -195,348 +291,400 @@ logActivity(
 
 
 
-  // --- HANDLER UPLOAD & KONVERSI FOTO KE BASE64 ---
-const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      
-      // 1. Set state avatar lokal
-      setAvatarUrl(base64String);
 
-      // 2. Simpan juga langsung ke state profil & localStorage agar persisten
-      const updatedProfile = { ...profile, avatar: base64String };
-      setProfile(updatedProfile);
-      localStorage.setItem('user_profile_data', JSON.stringify(updatedProfile));
+  // Upload Avatar ke Storage Supabase & Perbarui Riwayat
+const uploadAndSaveAvatar = async (file) => {
+  try {
+    // 1. Ambil ID admin yang sedang aktif dari localStorage
+    const currentAdminId = localStorage.getItem('adminId');
+    if (!currentAdminId) {
+      throw new Error('Sesi login tidak ditemukan. Silakan login kembali.');
+    }
 
-      // 3. Catat aktivitas ke /activity
+    Swal.fire({ title: 'Mengunggah...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const fileExt = file.name.split('.').pop();
+    // Gunakan currentAdminId untuk penamaan file yang unik
+    const fileName = `${currentAdminId}-${Date.now()}.${fileExt}`;
+    const filePath = `profiles/${fileName}`;
+
+    // 2. Upload file ke Supabase Storage (pastikan bucket 'avatars' sudah public)
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    // 3. Dapatkan Public URL yang valid
+    const { data: publicURLData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const newAvatarUrl = publicURLData.publicUrl;
+
+    // 4. Siapkan riwayat foto lama
+    let updatedHistory = [...avatarHistory];
+    if (avatarUrl && !updatedHistory.includes(avatarUrl)) {
+      updatedHistory.unshift(avatarUrl);
+    }
+
+    // 5. Update URL baru dan history ke tabel admins di database berdasarkan ID yang benar
+    const { error: dbError } = await supabase
+      .from('admins')
+      .update({
+        avatar_url: newAvatarUrl,
+        avatar_history: updatedHistory,
+        updated_at: new Date(),
+      })
+      .eq('id', currentAdminId); // 👈 Gunakan ID dari localStorage
+
+    if (dbError) throw dbError;
+
+    // Catat aktivitas jika fungsi logActivity tersedia
+    if (typeof logActivity === 'function') {
       logActivity(
-        'Unggah Foto Profil',
-        `Berhasil mengunggah file gambar baru: "${file.name}"`,
-        'upload'
+        'Profile',
+        `Foto profil berhasil diperbarui.`,
+        'update'
       );
+    }
 
-      // 4. Buka modal atur posisi
-      setTimeout(() => {
-        handleOpenPhotoModal();
-      }, 100);
-    };
+    // 6. Set state lokal agar langsung berubah tanpa harus refresh manual
+    setAvatarUrl(newAvatarUrl);
+    setAvatarHistory(updatedHistory);
 
-    // Baca file sebagai data URL (Base64)
-    reader.readAsDataURL(file);
+    Swal.fire('Berhasil!', 'Foto profil berhasil disimpan dan diperbarui.', 'success');
+  } catch (err) {
+    Swal.fire('Gagal Upload!', err.message, 'error');
   }
 };
 
-
-
-useEffect(() => {
-  const savedProfile = localStorage.getItem('user_profile_data');
-  if (savedProfile) {
-    const parsed = JSON.parse(savedProfile);
-    setProfile(parsed);
-    setTempProfile(parsed);
-    if (parsed.avatar) {
-      setAvatarUrl(parsed.avatar); // Memuat kembali foto base64 yang tersimpan
-    }
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'text-slate-100 bg-slate-950' : 'text-slate-800 bg-white'}`}>
+        <p className="text-lg font-medium animate-pulse">Memuat data profil...</p>
+      </div>
+    );
   }
-}, []);
 
-
-
-
-  // --- HANDLER GANTI PASSWORD ---
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('Semua field password harus diisi!');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      alert('Password baru dan konfirmasi password tidak cocok!');
-      return;
-    }
-
-logActivity(
-    'Perubahan Keamanan Sandi',
-    'Pengguna berhasil memperbarui kata sandi akun.',
-    'security'
-  );
-
-    alert('Password berhasil diubah!');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-  };
   return (
-    <div className={`min-h-screen p-6 md:p-10 font-sans transition-colors duration-200 ${isDark ? 'bg-[#111827] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className={`min-h-screen p-4 sm:p-8 transition-colors duration-200 ${isDark ? 'text-slate-100 bg-slate-950' : 'text-slate-800 bg-white'}`}>
+      <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* HEADER JUDUL */}
-        <div className={`flex items-center justify-between border-b pb-5 ${isDark ? 'border-slate-700/60' : 'border-slate-200'}`}>
-          <div>
-            <h1 className="text-2xl font-bold text-indigo-500">Pengaturan Profil</h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Kelola informasi akun, foto profil, dan keamanan Anda.</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Tombol Edit/Batal */}
-            <button
-              onClick={() => {
-                if (isEditing) setTempProfile(profile);
-                setIsEditing(!isEditing);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                isEditing 
-                  ? (isDark ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800') 
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-              }`}
-            >
-              {isEditing ? <><X className="w-4 h-4" /> Batal</> : <><Edit3 className="w-4 h-4" /> Edit Profil</>}
-            </button>
-          </div>
+        {/* Header Title */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Pengaturan Profil</h1>
+          <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Kelola informasi profil, foto, dan keamanan akun Anda 
+          </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+{/* Bagian Foto Profil & Upload */}
+        <div className={`p-6 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <h2 className="text-xl font-semibold mb-6">Foto Profil & Riwayat</h2>
           
-          {/* KOLOM KIRI: FOTO PROFIL & POSISI */}
-          <div className="md:col-span-1 space-y-6">
-            <div className={`p-6 rounded-2xl border flex flex-col items-center text-center shadow-lg transition-colors ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
+          {/* Layout dibagi 2 kolom: Kiri (Upload/Utama), Kanan (Riwayat) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            
+            {/* KOLOM KIRI: Foto Utama & Tombol Ganti */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 p-4 rounded-xl border border-slate-700/30 bg-slate-800/20">
               
-              {/* CONTAINER PREVIEW FOTO (KLIK MEMUNCULKAN SWEETALERT) */}
+              {/* Bagian Foto yang saat diklik memunculkan SweetAlert */}
               <div 
-                onClick={handleOpenPhotoModal}
-                className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-500/40 shadow-inner group mb-4 bg-slate-900 cursor-pointer"
-                title="Klik untuk atur posisi foto"
+                onClick={() => {
+                  Swal.fire({
+                    title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + '">Foto Profil</span>',
+                    html: `
+                      <div class="flex flex-col items-center justify-center space-y-3">
+                        
+                        <div class="w-80 h-80 rounded-full bg-transparent overflow-hidden border-4 border-blue-500 shadow-xl">
+                          <img src="${avatarUrl || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}">${formData.name ? `${formData.name} (@${formData.username})` : 'Admin Profil'}</p>
+                      </div>
+                    `,
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    background: 'transparent',
+                    customClass: {
+                      popup: isDark ? '!bg-slate-900/80 backdrop-blur-md text-slate-100 border border-slate-800 rounded-2xl shadow-2xl' : '!bg-white/80 backdrop-blur-md text-slate-900 rounded-2xl shadow-2xl'
+                    }
+                  });
+                }}
+                className="relative group cursor-pointer"
+                title="Klik untuk melihat foto"
               >
-                <img 
-                  src={avatarUrl} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover transition-all duration-150"
-                  style={{ objectPosition: `${imagePosition.x}% ${imagePosition.y}%` }}
-                />
-                
-                {/* Tombol Overlay Upload */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition text-white">
-                  <Camera className="w-6 h-6 mb-1" />
-                  <span className="text-[11px] font-medium">Ganti / Atur</span>
+                <div className="w-55 h-55 rounded-full overflow-hidden border-4 border-blue-500 shadow-md bg-slate-800 relative">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover transition duration-200 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400">
+                      {formData.name ? formData.name.charAt(0).toUpperCase() : 'A'}
+                    </div>
+                  )}
+
+                  {/* Overlay petunjuk saat kursor diarahkan (hover) */}
+                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-200">
+                    <span className="text-xl">🔍</span>
+                    <span className="text-[10px] font-semibold mt-1">Lihat Foto</span>
+                  </div>
                 </div>
               </div>
 
-              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</h2>
-              <p className="text-xs text-indigo-400">@{profile.username}</p>
-              
-              {/* TOMBOL GANTI FOTO / ATUR POSISI */}
-              <div className="w-full mt-4 flex flex-col gap-2">
-                <button 
-                  onClick={handleOpenPhotoModal}
-                  className={`w-full py-2 px-3 text-xs rounded-xl border font-medium transition flex items-center justify-center gap-1.5 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'}`}
+              <div className="space-y-3 w-full">
+<p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+  {formData.bio || 'Belum ada bio'}
+</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow w-full"
                 >
-                  <Move className="w-3.5 h-3.5 text-indigo-500" /> Atur Posisi Foto
+                  Ganti Foto Profil
                 </button>
+              </div>
+            </div>
 
-                <label className={`w-full py-2 px-3 text-xs rounded-xl border font-medium transition flex items-center justify-center gap-1.5 cursor-pointer ${isDark ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30' : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'}`}>
-                  <Camera className="w-3.5 h-3.5" /> Upload Foto Baru
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                </label>
+            {/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
+            <div className="flex flex-col justify-between h-full p-4 rounded-xl border border-slate-700/30 bg-slate-800/20">
+              <div>
+                <h3 className="text-md font-medium mb-2">Riwayat Foto Sebelumnya</h3>
+                <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Klik "Gunakan" pada salah satu foto di bawah untuk memasangnya kembali secara instan.
+                </p>
               </div>
 
-            </div>
-          </div>
-
-          {/* KOLOM KANAN: DETAIL PROFIL & FORM EDIT */}
-          <div className="md:col-span-2 space-y-6">
-            
-            {/* FORM DETAIL PROFIL */}
-            <div className={`p-6 rounded-2xl border shadow-lg transition-colors ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
-              <h2 className={`text-base font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                <User className="w-4 h-4 text-indigo-500" /> Informasi Pribadi
-              </h2>
-
-              {!isEditing ? (
-                // TAMPILAN DETAIL PROFIL (READ-ONLY)
-                <div className="space-y-4 text-sm">
-                  <div className={`grid grid-cols-2 gap-4 border-b pb-3 ${isDark ? 'border-slate-700/40' : 'border-slate-100'}`}>
-                    <div>
-                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Nama Lengkap</p>
-                      <p className={`font-medium mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                    </div>
-                    <div>
-                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Username</p>
-                      <p className={`font-medium mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>@{profile.username}</p>
-                    </div>
-                  </div>
-
-                  <div className={`grid grid-cols-2 gap-4 border-b pb-3 ${isDark ? 'border-slate-700/40' : 'border-slate-100'}`}>
-                    <div>
-                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</p>
-                      <p className={`font-medium mt-0.5 flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        <Mail className="w-3.5 h-3.5 text-slate-400" /> {profile.email}
-                      </p>
-                    </div>
-                    <div>
-                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tanggal Lahir & Umur</p>
-                      <p className={`font-medium mt-0.5 flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" /> 
-                        {profile.birthDate} ({calculateAge(profile.birthDate)} Tahun)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className={`border-b pb-3 ${isDark ? 'border-slate-700/40' : 'border-slate-100'}`}>
-                    <div>
-                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tahun Kelulusan</p>
-                      <p className={`font-medium mt-0.5 flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        <GraduationCap className="w-3.5 h-3.5 text-slate-400" /> {profile.graduationYear}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bio / Deskripsi</p>
-                    <p className={`font-medium mt-1 leading-relaxed text-xs p-3 rounded-lg border ${isDark ? 'bg-slate-900/50 border-slate-700/40 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
-                      {profile.bio}
-                    </p>
-                  </div>
+              {avatarHistory.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className={`text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Belum ada riwayat foto profil sebelumnya.
+                  </p>
                 </div>
               ) : (
-                // FORM EDIT PROFIL
-                <form onSubmit={handleSaveProfile} className="space-y-4 text-sm">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Nama Lengkap</label>
-                      <input 
-                        type="text" 
-                        value={tempProfile.name}
-                        onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })}
-                        className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                        required
-                      />
+                /* Ukuran thumbnail riwayat diperbesar dari w-16 h-16 menjadi w-20 h-20 */
+                <div className="flex flex-wrap gap-3 max-h-56 overflow-y-auto p-1">
+                  {avatarHistory.map((histUrl, idx) => (
+                    <div key={idx} className="w-30 h-30 rounded-xl overflow-hidden border-2 border-slate-600 shadow-sm relative group">
+                      <img src={histUrl} alt={`Riwayat ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setAvatarUrl(histUrl);
+                          await supabase.from('admins').update({ avatar_url: histUrl }).eq('id', ADMIN_ID);
+                          Swal.fire('Berhasil', 'Foto profil dikembalikan ke riwayat terpilih.', 'success');
+                        }}
+                        className="absolute inset-0 bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition font-semibold"
+                      >
+                        Gunakan
+                      </button>
                     </div>
-                    <div>
-                      <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Username</label>
-                      <input 
-                        type="text" 
-                        value={tempProfile.username}
-                        onChange={(e) => setTempProfile({ ...tempProfile, username: e.target.value })}
-                        className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</label>
-                      <input 
-                        type="email" 
-                        value={tempProfile.email}
-                        onChange={(e) => setTempProfile({ ...tempProfile, email: e.target.value })}
-                        className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tanggal Lahir (Umur otomatis terhitung)</label>
-                      <input 
-                        type="date" 
-                        value={tempProfile.birthDate}
-                        onChange={(e) => setTempProfile({ ...tempProfile, birthDate: e.target.value })}
-                        className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tahun Kelulusan</label>
-                    <input 
-                      type="text" 
-                      value={tempProfile.graduationYear}
-                      onChange={(e) => setTempProfile({ ...tempProfile, graduationYear: e.target.value })}
-                      className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bio / Deskripsi</label>
-                    <textarea 
-                      rows={3}
-                      value={tempProfile.bio}
-                      onChange={(e) => setTempProfile({ ...tempProfile, bio: e.target.value })}
-                      className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                    />
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <button 
-                      type="submit" 
-                      className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow transition"
-                    >
-                      <Save className="w-4 h-4" /> Simpan Perubahan
-                    </button>
-                  </div>
-                </form>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* FORM UBAH PASSWORD */}
-            <div className={`p-6 rounded-2xl border shadow-lg transition-colors ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
-              <h2 className={`text-base font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                <Lock className="w-4 h-4 text-indigo-500" /> Keamanan & Ubah Password
-              </h2>
-              
-              <form onSubmit={handlePasswordChange} className="space-y-4 text-sm">
-                <div>
-                  <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Password Saat Ini</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Password Baru</label>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                    />
-                  </div>
-                  <div>
-                    <label className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Konfirmasi Password Baru</label>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button 
-                    type="submit" 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}
-                  >
-                    <Lock className="w-4 h-4" /> Perbarui Password
-                  </button>
-                </div>
-              </form>
+          </div>
+        </div>
+        
+        {/* Bagian Detail Profil */}
+        <form onSubmit={handleSaveProfile} className={`p-6 rounded-2xl border shadow-sm space-y-4 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <h2 className="text-xl font-semibold mb-2">Detail Informasi</h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Nama Lengkap</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                required
+              />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-1">Username</label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                required
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                required
+              />
+            </div>
+
+            {/* Tanggal Lahir, Bulan, Tahun */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Tanggal Lahir</label>
+              <div className="grid grid-cols-3 gap-3">
+                <input
+                  type="number"
+                  name="birth_day"
+                  placeholder="Hari (1-31)"
+                  min="1"
+                  max="31"
+                  value={formData.birth_day}
+                  onChange={handleInputChange}
+                  className={`px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                />
+                <input
+                  type="number"
+                  name="birth_month"
+                  placeholder="Bulan (1-12)"
+                  min="1"
+                  max="12"
+                  value={formData.birth_month}
+                  onChange={handleInputChange}
+                  className={`px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                />
+                <input
+                  type="number"
+                  name="birth_year"
+                  placeholder="Tahun (YYYY)"
+                  value={formData.birth_year}
+                  onChange={handleInputChange}
+                  className={`px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <input
+                type="text"
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                placeholder="Contoh: Sedang aktif coding / Sibuk"
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Bio</label>
+              <textarea
+                name="bio"
+                rows="3"
+                value={formData.bio}
+                onChange={handleInputChange}
+                placeholder="Tuliskan sedikit tentang diri Anda..."
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+              ></textarea>
+            </div>
           </div>
 
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition shadow disabled:opacity-50"
+            >
+              {saving ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
+            </button>
+          </div>
+        </form>
+
+{/* Bagian Reset / Ubah Password */}
+<form onSubmit={handleUpdatePassword} className={`p-6 rounded-2xl border shadow-sm space-y-4 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+  <h2 className="text-xl font-semibold mb-2">Keamanan & Ubah Password</h2>
+  
+  <div className="space-y-4">
+    {/* Password Saat Ini */}
+    <div>
+      <label className="block text-sm font-medium mb-1">Password Saat Ini</label>
+      <div className="relative">
+        <input
+          type={showPassword.current ? "text" : "password"}
+          value={passwords.currentPassword}
+          onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+          className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+        >
+          {showPassword.current ? '👁️‍🗨️' : '👁️'}
+        </button>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Password Baru */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Password Baru</label>
+        <div className="relative">
+          <input
+            type={showPassword.new ? "text" : "password"}
+            value={passwords.newPassword}
+            onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+            className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+          >
+            {showPassword.new ? '👁️‍🗨️' : '👁️'}
+          </button>
         </div>
+      </div>
+
+      {/* Konfirmasi Password Baru */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Konfirmasi Password Baru</label>
+        <div className="relative">
+          <input
+            type={showPassword.confirm ? "text" : "password"}
+            value={passwords.confirmPassword}
+            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+            className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+          >
+            {showPassword.confirm ? '👁️‍🗨️️' : '👁️'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="flex justify-end pt-2">
+    <button
+      type="submit"
+      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition shadow"
+    >
+      Perbarui Password
+    </button>
+  </div>
+</form>
+
       </div>
     </div>
   );

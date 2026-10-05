@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-size: 100%; 
+  }
+
+  body {
+    background-color: #222D3D;
+    color: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* ==========================================
+/* Sembunyikan total banner Google agar tidak makan tempat */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0px !important;
+  width: 0px !important;
+  position: absolute !important;
+  top: -9999px !important;
+}
+
+/* Kunci total body agar tidak bergeser */
+body {
+  position: relative !important;
+  top: 0px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+}
+/* ==========================================
+   KUSTOMISASI WIDGET GOOGLE TRANSLATE (DARK MODE)
+   ================================---------- */
+
+#google_translate_element {
+  display: inline-block;
+}
+
+.goog-te-combo {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  padding: 6px 10px !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #334155 !important;
+  font-size: 0.75rem !important;
+  outline: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.goog-te-combo:hover {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+}
+
+.goog-logo-link, 
+.goog-te-gadget span, 
+.goog-te-gadget img {
+  display: none !important;
+}
+
+.goog-te-gadget {
+  color: transparent !important;
+  font-size: 0px !important;
+}
+
+/* ==========================================
+   PENYESUAIAN POSISI SIDEBAR & HEADER
+   ================================---------- */
+
+.sidebar-logo, 
+.brand-title {
+  margin-top: 0.25rem !important; 
+}
+
+/* Diberikan nilai 1rem agar ada jarak yang pas dan rapi di bawah header */
+aside, 
+.sidebar {
+  padding-top: 1rem !important; 
+}

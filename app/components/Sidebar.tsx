@@ -1,8 +1,12 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
 import { Home, User, Settings, Activity } from 'lucide-react'; // Tambahkan Activity di sini
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import Swal from 'sweetalert2';
+
+import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useSidebarTheme } from '@/app/context/SidebarThemeContext'; // Sesuaikan path-nya
@@ -11,15 +15,19 @@ import { FiShare2, FiDatabase, FiBarChart2,FiGlobe,FiBell,FiSettings, FiLogOut,F
 
 
 export default function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
-  const { setIsSidebarOpen } = useTheme();
-  const { mode, colorTheme, isSidebarOpen } = useTheme();
+  const { mode, colorTheme, isSidebarOpen, setIsSidebarOpen } = useTheme();
+  
+  // 👇 Letakkan isDark di SINI (setelah useTheme dipanggil)
+  const isDark = mode === 'dark';
+
   const { sidebarTheme, setSidebarTheme } = useSidebarTheme();
-// State lokal untuk menu tema dan menu admin (dipisah dengan benar)
+  
+  // State lokal...
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-
   const getSidebarStyle = () => {
     switch (sidebarTheme) {
       case 'sidebar-slate':
@@ -37,6 +45,81 @@ export default function Sidebar() {
         return 'bg-[#111827] text-white border-r border-gray-800';
     }
   };
+
+
+
+const handleLogout = () => {
+    // Tutup menu dropdown terlebih dahulu
+    setIsAdminMenuOpen(false);
+
+    // Konfirmasi sebelum keluar
+    Swal.fire({
+      title: 'Keluar Akun?',
+      text: 'Anda akan keluar dari sesi admin.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // 👇 Hapus data adminId dari localStorage agar sesi benar-benar bersih
+        localStorage.removeItem('adminId');
+        
+        // Atau jika ingin membersihkan seluruh localStorage:
+        // localStorage.clear();
+
+        // Arahkan ke halaman login
+        router.push('/login');
+      }
+    });
+  };
+
+
+
+
+
+const ADMIN_ID = '11111111-1111-1111-1111-111111111111';
+  
+  // 1. Tambahkan state untuk menyimpan data admin
+  const [adminData, setAdminData] = useState({
+    name: 'memuat....',
+    email: 'memuat....',
+    avatar_url: null,
+  });
+
+  // 2. Tambahkan useEffect untuk fetch data dari Supabase
+useEffect(() => {
+    const fetchLoggedInAdmin = async () => {
+      const currentAdminId = localStorage.getItem('adminId');
+      if (!currentAdminId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('admins')
+          .select('name, email, avatar_url')
+          .eq('id', currentAdminId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setAdminData({
+            name: data.name || 'Admin',
+            email: data.email || '',
+            avatar_url: data.avatar_url || '',
+          });
+        }
+      } catch (err) {
+        console.error('Gagal memuat info admin:', err.message);
+      }
+    };
+
+    fetchLoggedInAdmin();
+  }, []);
+
+
 
 // Jika fungsi dipanggil saat item menu diklik dengan membawa parameter path
 // Ubah fungsi Anda agar kompatibel dengan MouseEventHandler React
@@ -404,9 +487,13 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           )}
         </div>
 
-<Link href="/logout" className={getLinkStyle('/logout')} onClick={handleMenuClick}>
-  <FiLogOut size={18} className="mr-3" /> Login/Logout
-</Link>
+<button 
+      onClick={handleLogout}
+      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
+    >
+      <FiLogOut size={16} /> 
+      <span>🚪 Keluar (Logout)</span>
+    </button>
       </nav>
 
 
@@ -423,18 +510,51 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 {/* BAGIAN ATAS: Nama Admin & Tombol Setting dengan Dropdown */}
 <div className="p-6 flex flex-col space-y-6 relative">
-  <div className="flex items-center justify-between border-b border-white/10 pb-4 relative">
-    
-    {/* Info Nama Admin */}
-    <div className="flex items-center space-x-3">
-      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-md flex-shrink-0">
-        A
-      </div>
-      <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-white truncate">Maretsa</h3>
-        <span className="text-[10px] text-emerald-400 font-medium">● Online</span>
-      </div>
-    </div>
+      <div className="flex items-center justify-between border-b border-white/10 pb-4 relative">
+        
+        {/* 1. Profil Pengguna (Menggunakan Data Dinamis dari Supabase) */}
+        <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3 w-full">
+          
+          {/* Avatar Bulat (Bisa diklik untuk memunculkan SweetAlert) */}
+          <div 
+            onClick={() => {
+              Swal.fire({
+                title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + ' text-xl font-bold">Foto Profil</span>',
+                html: `
+                  <div class="flex flex-col items-center justify-center space-y-4 py-2">
+                    <div class="w-64 h-64 rounded-full bg-transparent overflow-hidden border-4 border-blue-500 shadow-2xl">
+                      <img src="${adminData.avatar_url || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-cover" />
+                    </div>
+                    <p class="text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}">${adminData.name}</p>
+                  </div>
+                `,
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: '550px',
+                background: 'transparent',
+                customClass: {
+                  popup: isDark ? '!bg-slate-900/90 backdrop-blur-md text-slate-100 border border-slate-800 rounded-3xl shadow-2xl p-6' : '!bg-white/90 backdrop-blur-md text-slate-900 rounded-3xl shadow-2xl p-6'
+                }
+              });
+            }}
+            className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0 border border-indigo-400 cursor-pointer group hover:opacity-90 transition"
+            title="Klik untuk melihat foto"
+          >
+            {adminData.avatar_url ? (
+              <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
+            )}
+          </div>
+
+          {/* Nama, Email, dan Status Online */}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
+            <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
+            <span className="text-[10px] text-emerald-400 font-medium inline-block mt-0.5">● Online</span>
+          </div>
+
+        </div>
 
     {/* Tombol Setting dengan Toggle Dropdown */}
     <button
@@ -465,7 +585,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 </Link>
 
 <Link 
-  href="/admin/security"
+  href="/dashboard/setting/change-password"
   onClick={() => setIsAdminMenuOpen(false)}
   className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
 >
@@ -475,15 +595,13 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
         <div className="border-t border-white/10 my-1"></div>
 
-        <button 
-          onClick={() => { 
-            setIsAdminMenuOpen(false); 
-          }}
-          className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
-        >
-          <FiLogOut size={16} /> 
-          <span>🚪 Keluar (Logout)</span>
-        </button>
+<button 
+      onClick={handleLogout}
+      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
+    >
+      <FiLogOut size={16} /> 
+      <span>🚪 Keluar (Logout)</span>
+    </button>
       </div>
     )}
 

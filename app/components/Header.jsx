@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import Swal from 'sweetalert2';
 import { useTheme } from '@/app/context/ThemeContext';
 import FontSizeDropdown from '@/app/components/FontSizeDropdown';
 import LanguageDropdown from '@/app/components/LanguageDropdown';
@@ -17,39 +20,76 @@ export default function Header() {
     setMounted(true);
   }, []);
 
+  const ADMIN_ID = '11111111-1111-1111-1111-111111111111'; // ID statis Anda
+  const [adminData, setAdminData] = useState({
+    name: 'memuat....',
+    email: 'memuat....',
+    avatar_url: null,
+  });
+
+useEffect(() => {
+    async function fetchAdminData() {
+      try {
+        // Ambil ID admin yang sedang login dari localStorage
+        const currentAdminId = localStorage.getItem('adminId');
+        
+        if (!currentAdminId) return; // Jika belum login, hentikan proses
+
+        const { data, error } = await supabase
+          .from('admins')
+          .select('name, email, avatar_url')
+          .eq('id', currentAdminId) // 👈 Gunakan variabel dari localStorage
+          .single();
+
+        if (data && !error) {
+          setAdminData({
+            name: data.name || 'Admin User',
+            email: data.email || 'admin@gmail.com',
+            avatar_url: data.avatar_url || null,
+          });
+        }
+      } catch (err) {
+        console.error('Gagal mengambil data admin:', err);
+      }
+    }
+
+    fetchAdminData();
+  }, []);
+
+  // 👇 VARIABEL INI WAJIB ADA AGAR TIDAK ERROR "isDark is not defined"
+  const isDark = mode === 'dark';
+
   return (
     <header className="h-20 bg-inherit border-b border-slate-700/35 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-10 backdrop-blur-md">
       {/* Bagian Kiri: Tombol Toggle Sidebar & Judul */}
+      <div className="flex items-center space-x-3 sm:space-x-4">
+        <button
+          type="button"
+          onClick={() => toggleSidebar()}
+          className="relative z-40 p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-200 transition-all cursor-pointer pointer-events-auto"
+          aria-label={isSidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+        >
+          {isSidebarOpen ? (
+            <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
 
-<div className="flex items-center space-x-3 sm:space-x-4">
-  <button
-    type="button"
-    onClick={() => toggleSidebar()}
-    className="relative z-40 p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-200 transition-all cursor-pointer pointer-events-auto"
-    aria-label={isSidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
-  >
-    {isSidebarOpen ? (
-      <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    ) : (
-      <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    )}
-  </button>
-
-  {/* Bagian judul dengan gambar ikon di sampingnya */}
-  <div className="flex items-center gap-2.5">
-
-    <h2 className="text-lg sm:text-xl font-bold tracking-wide">{t('dashboard')}</h2>
-        <img 
-      src="	https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80" 
-      alt="Dashboard Icon" 
-      className="w-15 h-15 object-contain" 
-    />
-  </div>
-</div>
+        {/* Bagian judul dengan gambar ikon di sampingnya */}
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg sm:text-xl font-bold tracking-wide">{t('dashboard')}</h2>
+          <img 
+            src="https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80" 
+            alt="Dashboard Icon" 
+            className="w-15 h-15 object-contain" 
+          />
+        </div>
+      </div>
 
       {/* Bagian Kanan: Desktop Menu */}
       <div className="hidden lg:flex items-center space-x-4">
@@ -68,11 +108,45 @@ export default function Header() {
         </button>
 
         <div className="flex items-center space-x-3 bg-slate-800/40 px-4 py-2 rounded-full border border-slate-700/50">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">A</div>
-          <div className="text-left">
-            <p className="text-xs font-semibold">Admin User</p>
-            <p className="text-[10px] text-slate-400">admin@gmail.com</p>
+          
+          {/* Bagian Avatar & SweetAlert */}
+          <div 
+            onClick={() => {
+              Swal.fire({
+                title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + ' text-xl font-bold">Foto Profil</span>',
+                html: `
+                  <div class="flex flex-col items-center justify-center space-y-4 py-2">
+                    <div class="w-64 h-64 rounded-full bg-transparent overflow-hidden border-4 border-blue-500 shadow-2xl">
+                      <img src="${adminData.avatar_url || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-cover" />
+                    </div>
+                    <p class="text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}">${adminData.name}</p>
+                  </div>
+                `,
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: '550px',
+                background: 'transparent',
+                customClass: {
+                  popup: isDark ? '!bg-slate-900/90 backdrop-blur-md text-slate-100 border border-slate-800 rounded-3xl shadow-2xl p-6' : '!bg-white/90 backdrop-blur-md text-slate-900 rounded-3xl shadow-2xl p-6'
+                }
+              });
+            }}
+            className="w-9 h-9 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center font-bold text-white text-sm border border-indigo-400 relative group cursor-pointer shrink-0"
+            title="Klik untuk melihat foto"
+          >
+            {adminData.avatar_url ? (
+              <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              adminData.name && adminData.name !== 'Memuat...' ? adminData.name.charAt(0).toUpperCase() : 'A'
+            )}
           </div>
+
+          {/* Bagian Teks Link */}
+          <Link href="/dashboard/setting/profile" className="text-left cursor-pointer group">
+            <p className="text-xs font-semibold text-slate-100 group-hover:text-blue-300 transition">{adminData.name}</p>
+            <p className="text-[10px] text-blue-400">{adminData.email}</p>
+          </Link>
+
         </div>
       </div>
 
@@ -90,19 +164,19 @@ export default function Header() {
         </button>
       </div>
 
-      {/* PORTAL DRAWER KANAN (Dirender di document.body agar menutupi seluruh layar secara penuh) */}
+      {/* PORTAL DRAWER KANAN (Mobile) */}
       {mounted && isRightMenuOpen && createPortal(
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          {/* Backdrop Gelap yang Menutup Seluruh Layar */}
+          {/* Backdrop Gelap */}
           <div 
             onClick={() => setIsRightMenuOpen(false)}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm"
           />
 
-          {/* Panel Samping Kanan Penuh dari Atas ke Bawah */}
+          {/* Panel Samping Kanan */}
           <div className="fixed top-0 right-0 bottom-0 w-72 bg-[#1B2A35] border-l border-slate-700 shadow-2xl p-6 flex flex-col z-50 text-white overflow-y-auto ml-auto">
             
-            {/* Header Panel Kanan: Judul & Tombol Close */}
+            {/* Header Panel Kanan */}
             <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-700">
               <h3 className="text-base font-bold text-white">Pengaturan Menu</h3>
               <button
@@ -117,14 +191,18 @@ export default function Header() {
             {/* KONTEN UTAMA */}
             <div className="flex flex-col space-y-5">
               
-              {/* 1. Profil Pengguna */}
+              {/* 1. Profil Pengguna (Menggunakan Data Supabase) */}
               <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base">
-                  A
+                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0">
+                  {adminData.avatar_url ? (
+                    <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Admin User</p>
-                  <p className="text-xs text-slate-400">admin@gmail.com</p>
+                <div className="overflow-hidden">
+                  <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
                 </div>
               </div>
 
