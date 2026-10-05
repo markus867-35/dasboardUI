@@ -61,15 +61,20 @@ useEffect(() => {
     checkUserAndFetchProfile();
   }, []);
 
+
+
+
 const checkUserAndFetchProfile = async () => {
   try {
     setLoading(true);
 
-    // Ambil ID dari localStorage yang disimpan saat login
+    // Ambil ID dari localStorage
     const currentUserId = localStorage.getItem('adminId');
 
+    // Jika tidak ada ID login, langsung tendang ke halaman login
     if (!currentUserId) {
-      throw new Error('Sesi login tidak ditemukan. Silakan login kembali.');
+      router.push('/login');
+      return;
     }
 
     setAdminId(currentUserId);
@@ -81,29 +86,31 @@ const checkUserAndFetchProfile = async () => {
       .eq('id', currentUserId)
       .single();
 
-    if (dbError) throw dbError;
-
-    if (data) {
-setFormData({
-  name: data.name || '',
-  username: data.username || '',
-  email: data.email || '',
-  birth_day: data.birth_day ?? '',     // Gunakan ?? '' jika nilainya null/undefined
-  birth_month: data.birth_month ?? '', 
-  birth_year: data.birth_year ?? '',   
-  status: data.status || '',
-  bio: data.bio || '',
-});
-      setInitialAdminData(data);
-      setAvatarUrl(data.avatar_url || '');
-      setAvatarHistory(data.avatar_history || []);
+    if (dbError || !data) {
+      throw new Error('Sesi tidak valid atau data admin tidak ditemukan.');
     }
-} catch (err: any) {
-  console.error('Gagal memuat profil:', err.message);
-  Swal.fire('Oops!', err.message || 'Terjadi kesalahan', 'error').then(() => {
-    router.push('/login');
-  });
-}finally {
+
+    setFormData({
+      name: data.name || '',
+      username: data.username || '',
+      email: data.email || '',
+      birth_day: data.birth_day ?? '',
+      birth_month: data.birth_month ?? '',
+      birth_year: data.birth_year ?? '',
+      status: data.status || '',
+      bio: data.bio || '',
+    });
+    setInitialAdminData(data);
+    setAvatarUrl(data.avatar_url || '');
+    setAvatarHistory(data.avatar_history || []);
+
+  } catch (err: any) {
+    console.error('Gagal memuat profil:', err.message);
+    Swal.fire('Sesi Berakhir', err.message || 'Silakan login kembali', 'warning').then(() => {
+      localStorage.removeItem('adminId'); // Bersihkan sisa data invalid
+      router.push('/login'); // Lempar ke halaman login
+    });
+  } finally {
     setLoading(false);
   }
 };
@@ -505,12 +512,12 @@ const uploadAndSaveAvatar = async (file: File) => {
               </div>
             </div>
 
-            {/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
+{/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
             <div className="flex flex-col justify-between h-full p-4 rounded-xl border border-slate-700/30 bg-slate-800/20">
               <div>
                 <h3 className="text-md font-medium mb-2">Riwayat Foto Sebelumnya</h3>
                 <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Klik "Gunakan" pada salah satu foto di bawah untuk memasangnya kembali secara instan.
+                  Klik "Gunakan" untuk memasang foto atau "Hapus" untuk membuangnya dari riwayat.
                 </p>
               </div>
 
@@ -521,22 +528,54 @@ const uploadAndSaveAvatar = async (file: File) => {
                   </p>
                 </div>
               ) : (
-                /* Ukuran thumbnail riwayat diperbesar dari w-16 h-16 menjadi w-20 h-20 */
                 <div className="flex flex-wrap gap-3 max-h-56 overflow-y-auto p-1">
                   {avatarHistory.map((histUrl, idx) => (
                     <div key={idx} className="w-30 h-30 rounded-xl overflow-hidden border-2 border-slate-600 shadow-sm relative group">
                       <img src={histUrl} alt={`Riwayat ${idx + 1}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setAvatarUrl(histUrl);
-                          await supabase.from('admins').update({ avatar_url: histUrl }).eq('id', ADMIN_ID);
-                          Swal.fire('Berhasil', 'Foto profil dikembalikan ke riwayat terpilih.', 'success');
-                        }}
-                        className="absolute inset-0 bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition font-semibold"
-                      >
-                        Gunakan
-                      </button>
+                      
+                      {/* Container Tombol Aksi saat Hover */}
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition p-1">
+                        {/* Tombol Gunakan */}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setAvatarUrl(histUrl);
+                            await supabase.from('admins').update({ avatar_url: histUrl }).eq('id', adminId);
+                            Swal.fire('Berhasil', 'Foto profil dikembalikan ke riwayat terpilih.', 'success');
+                          }}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                        >
+                          Gunakan
+                        </button>
+
+                        {/* Tombol Hapus */}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            // Filter keluar URL yang ingin dihapus dari array riwayat
+                            const updatedHistory = avatarHistory.filter((item) => item !== histUrl);
+
+                            // Perbarui state lokal
+                            setAvatarHistory(updatedHistory);
+
+                            // Jika foto yang dihapus sedang aktif sebagai avatar utama, Anda bisa memilih untuk mengosongkannya atau membiarkannya
+                            // Update ke database Supabase
+                            const { error } = await supabase
+                              .from('admins')
+                              .update({ avatar_history: updatedHistory })
+                              .eq('id', adminId);
+
+                            if (error) {
+                              Swal.fire('Gagal', 'Gagal menghapus riwayat foto dari database.', 'error');
+                            } else {
+                              Swal.fire('Terhapus', 'Foto berhasil dihapus dari riwayat.', 'success');
+                            }
+                          }}
+                          className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
