@@ -1,34 +1,51 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation'; // 1. Pastikan diimport
 import { useTheme } from '@/app/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import Swal from 'sweetalert2';
 
+
+// 1. Definisikan interface profil admin
+interface AdminProfile {
+  name?: string;
+  username?: string;
+  email?: string;
+  birth_day?: string;
+  birth_month?: string;
+  birth_year?: string;
+  status?: string;
+  bio?: string;
+  avatar_url?: string;
+  avatar_history?: string[];
+}
+
 export default function ProfilePage() {
+  const router = useRouter();
   const { mode } = useTheme();
   const isDark = mode === 'dark';
-  const [adminId, setAdminId] = useState(null);
+ const [adminId, setAdminId] = useState<string | null>(null);
 
   // ID Dummy tetap (karena belum ada pengecekan Auth sesuai permintaan)
   const ADMIN_ID = '11111111-1111-1111-1111-111111111111';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [initialAdminData, setInitialAdminData] = useState({});
+ const [initialAdminData, setInitialAdminData] = useState<AdminProfile>({});
 
   // Form State Detail Profil
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    birth_day: '',
-    birth_month: '',
-    birth_year: '',
-    status: '',
-    bio: '',
-  });
+const [formData, setFormData] = useState<AdminProfile>({
+  name: '',
+  username: '',
+  email: '',
+  birth_day: '',
+  birth_month: '',
+  birth_year: '',
+  status: '',
+  bio: '',
+});
 
   // Password State
   const [passwords, setPasswords] = useState({
@@ -84,12 +101,12 @@ const checkUserAndFetchProfile = async () => {
       setAvatarUrl(data.avatar_url || '');
       setAvatarHistory(data.avatar_history || []);
     }
-  } catch (err) {
-    console.error('Gagal memuat profil:', err.message);
-    Swal.fire('Oops!', err.message, 'error').then(() => {
-      router.push('/login');
-    });
-  } finally {
+} catch (err: any) {
+  console.error('Gagal memuat profil:', err.message);
+  Swal.fire('Oops!', err.message || 'Terjadi kesalahan', 'error').then(() => {
+    router.push('/login');
+  });
+}finally {
     setLoading(false);
   }
 };

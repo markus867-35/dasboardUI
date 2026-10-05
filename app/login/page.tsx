@@ -56,8 +56,10 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
   }
 };
 
-  // Handler Sign Up
-  const handleSignUp = async (e) => {
+
+
+// Handler Sign Up
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => { // 👈 Tambahkan tipe di sini
     e.preventDefault();
     setLoading(true);
     try {
@@ -81,8 +83,8 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
       Swal.fire('Berhasil!', 'Akun berhasil dibuat, silakan Sign In.', 'success');
       setIsSignUp(false); // Geser ke panel Sign In
       setSignUpData({ name: '', email: '', password: '' });
-    } catch (err) {
-      Swal.fire('Gagal!', err.message, 'error');
+    } catch (err: any) { // 👈 Tambahkan : any di sini
+      Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat pendaftaran.', 'error');
     } finally {
       setLoading(false);
     }
