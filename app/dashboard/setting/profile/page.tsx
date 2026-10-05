@@ -252,7 +252,7 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 };
 
   // SweetAlert interaktif untuk mengatur posisi foto (geser kiri, kanan, atas, bawah)
-  const openCropSweetAlert = (imageSrc, fileObject) => {
+  const openCropSweetAlert = (imageSrc: string, fileObject: File) => {
     let posX = 50; // posisi persentase X (0-100)
     let posY = 50; // posisi persentase Y (0-100)
     let zoom = 100; // skala zoom (%)
@@ -405,9 +405,9 @@ const uploadAndSaveAvatar = async (file: File) => {
     setAvatarHistory(updatedHistory);
 
     Swal.fire('Berhasil!', 'Foto profil berhasil disimpan dan diperbarui.', 'success');
-  } catch (err) {
-    Swal.fire('Gagal Upload!', err.message, 'error');
-  }
+} catch (err: any) {
+  Swal.fire('Gagal!', err.message || 'Terjadi kesalahan', 'error');
+}
 };
 
   if (loading) {
