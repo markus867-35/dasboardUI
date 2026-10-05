@@ -1,33 +1,30 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from '@/app/context/ThemeContext';
 
-const ThemeContext = createContext<any>(null);
+const inter = Inter({ subsets: ['latin'] });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState('dark');
-  const [colorTheme, setColorTheme] = useState('navy');
-  const [mounted, setMounted] = useState(false);
+export const metadata: Metadata = {
+  title: 'Data-save-Markus',
+  description: 'Aplikasi Dashboard & Manajemen Data',
+};
 
-  // Jalankan pembacaan localStorage HANYA setelah komponen terpasang di klien
-  useEffect(() => {
-    setMounted(true);
-    const savedMode = localStorage.getItem('theme_mode');
-    const savedColor = localStorage.getItem('color_theme');
-    if (savedMode) setMode(savedMode);
-    if (savedColor) setColorTheme(savedColor);
-  }, []);
-
-  // Mencegah render tema mentah di server yang memicu Error #418
-  if (!mounted) {
-    return <>{children}</>; 
-  }
-
+// 🔴 PASTIKAN ADA KATA "default" DI SINI
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <ThemeContext.Provider value={{ mode, setMode, colorTheme, setColorTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <html lang="en">
+      <body className={inter.className}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }
-
-export const useTheme = () => useContext(ThemeContext);
