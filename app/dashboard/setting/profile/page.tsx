@@ -35,8 +35,16 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
  const [initialAdminData, setInitialAdminData] = useState<AdminProfile>({});
 
-  // Form State Detail Profil
-const [formData, setFormData] = useState<AdminProfile>({
+const [formData, setFormData] = useState<{
+  name?: string;
+  username?: string;
+  email?: string;
+  birth_day?: number | string;
+  birth_month?: number | string;
+  birth_year?: number | string;
+  status?: string;
+  bio?: string;
+}>({
   name: '',
   username: '',
   email: '',
