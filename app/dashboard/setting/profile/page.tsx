@@ -105,14 +105,13 @@ const checkUserAndFetchProfile = async () => {
 
 
 
-
-const handleSaveProfile = async (e) => {
+const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   if (!adminId) return; // Pastikan ID ada
   setSaving(true);
   try {
-      // 1. Deteksi perubahan dengan membandingkan string secara aman (mengatasi perbedaan tipe data/null/undefined)
-      const changedFields = [];
+      // 1. Deteksi perubahan dengan membandingkan string secara aman
+      const changedFields: string[] = [];
       
       if (String(formData.name || '') !== String(initialAdminData.name || '')) changedFields.push('Nama Lengkap');
       if (String(formData.username || '') !== String(initialAdminData.username || '')) changedFields.push('Username');
@@ -126,33 +125,42 @@ const handleSaveProfile = async (e) => {
         ? `Memperbarui bagian: ${changedFields.join(', ')}`
         : 'Memperbarui informasi profil admin';
 
-const { error } = await supabase
-      .from('admins')
-      .update({
-        ...formData,
-        updated_at: new Date(),
-      })
-      .eq('id', adminId); // 👈 Gunakan adminId dinamis
+      const { error } = await supabase
+        .from('admins')
+        .update({
+          ...formData,
+          updated_at: new Date(),
+        })
+        .eq('id', adminId); // 👈 Gunakan adminId dinamis
 
-    if (error) throw error;
+      if (error) throw error;
 
       // 2. Catat log dengan teks deskripsi yang sudah difilter akurat
-      logActivity(
-        'Profile',
-        description,
-        'update'
-      );
+      if (typeof logActivity === 'function') {
+        logActivity(
+          'Profile',
+          description,
+          'update'
+        );
+      }
 
       // 3. Perbarui initialAdminData agar setelah disimpan, data ini jadi acuan baru lagi
       setInitialAdminData({ ...formData });
 
       Swal.fire('Berhasil!', 'Detail profil berhasil diperbarui.', 'success');
-    } catch (err) {
-      Swal.fire('Gagal!', err.message, 'error');
-    } finally {
+  } catch (err: any) {
+      Swal.fire('Gagal!', err.message || 'Terjadi kesalahan', 'error');
+  } finally {
       setSaving(false);
-    }
-  };
+  }
+};
+
+
+
+
+
+
+
 
   // Handle Ubah Password
   const handleUpdatePassword = async (e) => {

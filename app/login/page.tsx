@@ -24,7 +24,7 @@ export default function AuthPage() {
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Handler Sign In
-  const handleSignIn = async (e) => {
+const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
