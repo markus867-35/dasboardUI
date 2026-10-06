@@ -11,19 +11,19 @@ export default function AuthPage() {
   const isDark = mode === 'dark';
   const router = useRouter();
 
-  // State untuk melacak posisi panel (true = Sign Up di kanan, false = Sign In di kiri)
+  // State untuk melacak posisi panel (true = DAFTAR di kanan, false = LOGIN di kiri)
   const [isSignUp, setIsSignUp] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // State Form Sign In
+  // State Form LOGIN
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [showSignInPassword, setShowSignInPassword] = useState(false);
 
-  // State Form Sign Up
+  // State Form DAFTAR
   const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-// Handler Sign In
+// Handler LOGIN
 const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   setLoading(true);
@@ -58,7 +58,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
 
 
 
-// Handler Sign Up
+// Handler DAFTAR
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => { // 👈 Tambahkan tipe di sini
     e.preventDefault();
     setLoading(true);
@@ -80,8 +80,8 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
 
       if (error) throw error;
 
-      Swal.fire('Berhasil!', 'Akun berhasil dibuat, silakan Sign In.', 'success');
-      setIsSignUp(false); // Geser ke panel Sign In
+      Swal.fire('Berhasil!', 'Akun berhasil dibuat, silakan LOGIN.', 'success');
+      setIsSignUp(false); // Geser ke panel LOGIN
       setSignUpData({ name: '', email: '', password: '' });
     } catch (err: any) { // 👈 Tambahkan : any di sini
       Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat pendaftaran.', 'error');
@@ -95,11 +95,11 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
       {/* Container Utama Box */}
       <div className={`relative w-[850px] h-[520px] rounded-3xl shadow-2xl overflow-hidden flex transition-colors duration-200 ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
         
-        {/* --- FORM SIGN IN (Di Kiri) --- */}
+        {/* --- FORM LOGIN (Di Kiri) --- */}
         <div className={`absolute top-0 left-0 w-1/2 h-full flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out ${!isSignUp ? 'opacity-100 z-25 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
-          <h2 className="text-3xl font-bold mb-4">Sign In</h2>
+          <h2 className="text-3xl font-bold mb-4">LOGIN</h2>
           
-          <span className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>Sign in With Email & Password</span>
+          <span className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>LOGIN With Email & Password</span>
 
           <form onSubmit={handleSignIn} className="w-full space-y-3">
             <div className="relative">
@@ -142,13 +142,13 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
               disabled={loading}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 disabled:opacity-50"
             >
-              {loading ? 'Proses...' : 'SIGN IN'}
+              {loading ? 'Proses...' : 'LOGIN'}
             </button>
           </form>
         </div>
 
 
-        {/* --- FORM SIGN UP (Di Kanan) --- */}
+        {/* --- FORM DAFTAR (Di Kanan) --- */}
         <div className={`absolute top-0 right-0 w-1/2 h-full flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out ${isSignUp ? 'opacity-100 z-25 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
           <h2 className="text-3xl font-bold mb-4">Create Account</h2>
 
@@ -203,17 +203,22 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
               disabled={loading}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 mt-2 disabled:opacity-50"
             >
-              {loading ? 'Memproses...' : 'SIGN UP'}
+              {loading ? 'Memproses...' : 'DAFTAR'}
             </button>
           </form>
         </div>
 
 
-        {/* --- PANEL GESER (SLIDING RED PANEL) --- */}
+{/* --- PANEL GESER (SLIDING PANEL DENGAN BACKGROUND DINAMIS) --- */}
         <div 
-          className={`absolute top-0 left-0 w-1/2 h-full bg-red-600 text-white flex flex-col items-center justify-center p-8 text-center z-30 transition-transform duration-700 ease-in-out shadow-lg ${
+          className={`absolute top-0 left-0 w-1/2 h-full text-white flex flex-col items-center justify-center p-8 text-center z-30 transition-transform duration-700 ease-in-out shadow-lg bg-cover bg-center ${
             isSignUp ? 'translate-x-0' : 'translate-x-full'
           }`}
+          style={{ 
+            backgroundImage: isSignUp 
+              ? `url('https://ik.imagekit.io/j72i7hsy1/13.jpg?updatedAt=1785034895884')` 
+              : `url('https://ik.imagekit.io/j72i7hsy1/d2c96ac30d42e9157e313fe4e2cee952%20(1).jpg')` 
+          }}
         >
           {isSignUp ? (
             <div>
@@ -223,7 +228,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
                 onClick={() => setIsSignUp(false)}
                 className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300"
               >
-                SIGN IN
+                LOGIN
               </button>
             </div>
           ) : (
@@ -234,7 +239,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
                 onClick={() => setIsSignUp(true)}
                 className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300"
               >
-                SIGN UP
+                DAFTAR
               </button>
             </div>
           )}
