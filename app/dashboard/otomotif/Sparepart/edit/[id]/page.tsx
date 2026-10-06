@@ -25,7 +25,7 @@ export default function FormEditSparepartPage() {
   const [description, setDescription] = useState('');
   const [position, setPosition] = useState('Sistem Rem'); // Disimpan di kolom position
   const [material, setMaterial] = useState('Kampas Karbon'); // Disimpan di kolom diameter
-  const [sparepartType, setSparepartType] = useState('Original'); // Disimpan di kolom tire_type
+  const [SparepartType, setSparepartType] = useState('Original'); // Disimpan di kolom tire_type
   const [sni, setSni] = useState('');
 
   // Multi-Foto Array
@@ -37,15 +37,15 @@ export default function FormEditSparepartPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sparepartBrands = ['Honda Genuine', 'Yamaha Genuine', 'NISSIN', 'KTC Kytaco', 'RCB', 'SSW', 'Daytona', 'TDR'];
-  const sparepartSubCategories = [
+  const SparepartBrands = ['Honda Genuine', 'Yamaha Genuine', 'NISSIN', 'KTC Kytaco', 'RCB', 'SSW', 'Daytona', 'TDR'];
+  const SparepartSubCategories = [
     'Kampas Rem & Piringan', 
     'Rantai & Sprocket', 
     'Filter Udara & Oli', 
     'Busi & Kelistrikan'
   ];
 
-  // Ambil data sparepart berdasarkan ID saat halaman dimuat
+  // Ambil data Sparepart berdasarkan ID saat halaman dimuat
   useEffect(() => {
     if (id) {
       fetchSparepartDetail();
@@ -76,7 +76,7 @@ export default function FormEditSparepartPage() {
         setBuyPrice(data.buy_price ?? '');
         setSellPrice(data.sell_price ?? '');
         
-        // Mengisi data spesifikasi & deskripsi sparepart
+        // Mengisi data spesifikasi & deskripsi Sparepart
         setDescription(data.description || '');
         setPosition(data.position || 'Sistem Rem');
         setMaterial(data.diameter || 'Kampas Karbon');
@@ -93,9 +93,9 @@ export default function FormEditSparepartPage() {
         }
       }
     } catch (err: any) {
-      console.error('Gagal mengambil data sparepart:', err);
-      alert('Data sparepart tidak ditemukan.');
-      router.push('/dashboard/otomotif/sparepart');
+      console.error('Gagal mengambil data Sparepart:', err);
+      alert('Data Sparepart tidak ditemukan.');
+      router.push('/dashboard/otomotif/Sparepart');
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function FormEditSparepartPage() {
       setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = `sparepart/${fileName}`;
+      const filePath = `Sparepart/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
@@ -169,7 +169,7 @@ export default function FormEditSparepartPage() {
       description: description.trim(),
       position: position.trim(),
       diameter: material.trim(),     // Menyimpan material ke kolom diameter
-      tire_type: sparepartType.trim(), // Menyimpan jenis tipe ke kolom tire_type
+      tire_type: SparepartType.trim(), // Menyimpan jenis tipe ke kolom tire_type
       sni: sni.trim(),
       image_url: imageUrls
     };
@@ -182,8 +182,8 @@ export default function FormEditSparepartPage() {
 
       if (error) throw error;
       
-      alert('Data sparepart berhasil diperbarui!');
-      router.push(`/dashboard/otomotif/sparepart/detail/${id}`);
+      alert('Data Sparepart berhasil diperbarui!');
+      router.push(`/dashboard/otomotif/Sparepart/detail/${id}`);
     } catch (err: any) {
       console.error('Gagal memperbarui:', err);
       alert(`Terjadi kesalahan: ${err.message || 'Unknown error'}`);
@@ -200,7 +200,7 @@ export default function FormEditSparepartPage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-xs opacity-60">Memuat data sparepart untuk diedit...</div>
+      <div className="p-12 text-center text-xs opacity-60">Memuat data Sparepart untuk diedit...</div>
     );
   }
 
@@ -252,7 +252,7 @@ export default function FormEditSparepartPage() {
                 onChange={(e) => setBrand(e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
               >
-                {sparepartBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                {SparepartBrands.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
           </div>
@@ -265,7 +265,7 @@ export default function FormEditSparepartPage() {
                 onChange={(e) => setCategory(e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
               >
-                {sparepartSubCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                {SparepartSubCategories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
@@ -347,7 +347,7 @@ export default function FormEditSparepartPage() {
               value={description} 
               onChange={(e) => setDescription(e.target.value)} 
               rows={3}
-              placeholder="Tulis deskripsi kualitas sparepart..." 
+              placeholder="Tulis deskripsi kualitas Sparepart..." 
               className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none resize-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
             />
           </div>
