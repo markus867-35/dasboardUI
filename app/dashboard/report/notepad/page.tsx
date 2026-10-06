@@ -1,17 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase'; // <-- Cukup gunakan ini saja
 import { useTheme } from '@/app/context/ThemeContext'; 
 import { 
   Folder, FolderPlus, FileText, Plus, Trash2, Edit3, 
-  Save, X, ChevronRight, Menu, Search 
+  Save, X, ChevronRight, Menu, Search, Table as TableIcon, Image as ImageIcon, Bold, Italic, List, ListOrdered 
 } from 'lucide-react';
 
-// Inisialisasi Supabase Client (Sesuaikan dengan file config Anda jika ada)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Import TipTap untuk Rich Text Editor (Tabel & Gambar)
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { Image } from '@tiptap/extension-image';
+
+// HAPUS baris-baris ini karena 'supabase' sudah diimpor di atas:
+// const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+// const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface FolderType {
   id: string;
@@ -24,6 +33,189 @@ interface NoteType {
   title: string;
   content: string;
   updated_at: string;
+}
+
+function NoteEditorComponent({ content, onChange, isDark }: { content: string; onChange: (html: string) => void; isDark: boolean }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image.configure({
+        allowBase64: true,
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    content: content,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML()); // <-- Diubah menggunakan prop onChange agar tersinkronisasi ke parent
+    },
+    editorProps: {
+      attributes: {
+        class: `prose max-w-none focus:outline-none min-h-[400px] p-4 ${isDark ? 'text-slate-200 prose-invert' : 'text-slate-800'}`,
+      },
+      // Penanganan Paste: Upload gambar otomatis ke Supabase Storage
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (const item of items) {
+          if (item.type.indexOf('image') === 0) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) continue;
+
+            // Proses upload ke Supabase Storage secara asinkron
+(async () => {
+            try {
+              const fileName = `note-img-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+              console.log("Mulai mengunggah file:", fileName); // Cek apakah ini muncul di console
+
+              const { data, error } = await supabase.storage
+                .from('notes-images')
+                .upload(fileName, file);
+
+              if (error) {
+                console.error("Detail Error Supabase Storage:", error); // Cek error spesifik dari Supabase
+                throw error;
+              }
+
+              console.log("Upload berhasil, mengambil Public URL...");
+              const { data: { publicUrl } } = supabase.storage
+                .from('notes-images')
+                .getPublicUrl(fileName);
+
+              console.log("Public URL didapat:", publicUrl);
+
+              editor?.chain().focus().setImage({ src: publicUrl }).run();
+
+              if (editor) {
+                onChange(editor.getHTML());
+              }
+            } catch (err) {
+              console.error('Gagal total saat mengunggah gambar:', err);
+              alert('Gagal mengunggah gambar ke server. Cek Console F12.');
+            }
+          })();
+
+            return true;
+          }
+        }
+        return false;
+      },
+    },
+  });
+
+useEffect(() => {
+  // Hanya set content jika editor kosong atau ID/catatan utamanya berganti, 
+  // atau pastikan tidak menimpa state lokal yang sedang aktif.
+  if (editor && content !== editor.getHTML()) {
+    // Cek apakah perbedaannya murni karena sinkronisasi internal
+    const isDifferent = editor.getHTML() !== content;
+    if (isDifferent) {
+      editor.commands.setContent(content || '', false); // parameter 'false' mencegah reset kursor berlebih
+    }
+  }
+}, [content, editor]);
+
+  return (
+    <div className={`flex flex-col flex-1 w-full h-full border rounded-lg overflow-hidden ${isDark ? 'border-slate-700/60 bg-slate-900/50' : 'border-slate-300 bg-white'}`}>
+      
+      <style jsx global>{`
+        .ProseMirror table {
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          margin: 0;
+          overflow: hidden;
+        }
+        .ProseMirror td, .ProseMirror th {
+          min-width: 1em;
+          border: 2px solid ${isDark ? '#475569' : '#cbd5e1'};
+          padding: 6px 8px;
+          vertical-align: top;
+          box-sizing: border-box;
+          position: relative;
+        }
+        .ProseMirror th {
+          font-weight: bold;
+          background-color: ${isDark ? '#1e293b' : '#f1f5f9'};
+        }
+        .ProseMirror img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 6px;
+          margin: 8px 0;
+        }
+        .ProseMirror .selectedCell:after {
+          z-index: 2;
+          position: absolute;
+          content: "";
+          left: 0; right: 0; top: 0; bottom: 0;
+          background: rgba(99, 102, 241, 0.15);
+          pointer-events: none;
+        }
+      `}</style>
+
+      {/* Toolbar Editor dengan Tombol Kontrol Tabel Tambahan */}
+      <div className={`flex flex-wrap items-center gap-1.5 p-2 border-b ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-100 border-slate-200'}`}>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={`p-1.5 rounded text-xs transition ${editor?.isActive('bold') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+          title="Bold"
+        >
+          <Bold className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={`p-1.5 rounded text-xs transition ${editor?.isActive('italic') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+          title="Italic"
+        >
+          <Italic className="w-4 h-4" />
+        </button>
+        <div className={`w-[1px] h-5 mx-1 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+          title="Sisipkan Tabel"
+        >
+          <TableIcon className="w-3.5 h-3.5 text-indigo-400" /> + Tabel
+        </button>
+        
+{/* Tombol Hapus Tabel */}
+{editor?.can().deleteTable() && (
+  <button
+    type="button"
+    onClick={() => editor?.chain().focus().deleteTable().run()}
+    className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 transition border border-red-500/30"
+    title="Hapus Tabel Keseluruhan"
+  >
+    Hapus Tabel
+  </button>
+)}
+
+        <button
+          type="button"
+          onClick={() => {
+            const url = prompt('Masukkan URL Gambar:');
+            if (url) editor?.chain().focus().setImage({ src: url }).run();
+          }}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+          title="Sisipkan Gambar via URL"
+        >
+          <ImageIcon className="w-3.5 h-3.5 text-emerald-400" /> + Gambar
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto cursor-text p-2">
+        <EditorContent editor={editor} />
+      </div>
+    </div>
+  );
 }
 
 export default function NoteManagerPage() {
@@ -46,7 +238,6 @@ export default function NoteManagerPage() {
   const [noteContent, setNoteContent] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-
 
   const { mode } = useTheme(); 
   const isDark = mode === 'dark';
@@ -191,7 +382,6 @@ export default function NoteManagerPage() {
     if (error) {
       alert('Gagal menyimpan catatan!');
     } else {
-      // Perbarui state lokal
       setSelectedNote({ ...selectedNote, content: noteContent });
     }
   };
@@ -231,7 +421,7 @@ export default function NoteManagerPage() {
     n.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-return (
+  return (
     <div className={`flex h-screen overflow-hidden font-sans ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#111827] text-slate-100'}`}>
       
       {/* SIDEBAR: FOLDERS */}
@@ -241,6 +431,7 @@ return (
             <Folder className="w-5 h-5 text-indigo-400" /> Daftar Folder
           </h1>
           <button 
+            type="button"
             onClick={() => setIsCreatingFolder(true)}
             className="p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition"
             title="Buat Folder Baru"
@@ -281,8 +472,8 @@ return (
                     autoFocus
                   />
                   <div className="flex justify-end gap-1">
-                    <button onClick={() => setEditingFolderId(null)} className="px-2 py-0.5 text-xs text-slate-400">Batal</button>
-                    <button onClick={() => handleUpdateFolder(folder.id)} className="px-2 py-0.5 bg-indigo-600 text-xs rounded text-white">Ubah</button>
+                    <button type="button" onClick={() => setEditingFolderId(null)} className="px-2 py-0.5 text-xs text-slate-400">Batal</button>
+                    <button type="button" onClick={() => handleUpdateFolder(folder.id)} className="px-2 py-0.5 bg-indigo-600 text-xs rounded text-white">Ubah</button>
                   </div>
                 </div>
               ) : (
@@ -296,6 +487,7 @@ return (
                   </div>
                   <div className="hidden group-hover:flex items-center gap-1">
                     <button 
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); setEditingFolderId(folder.id); setEditedFolderName(folder.name); }}
                       className="p-1 text-slate-400 hover:text-indigo-400 rounded"
                       title="Edit Nama Folder"
@@ -303,6 +495,7 @@ return (
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button 
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
                       className="p-1 text-slate-400 hover:text-red-400 rounded"
                       title="Hapus Folder"
@@ -325,6 +518,7 @@ return (
         <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-slate-700/60' : 'border-slate-200'}`}>
           <h2 className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Daftar Catatan</h2>
           <button 
+            type="button"
             disabled={!selectedFolderId}
             onClick={() => setIsCreatingNote(true)}
             className="p-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg text-white transition"
@@ -378,10 +572,11 @@ return (
                 <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${selectedNote?.id === note.id ? 'text-amber-400' : 'text-slate-400'}`} />
                 <div className="truncate">
                   <p className="text-sm font-medium truncate">{note.title}</p>
-                  <p className="text-[11px] text-slate-400 truncate">{note.content || 'Kosong'}</p>
+                  <p className="text-[11px] text-slate-400 truncate">{note.content ? note.content.replace(/<[^>]*>?/gm, '') : 'Kosong'}</p>
                 </div>
               </div>
               <button 
+                type="button"
                 onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
                 className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 rounded transition"
                 title="Hapus Catatan"
@@ -413,8 +608,8 @@ return (
                       className={`px-2.5 py-1 text-sm border border-indigo-500 rounded focus:outline-none ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}
                       autoFocus
                     />
-                    <button onClick={handleUpdateNoteTitle} className="px-3 py-1 bg-indigo-600 text-xs rounded text-white hover:bg-indigo-500">Simpan</button>
-                    <button onClick={() => setIsEditingNoteTitle(false)} className="px-2 py-1 text-xs text-slate-400">Batal</button>
+                    <button type="button" onClick={handleUpdateNoteTitle} className="px-3 py-1 bg-indigo-600 text-xs rounded text-white hover:bg-indigo-500">Simpan</button>
+                    <button type="button" onClick={() => setIsEditingNoteTitle(false)} className="px-2 py-1 text-xs text-slate-400">Batal</button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { setIsEditingNoteTitle(true); setEditedNoteTitle(selectedNote.title); }}>
@@ -426,6 +621,7 @@ return (
 
               {/* Tombol Simpan Manual */}
               <button 
+                type="button"
                 onClick={handleSaveNoteContent}
                 disabled={loading}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg transition"
@@ -434,13 +630,12 @@ return (
               </button>
             </div>
 
-            {/* Area Teks Notepad */}
+            {/* Area Editor Tiptap (Tabel, Gambar, & Format Teks) */}
             <div className="flex-1 p-6 flex flex-col">
-              <textarea 
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Mulai menulis catatan di sini..."
-                className={`w-full flex-1 bg-transparent resize-none focus:outline-none text-base leading-relaxed font-mono placeholder:text-slate-500 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}
+              <NoteEditorComponent 
+                content={noteContent} 
+                onChange={(html) => setNoteContent(html)} 
+                isDark={isDark} 
               />
             </div>
           </>
