@@ -143,7 +143,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   report: pathname.startsWith('/dashboard/report'),
   shopping: pathname?.startsWith('/dashboard/produk'),
   medsos: pathname?.startsWith('/dashboard/sosmed'),
-  notifications: pathname.startsWith('/dashboard/notifications'),
+  otomotif: pathname.startsWith('/dashboard/otomotif'),
   setting: pathname.startsWith('/dashboard/setting'),
 });
 
@@ -417,7 +417,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
               <Link href="/dashboard/medsos" className={getSubLinkStyle('/dashboard/medsos')} onClick={handleMenuClick}>
                 Sosmed
               </Link>
-              <Link href="/dashboard/notifications/settings" className={getSubLinkStyle('/dashboard/notifications/settings')} onClick={handleMenuClick}>
+              <Link href="/dashboard/otomotif/settings" className={getSubLinkStyle('/dashboard/otomotif/settings')} onClick={handleMenuClick}>
                 Setting
               </Link>
             </div>
@@ -429,31 +429,44 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
-        {/* 4. Notifications */}
+        {/* 4. otomotif */}
         <div>
           <button
-            onClick={() => toggleMenu('notifications')}
+            onClick={() => toggleMenu('otomotif')}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
 <div className="flex items-center gap-3">
   <FiBell size={18} /> 
-  <span>Notifications</span>
+  <span>Shoping-Otomotif</span>
 </div>
-            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.notifications ? 'rotate-90' : ''}`}>
+            <span className={`text-2xl transform transition-transform duration-200 ${openMenus.otomotif ? 'rotate-90' : ''}`}>
               &gt;
             </span>
           </button>
-          {openMenus.notifications && (
+          {openMenus.otomotif && (
             <div className="pl-11 pr-2 py-1 space-y-1">
-              <Link href="/dashboard/notifications/unread" className={getSubLinkStyle('/dashboard/notifications/unread')} onClick={handleMenuClick}>
-                Unread Alerts
+              <Link href="/dashboard/otomotif/ban" className={getSubLinkStyle('/dashboard/otomotif/ban')} onClick={handleMenuClick}>
+                Ban Motor
               </Link>
-              <Link href="/dashboard/notifications/settings" className={getSubLinkStyle('/dashboard/notifications/settings')} onClick={handleMenuClick}>
+              <Link href="/dashboard/otomotif/settings" className={getSubLinkStyle('/dashboard/otomotif/settings')} onClick={handleMenuClick}>
                 Alert Preferences
               </Link>
             </div>
           )}
         </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -495,6 +508,32 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
       <span>🚪 Keluar (Logout)</span>
     </button>
       </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
