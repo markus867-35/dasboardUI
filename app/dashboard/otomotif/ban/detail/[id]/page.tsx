@@ -83,7 +83,7 @@ export default function DetailBanPage() {
     images = ['https://via.placeholder.com/400'];
   }
 
-  const selectedImage = images[activeImageIndex] || images[0];
+const [selectedImage, setSelectedImage] = useState(images[0] || '');
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -119,7 +119,11 @@ export default function DetailBanPage() {
           </button>
         </div>
       </div>
-{/* Konten Utama Detail */}
+
+
+
+
+  {/* Konten Utama Detail */}
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-2xl border ${getCardStyle()}`}>
         
         {/* Kolom Kiri: Galeri Foto Produk */}
@@ -132,9 +136,7 @@ export default function DetailBanPage() {
               <button 
                 type="button"
                 onClick={() => {
-                  const newIndex = activeImageIndex === 0 ? images.length - 1 : activeImageIndex - 1;
-                  setActiveImageIndex(newIndex);
-                  setSelectedImage(images[newIndex]);
+                  setActiveImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
                 }}
                 className="absolute left-3 p-2 rounded-full bg-slate-100/80 text-slate-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10"
                 title="Sebelumnya"
@@ -145,9 +147,9 @@ export default function DetailBanPage() {
               </button>
             )}
 
-            {/* Gambar Utama */}
+            {/* Gambar Utama (Mengambil langsung dari array berdasarkan activeImageIndex) */}
             <img 
-              src={selectedImage} 
+              src={images[activeImageIndex] || selectedImage} 
               alt={product.name} 
               className="w-full h-full object-contain transition-all duration-300"
             />
@@ -157,9 +159,7 @@ export default function DetailBanPage() {
               <button 
                 type="button"
                 onClick={() => {
-                  const newIndex = activeImageIndex === images.length - 1 ? 0 : activeImageIndex + 1;
-                  setActiveImageIndex(newIndex);
-                  setSelectedImage(images[newIndex]);
+                  setActiveImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
                 }}
                 className="absolute right-3 p-2 rounded-full bg-slate-100/80 text-slate-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10"
                 title="Selanjutnya"
@@ -171,17 +171,14 @@ export default function DetailBanPage() {
             )}
           </div>
 
-          {/* Thumbnail List (Hanya 1 saja di sini) */}
+          {/* Thumbnail List */}
           {images.length > 1 && (
             <div className="flex items-center gap-3 overflow-x-auto w-full pb-2">
               {images.map((imgUrl, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => {
-                    setActiveImageIndex(idx);
-                    setSelectedImage(imgUrl);
-                  }}
+                  onClick={() => setActiveImageIndex(idx)}
                   className={`w-16 h-16 rounded-xl border overflow-hidden shrink-0 bg-white p-1 transition ${
                     activeImageIndex === idx ? 'border-blue-600 ring-2 ring-blue-500/30' : 'opacity-60 hover:opacity-100 border-slate-200 dark:border-slate-800'
                   }`}
