@@ -11,6 +11,7 @@ export default function DetailBanPage() {
   const params = useParams();
   const id = params?.id;
 
+  // 1. SEMUA HOOKS DI ATAS (TERMASUK ACTIVEIMAGEINDEX)
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -64,6 +65,7 @@ export default function DetailBanPage() {
       : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
   };
 
+  // 2. KONDISI LOADING & RETURN DI BAWAH HOOKS
   if (loading) {
     return <div className="p-16 text-center text-xs opacity-60">Memuat detail produk...</div>;
   }
@@ -72,7 +74,7 @@ export default function DetailBanPage() {
     return <div className="p-16 text-center text-xs opacity-60">Produk tidak ditemukan.</div>;
   }
 
-  // Normalisasi gambar (bisa berupa array text[] atau string tunggal)
+  // Normalisasi gambar
   let images: string[] = [];
   if (Array.isArray(product.image_url)) {
     images = product.image_url.filter(Boolean);
@@ -82,8 +84,6 @@ export default function DetailBanPage() {
   if (images.length === 0) {
     images = ['https://via.placeholder.com/400'];
   }
-
-const [selectedImage, setSelectedImage] = useState(images[0] || '');
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -120,10 +120,7 @@ const [selectedImage, setSelectedImage] = useState(images[0] || '');
         </div>
       </div>
 
-
-
-
-  {/* Konten Utama Detail */}
+      {/* Konten Utama Detail */}
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-2xl border ${getCardStyle()}`}>
         
         {/* Kolom Kiri: Galeri Foto Produk */}
@@ -147,9 +144,9 @@ const [selectedImage, setSelectedImage] = useState(images[0] || '');
               </button>
             )}
 
-            {/* Gambar Utama (Mengambil langsung dari array berdasarkan activeImageIndex) */}
+            {/* Gambar Utama */}
             <img 
-              src={images[activeImageIndex] || selectedImage} 
+              src={images[activeImageIndex]} 
               alt={product.name} 
               className="w-full h-full object-contain transition-all duration-300"
             />
