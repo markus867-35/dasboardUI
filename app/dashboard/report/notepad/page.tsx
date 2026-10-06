@@ -108,16 +108,14 @@ function NoteEditorComponent({ content, onChange, isDark }: { content: string; o
   });
 
 useEffect(() => {
-  // Hanya set content jika editor kosong atau ID/catatan utamanya berganti, 
-  // atau pastikan tidak menimpa state lokal yang sedang aktif.
-  if (editor && content !== editor.getHTML()) {
-    // Cek apakah perbedaannya murni karena sinkronisasi internal
-    const isDifferent = editor.getHTML() !== content;
-    if (isDifferent) {
-      editor.commands.setContent(content || '', false); // parameter 'false' mencegah reset kursor berlebih
+    if (editor && content !== editor.getHTML()) {
+      const isDifferent = editor.getHTML() !== content;
+      if (isDifferent) {
+        // Hapus argumen 'false' dan biarkan kosong atau gunakan objek konfigurasi
+        editor.commands.setContent(content || ''); 
+      }
     }
-  }
-}, [content, editor]);
+  }, [content, editor]);
 
   return (
     <div className={`flex flex-col flex-1 w-full h-full border rounded-lg overflow-hidden ${isDark ? 'border-slate-700/60 bg-slate-900/50' : 'border-slate-300 bg-white'}`}>
