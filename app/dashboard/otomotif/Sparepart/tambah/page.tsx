@@ -38,7 +38,8 @@ export default function FormSparepartPage() {
     'Kampas Rem & Piringan', 
     'Rantai & Sprocket', 
     'Filter Udara & Oli', 
-    'Busi & Kelistrikan'
+    'Busi & Kelistrikan',
+    'Lainya'
   ];
 
   // Fungsi upload file gambar ke Supabase Storage (folder 'products/Sparepart')
