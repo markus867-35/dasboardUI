@@ -463,12 +463,10 @@ const uploadAndSaveAvatar = async (file: File) => {
                         <p class="text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}">${formData.name ? `${formData.name} (@${formData.username})` : 'Admin Profil'}</p>
                       </div>
                     `,
-                    showCloseButton: true,
+                    showCloseButton: false,
                     showConfirmButton: false,
                     background: 'transparent',
-                    customClass: {
-                      popup: isDark ? '!bg-slate-900/80 backdrop-blur-md text-slate-100 border border-slate-800 rounded-2xl shadow-2xl' : '!bg-white/80 backdrop-blur-md text-slate-900 rounded-2xl shadow-2xl'
-                    }
+
                   });
                 }}
                 className="relative group cursor-pointer"

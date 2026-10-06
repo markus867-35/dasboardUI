@@ -122,13 +122,11 @@ useEffect(() => {
                     <p class="text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}">${adminData.name}</p>
                   </div>
                 `,
-                showCloseButton: true,
+                showCloseButton: false,
                 showConfirmButton: false,
                 width: '550px',
                 background: 'transparent',
-                customClass: {
-                  popup: isDark ? '!bg-slate-900/90 backdrop-blur-md text-slate-100 border border-slate-800 rounded-3xl shadow-2xl p-6' : '!bg-white/90 backdrop-blur-md text-slate-900 rounded-3xl shadow-2xl p-6'
-                }
+
               });
             }}
             className="w-9 h-9 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center font-bold text-white text-sm border border-indigo-400 relative group cursor-pointer shrink-0"
