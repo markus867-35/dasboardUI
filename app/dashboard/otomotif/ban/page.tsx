@@ -147,7 +147,7 @@ export default function BanInventoryPage() {
   const formatRupiah = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
       
       {/* 1. HEADER LOGO MEREK BAN (HORIZONTAL SLIDER) */}
       <div className={`p-4 rounded-2xl border ${getCardStyle()}`}>
