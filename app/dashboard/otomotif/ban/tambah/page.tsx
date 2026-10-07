@@ -38,8 +38,8 @@ export default function FormBanPage() {
     'Ban Motor Matic', 
     'Ban Motor Bebek', 
     'Ban Motor Sport', 
-    'Ban Motor Big Matic',
-    'lainnya'
+    'Ban Motor Big Matic'
+   
   ];
 
   // Fungsi upload file gambar ke Supabase Storage
