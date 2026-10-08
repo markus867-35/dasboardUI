@@ -17,6 +17,7 @@ interface Product {
   stock: number;
   min_stock: number;
   buy_price?: number;
+  discount_price?: number; // <-- TAMBAHKAN BARIS INI
   modal_price?: number;
   sell_price?: number;
   price?: number;
