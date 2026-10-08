@@ -1,0 +1,293 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { useTheme } from '@/app/context/ThemeContext';
+import { FiArrowLeft, FiEdit, FiTrash2, FiTag, FiShoppingCart, FiShield, FiTool } from 'react-icons/fi';
+import { supabase } from '@/lib/supabase';
+import { useRouter, useParams } from 'next/navigation';
+
+export default function DetailPeralatanPage() {
+  const { mode } = useTheme();
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id;
+
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (id) {
+      fetchDetail();
+    }
+  }, [id]);
+
+  const fetchDetail = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('peralatan_bengkel')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setProduct(data);
+    } catch (err: any) {
+      console.error('Gagal mengambil detail peralatan:', err);
+      alert('Gagal memuat detail produk peralatan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Apakah Anda yakin ingin menghapus produk peralatan ini?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('peralatan_bengkel')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('Produk peralatan berhasil dihapus.');
+      router.push('/dashboard/otomotif/peralatan');
+    } catch (err: any) {
+      console.error('Gagal menghapus:', err);
+      alert(`Gagal menghapus: ${err.message}`);
+    }
+  };
+
+  const getCardStyle = () => {
+    return mode === 'light' 
+      ? 'bg-white text-slate-800 border-slate-200 shadow-sm' 
+      : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
+  };
+
+  if (loading) {
+    return <div className="p-16 text-center text-xs opacity-60">Memuat detail produk peralatan...</div>;
+  }
+
+  if (!product) {
+    return <div className="p-16 text-center text-xs opacity-60">Produk peralatan tidak ditemukan.</div>;
+  }
+
+  // Normalisasi gambar
+  let images: string[] = [];
+  if (Array.isArray(product.image_url)) {
+    images = product.image_url.filter(Boolean);
+  } else if (typeof product.image_url === 'string' && product.image_url.trim() !== '') {
+    images = [product.image_url];
+  }
+  if (images.length === 0) {
+    images = ['https://via.placeholder.com/400'];
+  }
+
+  // Kalkulasi Harga (Sell Price dikurangi Discount Price)
+  const sellPrice = Number(product.sell_price || product.price || 0);
+  const discountAmount = Number(product.discount_price || 0);
+  const finalPrice = Math.max(0, sellPrice - discountAmount);
+
+  return (
+    <div className="p-6 max-w-10xl mx-auto space-y-6">
+      
+      {/* Breadcrumb & Tombol Navigasi */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs opacity-70">
+          <span className="cursor-pointer hover:underline" onClick={() => router.push('/dashboard/otomotif/peralatan')}>Peralatan Bengkel</span>
+          <span>/</span>
+          <span>{product.brand}</span>
+          <span>/</span>
+          <span className="font-semibold text-slate-900 dark:text-white">{product.name}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => router.push('/dashboard/otomotif/peralatan')} 
+            className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-500/20 hover:bg-slate-500/10 transition"
+          >
+            <FiArrowLeft size={14} /> Kembali
+          </button>
+          <button 
+            type="button"
+            onClick={() => router.push(`/dashboard/otomotif/peralatan/edit/${product.id}`)} 
+            className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <FiEdit size={14} /> Edit
+          </button>
+          <button 
+            type="button"
+            onClick={handleDelete} 
+            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <FiTrash2 size={14} /> Hapus
+          </button>
+        </div>
+      </div>
+
+      {/* Konten Utama Detail */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-2xl border ${getCardStyle()}`}>
+        
+        {/* Kolom Kiri: Galeri Foto Produk */}
+        <div className="space-y-4 flex flex-col items-center">
+          {/* Gambar Utama Besar */}
+          <div className="w-full h-64 rounded-2xl border bg-white dark:bg-white border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden p-3 relative group">
+            
+            {/* Tombol Panah Kiri (Prev) */}
+            {images.length > 1 && (
+              <button 
+                type="button"
+                onClick={() => {
+                  setActiveImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
+                }}
+                className="absolute left-3 p-2 rounded-full bg-slate-100/80 text-slate-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10"
+                title="Sebelumnya"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Gambar Utama */}
+            <img 
+              src={images[activeImageIndex]} 
+              alt={product.name} 
+              className="w-full h-full object-contain transition-all duration-300"
+            />
+
+            {/* Tombol Panah Kanan (Next) */}
+            {images.length > 1 && (
+              <button 
+                type="button"
+                onClick={() => {
+                  setActiveImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
+                }}
+                className="absolute right-3 p-2 rounded-full bg-slate-100/80 text-slate-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10"
+                title="Selanjutnya"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Thumbnail List */}
+          {images.length > 1 && (
+            <div className="flex items-center gap-3 overflow-x-auto w-full pb-2">
+              {images.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`w-16 h-16 rounded-xl border overflow-hidden shrink-0 bg-white p-1 transition ${
+                    activeImageIndex === idx ? 'border-blue-600 ring-2 ring-blue-500/30' : 'opacity-60 hover:opacity-100 border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Kolom Kanan: Informasi Detail & Tombol Aksi Pembelian */}
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-500 uppercase">
+                {product.brand}
+              </span>
+              <span className="text-xs opacity-60">SKU: {product.sku}</span>
+            </div>
+            <h1 className="text-xl font-extrabold">{product.name}</h1>
+            <p className="text-xs opacity-60 mt-1">Kategori: {product.category}</p>
+          </div>
+
+          {/* Harga & Informasi Stok */}
+          <div className={`p-5 rounded-2xl border ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-800'} space-y-2`}>
+            <div className="flex items-baseline gap-3">
+              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                Rp {finalPrice.toLocaleString('id-ID')}
+              </div>
+              {discountAmount > 0 && (
+                <span className="text-xs line-through opacity-50">
+                  Rp {sellPrice.toLocaleString('id-ID')}
+                </span>
+              )}
+            </div>
+            <div className="text-xs opacity-70 flex items-center gap-2">
+              <span>Harga Modal: Rp {product.buy_price?.toLocaleString('id-ID')}</span>
+              <span>•</span>
+              <span className="font-semibold text-emerald-600">Stok Tersedia: {product.stock} pcs</span>
+            </div>
+          </div>
+
+          {/* Tombol Aksi: Beli Langsung & Keranjang */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/otomotif/peralatan/checkout/${product.id}`)}
+              className="py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
+            >
+              Beli Langsung
+            </button>
+            <button
+              type="button"
+              onClick={() => alert(`Produk ${product.name} berhasil ditambahkan ke keranjang!`)}
+              className="py-3 px-4 rounded-xl text-xs font-bold border border-blue-500/30 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400 transition flex items-center justify-center gap-2"
+            >
+              <FiShoppingCart size={16} /> + Keranjang
+            </button>
+          </div>
+
+          {/* Promo / Bundling Banner */}
+          <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-1 text-xs">
+            <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <FiTag size={14} /> PROMO PERALATAN BENGKEL
+            </div>
+            <p className="opacity-80">Setiap pembelian alat bengkel ini mendapatkan garansi resmi pabrikan dan panduan penggunaan.</p>
+          </div>
+
+          {/* Garansi Kualitas */}
+          <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1 text-xs">
+            <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <FiShield size={14} /> GARANSI KUALITAS & KEASLIAN
+            </div>
+            <p className="opacity-80">Peralatan dijamin 100% original, tahan lama, dan dirancang untuk kebutuhan bengkel profesional.</p>
+          </div>
+
+          {/* Spesifikasi Grid Khusus Peralatan */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-500/20 text-xs">
+            <div className="p-3 rounded-xl border bg-slate-500/5">
+              <span className="block opacity-60 text-[10px]">Tipe Alat</span>
+              <span className="font-bold">{product.position || 'Manual Tools'}</span>
+            </div>
+            <div className="p-3 rounded-xl border bg-slate-500/5">
+              <span className="block opacity-60 text-[10px]">Material / Bahan</span>
+              <span className="font-bold">{product.diameter || 'Chrome Vanadium'}</span>
+            </div>
+          </div>
+
+          {/* Deskripsi & Fitur */}
+          <div className="space-y-2 pt-2 border-t border-slate-500/20 text-xs">
+            <h3 className="font-bold">Deskripsi & Keunggulan Produk</h3>
+            <p className="opacity-80 leading-relaxed">
+              {product.description || `${product.name} adalah peralatan bengkel berkualitas tinggi yang dirancang untuk memudahkan pekerjaan servis kendaraan dengan tingkat presisi dan ketahanan material yang prima.`}
+            </p>
+            {product.features && (
+              <p className="opacity-80 whitespace-pre-line pt-1">
+                {product.features}
+              </p>
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

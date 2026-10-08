@@ -472,6 +472,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
               <Link href="/dashboard/otomotif/servis" className={getSubLinkStyle('/dashboard/otomotif/servis')} onClick={handleMenuClick}>
                 Servis Motor
               </Link>
+              <Link href="/dashboard/otomotif/peralatan" className={getSubLinkStyle('/dashboard/otomotif/peralatan')} onClick={handleMenuClick}>
+                Peralatan
+              </Link>
             </div>
           )}
         </div>
