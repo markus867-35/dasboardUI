@@ -19,6 +19,7 @@ export default function FormSparepartPage() {
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [discountPrice, setDiscountPrice] = useState<number | ''>('');
   
   // Field Tambahan Spesifikasi & Deskripsi Sparepart
   const [position, setPosition] = useState('Sistem Rem');
@@ -110,6 +111,7 @@ export default function FormSparepartPage() {
       sell_price: priceValue,
       price: priceValue, 
       image_url: imageUrls, 
+      discount_price: discountPrice === '' ? 0 : Number(discountPrice), // <-- TAMBAHKAN BARIS INI
       position,        // Menyimpan bagian/posisi Sparepart
       diameter: material,  // Memetakan material ke kolom diameter
       tire_type: SparepartType, // Memetakan jenis tipe Sparepart ke kolom tire_type
@@ -199,6 +201,31 @@ export default function FormSparepartPage() {
               </select>
             </div>
           </div>
+
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-xs font-semibold opacity-70 mb-1">Harga Jual (Rp) *</label>
+    <input 
+      type="number" 
+      value={sellPrice} 
+      onChange={(e) => setSellPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+      placeholder="325000" 
+      className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+      required 
+    />
+  </div>
+  <div>
+    <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+    <input 
+      type="number" 
+      value={discountPrice} 
+      onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+      placeholder="Kosongkan jika tidak ada diskon" 
+      className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+    />
+  </div>
+</div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

@@ -20,6 +20,7 @@ export default function FormEditSparepartPage() {
   const [minStock, setMinStock] = useState<number | ''>(3);
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
+  const [discountPrice, setDiscountPrice] = useState<number | ''>(''); // State Harga Diskon
   
   // Field Tambahan Spesifikasi & Deskripsi Sparepart
   const [description, setDescription] = useState('');
@@ -81,6 +82,7 @@ export default function FormEditSparepartPage() {
         setPosition(data.position || 'Sistem Rem');
         setMaterial(data.diameter || 'Kampas Karbon');
         setSparepartType(data.tire_type || 'Original');
+        setDiscountPrice(data.discount_price ?? ''); // Memuat data harga diskon dari database
         setSni(data.sni || '');
 
         // Normalisasi data gambar
@@ -166,6 +168,7 @@ export default function FormEditSparepartPage() {
       buy_price: Number(buyPrice),
       sell_price: priceValue,
       price: priceValue, // Menjaga kompatibilitas kolom harga
+      discount_price: discountPrice === '' ? 0 : Number(discountPrice), // <-- TAMBAHKAN BARIS INI
       description: description.trim(),
       position: position.trim(),
       diameter: material.trim(),     // Menyimpan material ke kolom diameter
@@ -304,6 +307,18 @@ export default function FormEditSparepartPage() {
                 required 
               />
             </div>
+          </div>
+
+                    {/* Kolom Harga Diskon (Opsional) */}
+          <div>
+            <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+            <input 
+              type="number" 
+              value={discountPrice} 
+              onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+              placeholder="Kosongkan jika tidak ada diskon (Badge diskon tidak akan muncul)" 
+              className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+            />
           </div>
 
           {/* Kolom Spesifikasi Tambahan Sparepart (Bagian, Material, SNI) */}

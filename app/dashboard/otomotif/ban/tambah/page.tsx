@@ -204,6 +204,10 @@ export default function FormBanPage() {
   </div>
 </div>
 
+
+
+
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold opacity-70 mb-1">Jenis Ban</label>
