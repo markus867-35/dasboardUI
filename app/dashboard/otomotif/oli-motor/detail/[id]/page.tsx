@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
-import { FiArrowLeft, FiEdit, FiTrash2, FiTag } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit, FiTrash2, FiTag, FiShoppingCart, FiShield } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -51,7 +51,7 @@ export default function DetailOliPage() {
 
       if (error) throw error;
       alert('Produk oli berhasil dihapus.');
-      router.push('/dashboard/otomotif/oli');
+      router.push('/dashboard/otomotif/oli-motor');
     } catch (err: any) {
       console.error('Gagal menghapus:', err);
       alert(`Gagal menghapus: ${err.message}`);
@@ -83,13 +83,18 @@ export default function DetailOliPage() {
     images = ['https://via.placeholder.com/400'];
   }
 
+  // Kalkulasi Harga (Sell Price dikurangi Discount Price)
+  const sellPrice = Number(product.sell_price || product.price || 0);
+  const discountAmount = Number(product.discount_price || 0);
+  const finalPrice = Math.max(0, sellPrice - discountAmount);
+
   return (
     <div className="p-6 max-w-10xl mx-auto space-y-6">
       
       {/* Breadcrumb & Tombol Navigasi */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs opacity-70">
-          <span className="cursor-pointer hover:underline" onClick={() => router.push('/dashboard/otomotif/oli')}>Oli Motor</span>
+          <span className="cursor-pointer hover:underline" onClick={() => router.push('/dashboard/otomotif/oli-motor')}>Oli Motor</span>
           <span>/</span>
           <span>{product.brand}</span>
           <span>/</span>
@@ -98,18 +103,21 @@ export default function DetailOliPage() {
 
         <div className="flex items-center gap-2">
           <button 
+            type="button"
             onClick={() => router.push('/dashboard/otomotif/oli-motor')} 
             className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-500/20 hover:bg-slate-500/10 transition"
           >
             <FiArrowLeft size={14} /> Kembali
           </button>
           <button 
+            type="button"
             onClick={() => router.push(`/dashboard/otomotif/oli-motor/edit/${product.id}`)} 
             className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
           >
             <FiEdit size={14} /> Edit
           </button>
           <button 
+            type="button"
             onClick={handleDelete} 
             className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
           >
@@ -185,7 +193,7 @@ export default function DetailOliPage() {
           )}
         </div>
 
-        {/* Kolom Kanan: Informasi Detail */}
+        {/* Kolom Kanan: Informasi Detail & Tombol Aksi Pembelian */}
         <div className="space-y-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -198,16 +206,41 @@ export default function DetailOliPage() {
             <p className="text-xs opacity-60 mt-1">Kategori: {product.category}</p>
           </div>
 
-          {/* Harga & Stok */}
-          <div className="p-4 rounded-xl bg-slate-500/5 border border-slate-500/10 space-y-1">
-            <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
-              Rp {product.sell_price?.toLocaleString('id-ID')}
+          {/* Harga & Informasi Stok */}
+          <div className={`p-5 rounded-2xl border ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-800'} space-y-2`}>
+            <div className="flex items-baseline gap-3">
+              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                Rp {finalPrice.toLocaleString('id-ID')}
+              </div>
+              {discountAmount > 0 && (
+                <span className="text-xs line-through opacity-50">
+                  Rp {sellPrice.toLocaleString('id-ID')}
+                </span>
+              )}
             </div>
-            <div className="text-xs opacity-60 flex items-center gap-2">
+            <div className="text-xs opacity-70 flex items-center gap-2">
               <span>Harga Modal: Rp {product.buy_price?.toLocaleString('id-ID')}</span>
               <span>•</span>
               <span className="font-semibold text-emerald-600">Stok Tersedia: {product.stock} pcs</span>
             </div>
+          </div>
+
+          {/* Tombol Aksi: Beli Langsung & Keranjang */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/otomotif/oli-motor/checkout/${product.id}`)}
+              className="py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
+            >
+              Beli Langsung
+            </button>
+            <button
+              type="button"
+              onClick={() => alert(`Produk ${product.name} berhasil ditambahkan ke keranjang!`)}
+              className="py-3 px-4 rounded-xl text-xs font-bold border border-blue-500/30 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400 transition flex items-center justify-center gap-2"
+            >
+              <FiShoppingCart size={16} /> + Keranjang
+            </button>
           </div>
 
           {/* Promo / Bundling Banner */}
@@ -216,6 +249,14 @@ export default function DetailOliPage() {
               <FiTag size={14} /> PROMO OLI SPESIAL
             </div>
             <p className="opacity-80">Setiap pembelian oli ini mendapatkan layanan penggantian oli gratis di bengkel.</p>
+          </div>
+
+          {/* Garansi Keaslian */}
+          <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1 text-xs">
+            <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <FiShield size={14} /> GARANSI KEASLIAN OLI
+            </div>
+            <p className="opacity-80">Oli dijamin 100% original dan tersegel resmi dari pabrikan.</p>
           </div>
 
           {/* Spesifikasi Grid Khusus Oli */}

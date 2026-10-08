@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
-import { FiArrowLeft, FiEdit, FiTrash2, FiTag } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit, FiTrash2, FiTag, FiShoppingCart, FiShoppingBag } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -98,18 +98,21 @@ export default function DetailSparepartPage() {
 
         <div className="flex items-center gap-2">
           <button 
+            type="button"
             onClick={() => router.push('/dashboard/otomotif/Sparepart')} 
             className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-500/20 hover:bg-slate-500/10 transition"
           >
             <FiArrowLeft size={14} /> Kembali
           </button>
           <button 
+            type="button"
             onClick={() => router.push(`/dashboard/otomotif/Sparepart/edit/${product.id}`)} 
             className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
           >
             <FiEdit size={14} /> Edit
           </button>
           <button 
+            type="button"
             onClick={handleDelete} 
             className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
           >
@@ -207,6 +210,29 @@ export default function DetailSparepartPage() {
               <span>Harga Modal: Rp {product.buy_price?.toLocaleString('id-ID')}</span>
               <span>•</span>
               <span className="font-semibold text-emerald-600">Stok Tersedia: {product.stock} pcs</span>
+            </div>
+          </div>
+
+          {/* TAMBAHAN: Teks Informasi & Tombol Beli / Keranjang sesuai permintaan */}
+          <div className="space-y-3 pt-2">
+            <p className="text-xs opacity-80">
+              Dapatkan Sparepart <span className="font-bold uppercase">{product.brand}</span> termurah di Planet Ban Terdekat Dari Lokasimu
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+<button 
+  type="button"
+  onClick={() => router.push(`/dashboard/otomotif/Sparepart/checkout/${product.id}`)}
+  className="w-full sm:w-1/2 py-2.5 px-4 rounded-full border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 text-xs font-bold hover:bg-blue-600/10 transition flex items-center justify-center gap-2"
+>
+  <FiShoppingBag size={14} /> Beli Langsung
+</button>
+              <button 
+                type="button"
+                onClick={() => alert(`Berhasil memasukkan ${product.name} ke keranjang!`)}
+                className="w-full sm:w-1/2 py-2.5 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2"
+              >
+                <FiShoppingCart size={14} /> + Keranjang
+              </button>
             </div>
           </div>
 
