@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
  const [initialAdminData, setInitialAdminData] = useState<AdminProfile>({});
- const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+ 
 
 const [formData, setFormData] = useState<AdminProfile>({
   name: '',
