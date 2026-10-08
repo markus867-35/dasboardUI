@@ -20,11 +20,12 @@ export default function FormEditOliPage() {
   const [minStock, setMinStock] = useState<number | ''>(3);
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
+  const [discountPrice, setDiscountPrice] = useState<number | ''>(''); // State Harga Diskon
   
   // Field Tambahan Spesifikasi & Deskripsi Oli
   const [description, setDescription] = useState('');
   const [viscosity, setViscosity] = useState('10W-30'); // Disimpan di kolom position
-  const [size, setSize] = useState('0.8 L');           // Disimpan di kolom diameter
+  const [size, setSize] = useState('0.8 L');          // Disimpan di kolom diameter
   const [sni, setSni] = useState('');
 
   // Multi-Foto Array
@@ -70,11 +71,12 @@ export default function FormEditOliPage() {
         setMinStock(data.min_stock ?? 3);
         setBuyPrice(data.buy_price ?? '');
         setSellPrice(data.sell_price ?? '');
+        setDiscountPrice(data.discount_price ?? ''); // Memuat data harga diskon dari database
         
         // Mengisi data spesifikasi & deskripsi oli
         setDescription(data.description || '');
         setViscosity(data.position || '10W-30'); // Memetakan kembali dari kolom position
-        setSize(data.diameter || '0.8 L');         // Memetakan kembali dari kolom diameter
+        setSize(data.diameter || '0.8 L');        // Memetakan kembali dari kolom diameter
         setSni(data.sni || '');
 
         // Normalisasi data gambar
@@ -160,6 +162,7 @@ export default function FormEditOliPage() {
       buy_price: Number(buyPrice),
       sell_price: priceValue,
       price: priceValue, // Menjaga kompatibilitas kolom harga
+      discount_price: discountPrice === '' ? 0 : Number(discountPrice), // Menyimpan data diskon (0 jika kosong)
       description: description.trim(),
       position: viscosity.trim(), // Menyimpan kekentalan ke kolom position
       diameter: size.trim(),      // Menyimpan ukuran/volume ke kolom diameter
@@ -297,6 +300,18 @@ export default function FormEditOliPage() {
                 required 
               />
             </div>
+          </div>
+
+          {/* Kolom Harga Diskon (Opsional) */}
+          <div>
+            <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+            <input 
+              type="number" 
+              value={discountPrice} 
+              onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+              placeholder="Kosongkan jika tidak ada diskon (Badge diskon tidak akan muncul)" 
+              className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+            />
           </div>
 
           {/* Kolom Spesifikasi Tambahan Oli (Kekentalan, Ukuran/Volume, SNI) */}

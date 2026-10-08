@@ -19,6 +19,7 @@ export default function FormBanPage() {
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [discountPrice, setDiscountPrice] = useState<number | ''>('');
   
   // Field Tambahan Spesifikasi & Deskripsi
   const [position, setPosition] = useState('Depan/Belakang');
@@ -100,23 +101,24 @@ export default function FormBanPage() {
 
     // Mengirimkan 'sell_price' dan 'price' sekaligus agar aman berapapun nama kolom di database Anda
     const payload = {
-      name: name.trim(),
-      sku: sku.trim(),
-      category,
-      brand,
-      stock: Number(stock),
-      min_stock: Number(minStock),
-      buy_price: Number(buyPrice),
-      sell_price: priceValue,
-      price: priceValue, // Menjaga kompatibilitas jika tabel menggunakan kolom 'price'
-      image_url: imageUrls, 
-      position,
-      diameter,
-      tire_type: tireType,
-      description: description.trim(),
-      features: features.trim(),
-      sni: sni.trim()
-    };
+  name: name.trim(),
+  sku: sku.trim(),
+  category,
+  brand,
+  stock: Number(stock),
+  min_stock: Number(minStock),
+  buy_price: Number(buyPrice),
+  sell_price: priceValue,
+  price: priceValue,
+  discount_price: discountPrice === '' ? 0 : Number(discountPrice), // Tambahan data diskon
+  image_url: imageUrls, 
+  position,
+  diameter,
+  tire_type: tireType,
+  description: description.trim(),
+  features: features.trim(),
+  sni: sni.trim()
+};
 
     try {
       const { data, error } = await supabase
@@ -178,27 +180,29 @@ export default function FormBanPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold opacity-70 mb-1">Kode SKU</label>
-              <input 
-                type="text" 
-                value={sku} 
-                onChange={(e) => setSku(e.target.value)} 
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold opacity-70 mb-1">Merek Ban</label>
-              <select 
-                value={brand} 
-                onChange={(e) => setBrand(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
-              >
-                {tireBrands.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-          </div>
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-xs font-semibold opacity-70 mb-1">Harga Jual (Rp) *</label>
+    <input 
+      type="number" 
+      value={sellPrice} 
+      onChange={(e) => setSellPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+      placeholder="325000" 
+      className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+      required 
+    />
+  </div>
+  <div>
+    <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+    <input 
+      type="number" 
+      value={discountPrice} 
+      onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+      placeholder="Kosongkan jika tidak ada diskon" 
+      className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+    />
+  </div>
+</div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

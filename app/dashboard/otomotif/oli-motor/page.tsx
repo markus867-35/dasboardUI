@@ -436,11 +436,14 @@ export default function OliInventoryPage() {
                   <div key={item.id} className={`rounded-3xl border overflow-hidden flex flex-col justify-between relative group transition hover:shadow-xl ${cardBg}`}>
                     
                     {/* BADGE DISKON HARGA */}
-                    <div className="absolute top-0 left-0 z-10">
-                      <span className="px-4 py-1.5 rounded-tl-2xl rounded-br-2xl bg-red-600 text-white text-[11px] font-bold shadow uppercase tracking-wider inline-block">
-                        Diskon Harga
-                      </span>
-                    </div>
+{/* BADGE DISKON HARGA - Hanya muncul jika produk memiliki data diskon/harga coret */}
+{item.discount_price && Number(item.discount_price) > 0 && (
+  <div className="absolute top-0 left-0 z-10">
+    <span className="px-4 py-1.5 rounded-tl-2xl rounded-br-2xl bg-red-600 text-white text-[11px] font-bold shadow uppercase tracking-wider inline-block">
+      Diskon Harga
+    </span>
+  </div>
+)}
 
                     <div className="p-4 space-y-3">
                       <Link href={`/dashboard/otomotif/oli-motor/detail/${item.id}`} className="block group-hover:opacity-95 transition">

@@ -19,6 +19,7 @@ export default function FormOliPage() {
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [discountPrice, setDiscountPrice] = useState<number | ''>('');
   
   // Field Tambahan Spesifikasi & Deskripsi Oli
   const [viscosity, setViscosity] = useState('10W-30');
@@ -109,6 +110,7 @@ export default function FormOliPage() {
       sell_price: priceValue,
       price: priceValue, 
       image_url: imageUrls, 
+      discount_price: discountPrice === '' ? 0 : Number(discountPrice), // Tambahan data diskon
       position: viscosity, // Menggunakan kolom position untuk menyimpan kekentalan/viskositas
       diameter: size,       // Menggunakan kolom diameter untuk menyimpan ukuran/volume
       tire_type: oilType,   // Menggunakan kolom tire_type untuk menyimpan tipe oli
@@ -197,6 +199,17 @@ export default function FormOliPage() {
                 {oilBrands.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
+
+            <div>
+    <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+    <input 
+      type="number" 
+      value={discountPrice} 
+      onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+      placeholder="Kosongkan jika tidak ada diskon" 
+      className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+    />
+  </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

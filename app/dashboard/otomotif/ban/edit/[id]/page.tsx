@@ -20,6 +20,7 @@ export default function FormEditBanPage() {
   const [minStock, setMinStock] = useState<number | ''>(3);
   const [buyPrice, setBuyPrice] = useState<number | ''>('');
   const [sellPrice, setSellPrice] = useState<number | ''>('');
+  const [discountPrice, setDiscountPrice] = useState<number | ''>(''); // State Harga Diskon
   
   // Field Tambahan: Deskripsi & Spesifikasi
   const [description, setDescription] = useState('');
@@ -70,6 +71,7 @@ export default function FormEditBanPage() {
         setMinStock(data.min_stock ?? 3);
         setBuyPrice(data.buy_price ?? '');
         setSellPrice(data.sell_price ?? '');
+        setDiscountPrice(data.discount_price ?? ''); // Memuat data harga diskon dari database
         
         // Mengisi data deskripsi & spesifikasi yang sudah ada di database
         setDescription(data.description || '');
@@ -157,6 +159,7 @@ export default function FormEditBanPage() {
       min_stock: Number(minStock),
       buy_price: Number(buyPrice),
       sell_price: Number(sellPrice),
+      discount_price: discountPrice === '' ? 0 : Number(discountPrice), // Menyimpan data diskon (0 jika kosong)
       description: description.trim(),
       position: position.trim(),
       diameter: diameter.trim(),
@@ -294,6 +297,18 @@ export default function FormEditBanPage() {
                 required 
               />
             </div>
+          </div>
+
+          {/* Kolom Harga Diskon (Opsional) */}
+          <div>
+            <label className="block text-xs font-semibold opacity-70 mb-1">Harga Diskon (Opsional)</label>
+            <input 
+              type="number" 
+              value={discountPrice} 
+              onChange={(e) => setDiscountPrice(e.target.value === '' ? '' : Number(e.target.value))} 
+              placeholder="Kosongkan jika tidak ada diskon (Badge diskon tidak akan muncul)" 
+              className={`w-full px-4 py-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+            />
           </div>
 
           {/* Kolom Spesifikasi Tambahan (Posisi, Diameter, SNI) */}
