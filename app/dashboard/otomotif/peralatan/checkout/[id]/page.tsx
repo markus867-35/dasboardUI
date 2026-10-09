@@ -37,7 +37,7 @@ export default function CheckoutPeralatanPage() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('online_shop_stock')
+        .from('peralatan_bengkel')
         .select('*')
         .eq('id', id)
         .single();
@@ -95,7 +95,7 @@ export default function CheckoutPeralatanPage() {
       // Kurangi stok produk langsung di Supabase
       const newStock = product.stock - quantity;
       const { error: updateError } = await supabase
-        .from('online_shop_stock')
+        .from('peralatan_bengkel')
         .update({ stock: newStock })
         .eq('id', id);
 
