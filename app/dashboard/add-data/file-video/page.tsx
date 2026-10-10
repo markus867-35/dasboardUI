@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { 
   FiVideo, FiUpload, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiX, FiPlay, FiFilm 
+  FiGrid, FiList, FiX, FiPlay 
 } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 
@@ -82,8 +82,8 @@ export default function FileVideoPage() {
         year: 'numeric'
       });
 
-const newVideo = {
-        id: Date.now(), // <-- Tambahkan baris ini agar id selalu terisi otomatis
+      const newVideo = {
+        id: Date.now(),
         name: file.name.replace(/\.[^/.]+$/, ""),
         duration: '--:--',
         url: publicURLData.publicUrl,
@@ -91,6 +91,7 @@ const newVideo = {
         date: formattedDate,
         dimension: 'Original'
       };
+
       // 3. Simpan metadata ke tabel Supabase (Tabel: video_tracks)
       const { data, error: insertError } = await supabase
         .from('video_tracks')
@@ -214,10 +215,16 @@ const newVideo = {
                 onClick={() => setActiveVideo(item)}
                 className="group flex flex-col rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-transparent hover:border-blue-500/40 cursor-pointer transition relative"
               >
-                {/* Thumbnail / Box Video Cover */}
+                {/* Thumbnail / Box Video Cover dengan Pratinjau Frame */}
                 <div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
+                  <video 
+                    src={`${item.url}#t=0.001`}
+                    preload="metadata"
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
-                  <FiFilm className="text-white/20 absolute" size={64} />
                   
                   {/* Tombol Hapus di Mode Grid (Sudut Kanan Atas) */}
                   <button 
@@ -232,8 +239,10 @@ const newVideo = {
                   </button>
 
                   {/* Tombol Play Hover */}
-                  <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center z-20 shadow-lg transform transition group-hover:scale-110">
-                    <FiPlay size={20} className="ml-0.5" />
+                  <div className="absolute inset-0 flex items-center justify-center z-20">
+                    <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transform transition group-hover:scale-110">
+                      <FiPlay size={20} className="ml-0.5" />
+                    </div>
                   </div>
 
                   <span className="absolute bottom-2 right-2 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-mono">
@@ -315,7 +324,9 @@ const newVideo = {
 
             <div className="mb-3">
               <h2 className="text-sm font-bold truncate pr-10">{activeVideo.name}</h2>
-              <p className="text-[10px] opacity-60">Ukuran: {activeVideo.size} • Resolusi: {activeVideo.dimension || 'Original'} • {activeVideo.date}</p>
+              <p className="text-[10px] opacity-60">
+                Ukuran: {activeVideo.size} | Resolusi: {activeVideo.dimension || 'Original'} | Tanggal: {activeVideo.date}
+              </p>
             </div>
 
             {/* Elemen Video Player Utama */}
