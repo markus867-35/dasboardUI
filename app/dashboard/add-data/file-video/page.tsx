@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { 
   FiVideo, FiUpload, FiTrash2, FiSearch, 
-  FiGrid, FiList, FiX, FiPlay, FiFolder, FiFolderPlus, FiMove, FiArrowLeft 
+  FiGrid, FiList, FiX, FiPlay, FiFolder, FiFolderPlus, FiSkipBack,FiEdit2, FiSkipForward ,FiMove, FiArrowLeft 
 } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 
@@ -28,6 +28,13 @@ export default function FileVideoPage() {
   const [videoList, setVideoList] = useState<VideoItem[]>([]);
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | number | 'all'>('all');
+  const [modalSize, setModalSize] = useState<'normal' | 'small' | 'large'>('normal');
+const [isDragging, setIsDragging] = useState(false);
+const [position, setPosition] = useState({ x: 0, y: 0 });
+const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+const [editingFolderId, setEditingFolderId] = useState<string | number | null>(null);
+const [editedFolderName, setEditedFolderName] = useState('');
+
 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -231,6 +238,28 @@ const filteredVideos = videoList.filter(item => {
 
   const currentFolderName = selectedFolderId === 'all' ? 'Semua Video' : folders.find(f => f.id === selectedFolderId)?.name || 'Folder';
 
+const handleUpdateFolder = async (id: string | number) => {
+  if (!editedFolderName.trim()) return;
+
+  try {
+    const { error } = await supabase
+      .from('video_folders')
+      .update({ name: editedFolderName.trim() })
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    // Perbarui state lokal dengan benar
+    setFolders(folders.map(f => f.id === id ? { ...f, name: editedFolderName.trim() } : f));
+    setEditingFolderId(null);
+  } catch (error) {
+    console.error('Gagal mengubah nama folder:', error);
+    alert('Gagal mengubah nama folder.');
+  }
+};
+
+
+  
   return (
     <div className="p-6 space-y-6 relative">
       
@@ -353,44 +382,102 @@ const filteredVideos = videoList.filter(item => {
         </div>
 
         {/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
-        {selectedFolderId === 'all' && folders.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {folders.map(folder => {
-                const count = videoList.filter(v => v.folder_id === folder.id).length;
-                return (
-                  <div 
-                    key={folder.id}
-                    onClick={() => setSelectedFolderId(folder.id)}
-                    className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-                      mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                        <FiFolder size={20} />
-                      </div>
-                      <div className="truncate">
-                        <h4 className="text-xs font-bold truncate group-hover:text-blue-400 transition">{folder.name}</h4>
-                        <p className="text-[10px] opacity-60">{count} Item</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }} 
-                        className="p-1 hover:text-red-400" title="Hapus Folder"
+{selectedFolderId === 'all' && folders.length > 0 && (
+  <div className="mb-8">
+    <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {folders.map(folder => {
+        const count = videoList.filter(v => v.folder_id === folder.id).length;
+        const isEditing = editingFolderId === folder.id;
+
+        return (
+          <div 
+            key={folder.id}
+            onClick={() => {
+              if (!isEditing) setSelectedFolderId(folder.id);
+            }}
+            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+              mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-3 overflow-hidden w-full">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
+                <FiFolder size={20} />
+              </div>
+
+              <div className="truncate w-full">
+                {isEditing ? (
+                  /* FORM INPUT SAAT DI-EDIT */
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="text" 
+                      value={editedFolderName}
+                      onChange={(e) => setEditedFolderName(e.target.value)}
+                      className={`w-full px-2 py-1 rounded border text-xs outline-none ${
+                        mode === 'light' ? 'bg-white border-slate-300 text-slate-800' : 'bg-slate-900 border-slate-700 text-white'
+                      }`}
+                      autoFocus
+                    />
+                    <button 
+                      onClick={() => handleUpdateFolder(folder.id)}
+                      className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-medium shrink-0"
+                    >
+                      Simpan
+                    </button>
+                    <button 
+                      onClick={() => setEditingFolderId(null)}
+                      className="px-1.5 py-1 text-[10px] opacity-60 hover:opacity-100 shrink-0"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  /* TAMPILAN NORMAL NAMA FOLDER */
+                  <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-between group/name">
+                    <div className="truncate">
+                      <h4 
+                        onClick={() => setSelectedFolderId(folder.id)}
+                        className="text-xs font-bold truncate group-hover:text-blue-400 transition"
                       >
-                        <FiTrash2 size={13} />
-                      </button>
+                        {folder.name}
+                      </h4>
+                      <p className="text-[10px] opacity-60">{count} Item</p>
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
-            <div className="border-b border-slate-700/20 my-6"></div>
+
+            {/* TOMBOL AKSI EDIT & HAPUS (MUNCUL SAAT HOVER) */}
+            {!isEditing && (
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0 ml-2">
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setEditingFolderId(folder.id); 
+                    setEditedFolderName(folder.name); 
+                  }} 
+                  className="p-1 hover:text-blue-400" 
+                  title="Edit Nama Folder"
+                >
+                  <FiEdit2 size={13} />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }} 
+                  className="p-1 hover:text-red-400" 
+                  title="Hapus Folder"
+                >
+                  <FiTrash2 size={13} />
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        );
+      })}
+    </div>
+    <div className="border-b border-slate-700/20 my-6"></div>
+  </div>
+)}
 
         <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">
           {selectedFolderId === 'all' ? 'Berkas Video Tanpa Folder' : `Video dalam "${currentFolderName}"`}
@@ -559,55 +646,173 @@ const filteredVideos = videoList.filter(item => {
         </div>
       )}
 
-     {/* MODAL PEMUTAR VIDEO (VIDEO PLAYER) */}
-      {activeVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div className={`w-full max-w-3xl rounded-2xl p-5 border shadow-2xl relative flex flex-col ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}>
-            
-            {/* Tombol Tutup */}
+
+
+
+
+
+
+
+
+
+
+
+
+
+     {/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
+{/* MODAL PEMUTAR VIDEO (DENGAN FITUR DRAG / GESER KE MANA MANA) */}
+{activeVideo && (() => {
+  const currentVideoIndex = filteredVideos.findIndex(v => v.id === activeVideo.id);
+  
+  const handleNextVideo = () => {
+    if (filteredVideos.length === 0) return;
+    const nextIndex = (currentVideoIndex + 1) % filteredVideos.length;
+    setActiveVideo(filteredVideos[nextIndex]);
+  };
+
+  const handlePrevVideo = () => {
+    if (filteredVideos.length === 0) return;
+    const prevIndex = (currentVideoIndex - 1 + filteredVideos.length) % filteredVideos.length;
+    setActiveVideo(filteredVideos[prevIndex]);
+  };
+
+  // Handler untuk mulai menggeser (Drag)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-none"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
+<div 
+        style={{ 
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          resize: 'both',
+          overflow: 'auto',
+        }}
+        className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
+          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[90vw] h-[85vh]' : 'w-[700px] h-auto'
+        } ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}
+      >
+        
+        {/* AREA HEADER YANG BISA DI-DRAG (DIARIK KE MANA-MANA) */}
+        <div 
+          onMouseDown={handleMouseDown}
+          className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none"
+          title="Klik dan tahan di sini untuk menggeser jendela"
+        >
+          <div className="pr-20 overflow-hidden">
+            <h2 className="text-xs font-bold truncate">{activeVideo.name}</h2>
+            <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
+          </div>
+
+          {/* Tombol Kontrol Ukuran & Tutup */}
+          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0">
             <button 
-              onClick={() => setActiveVideo(null)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
+              onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition"
+              title="Perkecil / Minimize"
             >
-              <FiX size={18} />
+              {modalSize === 'small' ? 'Restore' : 'Minimize'}
             </button>
-
-            <div className="mb-3">
-              <h2 className="text-sm font-bold truncate pr-10">{activeVideo.name}</h2>
-              <p className="text-[10px] opacity-60">
-                Ukuran: {activeVideo.size} | Resolusi: {activeVideo.dimension || 'Original'} | Tanggal: {activeVideo.date}
-              </p>
-            </div>
-
-            {/* Elemen Video Player Utama */}
-            <div className="w-full bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
-              <video 
-                src={activeVideo.url} 
-                controls 
-                autoPlay
-                className="w-full max-h-[60vh] object-contain"
-              />
-            </div>
-
-            <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-700/20">
-              <button 
-                onClick={() => handleDeleteVideo(activeVideo.id, activeVideo.url)}
-                className="px-3 py-2 rounded-xl text-xs font-medium bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition flex items-center gap-1.5"
-              >
-                <FiTrash2 size={14} /> Hapus Video
-              </button>
-
-              <button 
-                onClick={() => setActiveVideo(null)}
-                className="px-4 py-2 rounded-xl text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition"
-              >
-                Tutup Pemutar
-              </button>
-            </div>
-
+            <button 
+              onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'large' ? 'normal' : 'large'); }} 
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition"
+              title="Perbesar / Expand"
+            >
+              Expand
+            </button>
+            <button 
+              onClick={() => { setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
+              className="p-1 rounded-full hover:bg-red-600 transition"
+            >
+              <FiX size={14} />
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Elemen Video Player Utama */}
+        <div className="w-full bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
+          <video 
+            src={activeVideo.url} 
+            controls 
+            autoPlay
+            className={`w-full object-contain transition-all ${
+              modalSize === 'small' ? 'max-h-[25vh]' : modalSize === 'large' ? 'max-h-[75vh]' : 'max-h-[50vh]'
+            }`}
+          />
+          
+          {/* Tombol Navigasi Ganti Video di Atas Layar Video */}
+          <button 
+            onClick={handlePrevVideo} 
+            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black transition shadow"
+            title="Video Sebelumnya"
+          >
+            <FiSkipBack size={16} />
+          </button>
+          <button 
+            onClick={handleNextVideo} 
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black transition shadow"
+            title="Video Selanjutnya"
+          >
+            <FiSkipForward size={16} />
+          </button>
+        </div>
+
+        {/* Tombol Navigasi Bawah & Aksi Lainnya */}
+        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs">
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={handlePrevVideo}
+              className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 transition flex items-center gap-1 text-[11px]"
+            >
+              <FiSkipBack size={12} /> Prev
+            </button>
+            <button 
+              onClick={handleNextVideo}
+              className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 transition flex items-center gap-1 text-[11px]"
+            >
+              Next <FiSkipForward size={12} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={() => handleDeleteVideo(activeVideo.id, activeVideo.url)}
+              className="px-2.5 py-1 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition flex items-center gap-1 text-[11px]"
+            >
+              <FiTrash2 size={12} /> Hapus
+            </button>
+
+            <button 
+              onClick={() => { setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
+              className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition text-[11px]"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+})()}
 
     </div>
   );
