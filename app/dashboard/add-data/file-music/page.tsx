@@ -512,94 +512,110 @@ export default function FileMusicPage() {
             </div>
 
             {/* Bagian Kanan: KOTAK PANEL MIN PLAYER UTAMA */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-inner ${
-              mode === 'light' ? 'bg-slate-50/80 border-slate-200' : 'bg-[#0f172a]/60 border-slate-700/80'
-            }`}>
-              <div className="flex items-center justify-between border-b pb-2 border-slate-700/20">
-                <span className="text-xs font-bold flex items-center gap-1.5">
-                  <FiDisc className="text-blue-500 animate-spin" size={14} /> Pemutar Musik Aktif
-                </span>
-                <span className="text-[10px] opacity-60">{activeAudio ? activeAudio.name : 'Standby'}</span>
-              </div>
+{/* Bagian Kanan: KOTAK PANEL MIN PLAYER UTAMA */}
+<div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-inner ${
+  mode === 'light' ? 'bg-slate-50/80 border-slate-200' : 'bg-[#0f172a]/60 border-slate-700/80'
+}`}>
+  <div className="flex items-center justify-between border-b pb-2 border-slate-700/20">
+    <span className="text-xs font-bold flex items-center gap-1.5">
+      <FiDisc className="text-blue-500 animate-spin" size={14} /> Pemutar Musik Aktif
+    </span>
+    <span className="text-[10px] opacity-60 truncate max-w-[120px]">{activeAudio ? activeAudio.name : 'Standby'}</span>
+  </div>
 
-              {activeAudio ? (
-                <div className="py-3 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow ${isPlaying ? 'animate-pulse' : ''}`}>
-                      <FiDisc size={22} className={isPlaying ? 'animate-spin' : ''} />
-                    </div>
-                    <div className="truncate flex-grow">
-                      <h4 className="text-xs font-bold truncate">{activeAudio.name}</h4>
-                      <p className="text-[10px] opacity-60 truncate">{activeAudio.artist}</p>
-                    </div>
-                  </div>
+  {activeAudio ? (
+    <div className="py-3 space-y-3 flex flex-col items-center text-center">
+      
+{/* KOTAK ICON BERPUTAR JELAS (BENTUK KOTAK) */}
+      <div 
+        className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg my-1 border-2 border-white/40 transition-transform ${
+          isPlaying ? 'animate-spin' : ''
+        }`}
+        style={{ animationDuration: '3s' }}
+      >
+        <div className="w-8 h-8 rounded-lg bg-slate-900/40 border border-white/20 flex items-center justify-center">
+          <FiDisc size={18} className="text-white" />
+        </div>
+      </div>
+      {/* JUDUL DAN NAMA ARTIS DI BAWAH IKON */}
+      <div className="w-full px-2">
+        <h4 className="text-xs font-bold truncate w-full" title={activeAudio.name}>
+          {activeAudio.name}
+        </h4>
+        <p className="text-[10px] opacity-60 truncate w-full mt-0.5">
+          {activeAudio.artist}
+        </p>
+      </div>
 
-                  {/* Progress Bar & Durasi */}
-                  <div className="space-y-1">
-                    <input 
-                      type="range" 
-                      min={0} 
-                      max={duration || 100} 
-                      value={currentTime} 
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setCurrentTime(val);
-                        if (audioRef.current) audioRef.current.currentTime = val;
-                      }}
-                      className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <div className="flex justify-between text-[10px] opacity-60">
-                      <span>{formatTime(currentTime)}</span>
-                      <span>{formatTime(duration)}</span>
-                    </div>
-                  </div>
+      {/* Progress Bar & Durasi */}
+      <div className="w-full space-y-1">
+        <input 
+          type="range" 
+          min={0} 
+          max={duration || 100} 
+          value={currentTime} 
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setCurrentTime(val);
+            if (audioRef.current) audioRef.current.currentTime = val;
+          }}
+          className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+        />
+        <div className="flex justify-between text-[10px] opacity-60">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
 
-                  {/* Tombol Kontrol Langsung di Kotak */}
-                  <div className="flex items-center justify-center gap-2 pt-1">
-                    <button onClick={handlePrevTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Sebelumnya">
-                      <FiSkipBack size={14} />
-                    </button>
-                    <button onClick={() => skipTime(-10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Mundur 10s">
-                      -10s
-                    </button>
-                    <button 
-                      onClick={() => togglePlayAudio(activeAudio)} 
-                      className="p-3 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition"
-                      title={isPlaying ? "Pause" : "Play"}
-                    >
-                      {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
-                    </button>
-                    <button onClick={() => skipTime(10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Maju 10s">
-                      +10s
-                    </button>
-                    <button onClick={handleNextTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Selanjutnya">
-                      <FiSkipForward size={14} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center opacity-60 text-xs">
-                  <FiMusic size={28} className="mb-2 opacity-40" />
-                  <p>Belum ada musik diputar.<br/>Klik lagu untuk memutar langsung.</p>
-                </div>
-              )}
+      {/* Tombol Kontrol Langsung di Kotak */}
+      <div className="flex items-center justify-center gap-2 pt-1 w-full">
+        <button onClick={handlePrevTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Sebelumnya">
+          <FiSkipBack size={14} />
+        </button>
+        <button onClick={() => skipTime(-10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Mundur 10s">
+          -10s
+        </button>
+        <button 
+          onClick={() => togglePlayAudio(activeAudio)} 
+          className="p-3 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition"
+          title={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
+        </button>
+        <button onClick={() => skipTime(10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Maju 10s">
+          +10s
+        </button>
+        <button onClick={handleNextTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Selanjutnya">
+          <FiSkipForward size={14} />
+        </button>
+      </div>
 
-              {/* Selector Kecepatan di Kotak */}
-              <div className="border-t pt-2 border-slate-700/20 flex items-center justify-between">
-                <span className="text-[10px] opacity-60">Kecepatan:</span>
-                <div className="flex gap-1">
-                  {[1, 1.25, 1.5, 2].map(speed => (
-                    <button 
-                      key={speed}
-                      onClick={() => changeSpeed(speed)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${playbackSpeed === speed ? 'bg-blue-600 text-white' : 'bg-slate-500/10 hover:bg-slate-500/20'}`}
-                    >
-                      {speed}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-center py-8 text-center opacity-60 text-xs">
+      <FiMusic size={28} className="mb-2 opacity-40" />
+      <p>Belum ada musik diputar.<br/>Klik lagu untuk memutar langsung.</p>
+    </div>
+  )}
+
+  {/* Selector Kecepatan di Kotak */}
+  <div className="border-t pt-2 border-slate-700/20 flex items-center justify-between">
+    <span className="text-[10px] opacity-60">Kecepatan:</span>
+    <div className="flex gap-1">
+      {[1, 1.25, 1.5, 2].map(speed => (
+        <button 
+          key={speed}
+          onClick={() => changeSpeed(speed)}
+          className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+            playbackSpeed === speed ? 'bg-blue-600 text-white' : 'bg-slate-500/10 hover:bg-slate-500/20'
+          }`}
+        >
+          {speed}x
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
 
           </div>
         )}
@@ -717,10 +733,15 @@ export default function FileMusicPage() {
 
             <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Pemutar Musik Pop-up</span>
 
-            {/* Disk Album Visual */}
-            <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl my-1 ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }}>
-              <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/20">
-                <FiDisc size={16} />
+{/* Kotak Album Visual yang Berputar Jelas */}
+            <div 
+              className={`w-15 h-15 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl my-1 border-2 border-white/40 ${
+                isPlaying ? 'animate-spin' : ''
+              }`} 
+              style={{ animationDuration: '4s' }}
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-900/50 border border-white/20 flex items-center justify-center">
+                <FiDisc size={20} className="text-white" />
               </div>
             </div>
 
