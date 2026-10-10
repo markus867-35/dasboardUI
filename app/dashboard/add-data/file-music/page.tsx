@@ -4,7 +4,8 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { 
   FiMusic, FiUpload, FiTrash2, FiSearch, 
   FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload, FiLink, FiSave,
-  FiFolder, FiFolderPlus, FiEdit2, FiMove, FiChevronRight, FiArrowLeft
+  FiFolder, FiFolderPlus, FiEdit2, FiMove, FiChevronRight, FiArrowLeft,
+  FiSkipBack, FiSkipForward, FiFastForward, FiRewind
 } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 
@@ -49,9 +50,16 @@ export default function FileMusicPage() {
   // State untuk Modal Pindah Folder Musik
   const [movingTrack, setMovingTrack] = useState<MusicItem | null>(null);
   
-  // State untuk Pemutar Musik (Audio Player)
+  // State Pemutar Musik Aktif
   const [activeAudio, setActiveAudio] = useState<MusicItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+
+  // State Khusus Pop-up (HANYA AKTIF SAAT IKON DIKLIK)
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const getCardStyle = () => {
@@ -235,6 +243,7 @@ export default function FileMusicPage() {
         audioRef.current?.pause();
         setActiveAudio(null);
         setIsPlaying(false);
+        setIsPopupOpen(false);
       }
       setMusicList(musicList.filter(item => item.id !== id));
     } catch (error) {
@@ -242,6 +251,7 @@ export default function FileMusicPage() {
     }
   };
 
+  // Memutar / Menjedakan Lagu tanpa Membuka Pop-up
   const togglePlayAudio = (item: MusicItem) => {
     if (activeAudio?.id === item.id) {
       if (isPlaying) {
@@ -257,18 +267,61 @@ export default function FileMusicPage() {
     }
   };
 
+  // HANYA MEMUNCULKAN POP-UP KETIKA IKON MUSIK DIKLIK EKSPLISIT
+  const handleIconClickOpenPopup = (item: MusicItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveAudio(item);
+    setIsPlaying(true);
+    setIsPopupOpen(true); // Membuka pop-up khusus klik ikon
+  };
+
+  // Lagu Otomatis Mengganti Selanjutnya Tanpa Buka Pop-up
+  const handleNextTrack = () => {
+    if (!activeAudio || filteredMusic.length === 0) return;
+    const currentIndex = filteredMusic.findIndex(m => m.id === activeAudio.id);
+    const nextIndex = (currentIndex + 1) % filteredMusic.length;
+    setActiveAudio(filteredMusic[nextIndex]);
+    setIsPlaying(true);
+  };
+
+  const handlePrevTrack = () => {
+    if (!activeAudio || filteredMusic.length === 0) return;
+    const currentIndex = filteredMusic.findIndex(m => m.id === activeAudio.id);
+    const prevIndex = (currentIndex - 1 + filteredMusic.length) % filteredMusic.length;
+    setActiveAudio(filteredMusic[prevIndex]);
+    setIsPlaying(true);
+  };
+
+  const skipTime = (amount: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Math.min(Math.max(audioRef.current.currentTime + amount, 0), duration);
+    }
+  };
+
+  const changeSpeed = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speed;
+    }
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs)) return "00:00";
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
   useEffect(() => {
     if (activeAudio && audioRef.current) {
       audioRef.current.load();
+      audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   }, [activeAudio]);
 
-const filteredMusic = musicList.filter(item => {
+  const filteredMusic = musicList.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.artist.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Jika di "Semua Musik", hanya tampilkan lagu yang folder_id-nya null/kosong
-    // Jika di folder spesifik, tampilkan lagu yang folder_id-nya sesuai dengan folder yang dipilih
     const matchesFolder = selectedFolderId === 'all' 
       ? (item.folder_id === null || item.folder_id === undefined) 
       : item.folder_id === selectedFolderId;
@@ -394,7 +447,7 @@ const filteredMusic = musicList.filter(item => {
         </div>
       </div>
 
-      {/* AREA UTAMA KONTEN (MENAMPILKAN FOLDER CARD & MUSIK) */}
+      {/* AREA UTAMA KONTEN */}
       <div className={`min-h-[400px] p-6 rounded-2xl border transition-all ${getCardStyle()}`}>
         
         <div className="mb-6 flex justify-between items-center">
@@ -414,45 +467,144 @@ const filteredMusic = musicList.filter(item => {
           <span className="text-xs opacity-60">{filteredMusic.length} Trek Musik</span>
         </div>
 
-        {/* JIKA DI 'SEMUA MUSIK', TAMPILKAN KARTU FOLDER DI ATAS */}
-        {selectedFolderId === 'all' && folders.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {folders.map(folder => {
-                const count = musicList.filter(m => m.folder_id === folder.id).length;
-                return (
-                  <div 
-                    key={folder.id}
-                    onClick={() => setSelectedFolderId(folder.id)}
-                    className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-                      mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                        <FiFolder size={20} />
-                      </div>
-                      <div className="truncate">
-                        <h4 className="text-xs font-bold truncate group-hover:text-blue-400 transition">{folder.name}</h4>
-                        <p className="text-[10px] opacity-60">{count} Item</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }} 
-                        className="p-1 hover:text-red-400" title="Hapus Folder"
+        {/* FOLDER DAFTAR + KOTAK PEMUTAR KANAN */}
+        {selectedFolderId === 'all' && (
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Bagian Kiri: Folder */}
+            <div className="lg:col-span-2">
+              <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
+              {folders.length === 0 ? (
+                <div className="text-xs opacity-50 py-4">Belum ada folder.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {folders.map(folder => {
+                    const count = musicList.filter(m => m.folder_id === folder.id).length;
+                    return (
+                      <div 
+                        key={folder.id}
+                        onClick={() => setSelectedFolderId(folder.id)}
+                        className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+                          mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
+                        }`}
                       >
-                        <FiTrash2 size={13} />
-                      </button>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
+                            <FiFolder size={20} />
+                          </div>
+                          <div className="truncate">
+                            <h4 className="text-xs font-bold truncate group-hover:text-blue-400 transition">{folder.name}</h4>
+                            <p className="text-[10px] opacity-60">{count} Item</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }} 
+                            className="p-1 hover:text-red-400" title="Hapus Folder"
+                          >
+                            <FiTrash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Bagian Kanan: KOTAK PANEL MIN PLAYER UTAMA */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-inner ${
+              mode === 'light' ? 'bg-slate-50/80 border-slate-200' : 'bg-[#0f172a]/60 border-slate-700/80'
+            }`}>
+              <div className="flex items-center justify-between border-b pb-2 border-slate-700/20">
+                <span className="text-xs font-bold flex items-center gap-1.5">
+                  <FiDisc className="text-blue-500 animate-spin" size={14} /> Pemutar Musik Aktif
+                </span>
+                <span className="text-[10px] opacity-60">{activeAudio ? activeAudio.name : 'Standby'}</span>
+              </div>
+
+              {activeAudio ? (
+                <div className="py-3 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow ${isPlaying ? 'animate-pulse' : ''}`}>
+                      <FiDisc size={22} className={isPlaying ? 'animate-spin' : ''} />
+                    </div>
+                    <div className="truncate flex-grow">
+                      <h4 className="text-xs font-bold truncate">{activeAudio.name}</h4>
+                      <p className="text-[10px] opacity-60 truncate">{activeAudio.artist}</p>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Progress Bar & Durasi */}
+                  <div className="space-y-1">
+                    <input 
+                      type="range" 
+                      min={0} 
+                      max={duration || 100} 
+                      value={currentTime} 
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setCurrentTime(val);
+                        if (audioRef.current) audioRef.current.currentTime = val;
+                      }}
+                      className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <div className="flex justify-between text-[10px] opacity-60">
+                      <span>{formatTime(currentTime)}</span>
+                      <span>{formatTime(duration)}</span>
+                    </div>
+                  </div>
+
+                  {/* Tombol Kontrol Langsung di Kotak */}
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button onClick={handlePrevTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Sebelumnya">
+                      <FiSkipBack size={14} />
+                    </button>
+                    <button onClick={() => skipTime(-10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Mundur 10s">
+                      -10s
+                    </button>
+                    <button 
+                      onClick={() => togglePlayAudio(activeAudio)} 
+                      className="p-3 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition"
+                      title={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
+                    </button>
+                    <button onClick={() => skipTime(10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Maju 10s">
+                      +10s
+                    </button>
+                    <button onClick={handleNextTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Selanjutnya">
+                      <FiSkipForward size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center opacity-60 text-xs">
+                  <FiMusic size={28} className="mb-2 opacity-40" />
+                  <p>Belum ada musik diputar.<br/>Klik lagu untuk memutar langsung.</p>
+                </div>
+              )}
+
+              {/* Selector Kecepatan di Kotak */}
+              <div className="border-t pt-2 border-slate-700/20 flex items-center justify-between">
+                <span className="text-[10px] opacity-60">Kecepatan:</span>
+                <div className="flex gap-1">
+                  {[1, 1.25, 1.5, 2].map(speed => (
+                    <button 
+                      key={speed}
+                      onClick={() => changeSpeed(speed)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${playbackSpeed === speed ? 'bg-blue-600 text-white' : 'bg-slate-500/10 hover:bg-slate-500/20'}`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="border-b border-slate-700/20 my-6"></div>
+
           </div>
         )}
+
+        <div className="border-b border-slate-700/20 my-6"></div>
 
         <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">
           {selectedFolderId === 'all' ? 'Semua Berkas Musik' : `Musik dalam "${currentFolderName}"`}
@@ -472,15 +624,21 @@ const filteredMusic = musicList.filter(item => {
               return (
                 <div 
                   key={item.id} 
-                  onClick={() => togglePlayAudio(item)}
                   className={`group flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition relative ${
                     isCurrent ? 'border-blue-500 bg-blue-500/10' : mode === 'light' ? 'border-slate-200 hover:bg-slate-50' : 'border-slate-800 bg-[#0f172a]/50 hover:bg-slate-800/50'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow transition transform group-hover:scale-105 ${isCurrent ? 'bg-blue-600 animate-pulse' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
-                    {isCurrent ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
-                  </div>
-                  <div className="flex flex-col overflow-hidden flex-grow">
+                  {/* KLIK IKON MUSIK -> HANYA DENGAN INI POP-UP MUNCUL */}
+                  <button 
+                    onClick={(e) => handleIconClickOpenPopup(item, e)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow transition transform group-hover:scale-105 ${isCurrent ? 'bg-blue-600 animate-pulse' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}
+                    title="Klik untuk membuka Pop-up Pemutar Musik"
+                  >
+                    {isCurrent ? <FiPause size={16} /> : <FiMusic size={16} />}
+                  </button>
+
+                  {/* KLIK NAMA LAGU -> MEMUTAR LAGU DI KOTAK KANAN TANPA MEMBUKA POP-UP */}
+                  <div className="flex flex-col overflow-hidden flex-grow" onClick={() => togglePlayAudio(item)}>
                     <span className="text-xs font-bold truncate w-full" title={item.name}>{item.name}</span>
                     <span className="text-[10px] opacity-60 truncate w-full">{item.artist}</span>
                   </div>
@@ -502,7 +660,7 @@ const filteredMusic = musicList.filter(item => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-700/20 opacity-60">
-                  <th className="pb-3 w-10">Status</th>
+                  <th className="pb-3 w-10">Icon</th>
                   <th className="pb-3">Judul Trek</th>
                   <th className="pb-3">Artis</th>
                   <th className="pb-3">Tanggal</th>
@@ -513,14 +671,19 @@ const filteredMusic = musicList.filter(item => {
                 {filteredMusic.map((item) => {
                   const isCurrent = activeAudio?.id === item.id && isPlaying;
                   return (
-                    <tr key={item.id} onClick={() => togglePlayAudio(item)} className={`hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer ${isCurrent ? 'bg-blue-500/5' : ''}`}>
+                    <tr key={item.id} className={`hover:bg-black/5 dark:hover:bg-white/5 transition ${isCurrent ? 'bg-blue-500/5' : ''}`}>
                       <td className="py-2.5">
-                        <button className={`w-7 h-7 rounded-lg flex items-center justify-center text-white ${isCurrent ? 'bg-blue-600' : 'bg-slate-700'}`}>
-                          {isCurrent ? <FiPause size={12} /> : <FiPlay size={12} className="ml-0.5" />}
+                        {/* KLIK IKON MUSIK -> HANYA DENGAN INI POP-UP MUNCUL */}
+                        <button 
+                          onClick={(e) => handleIconClickOpenPopup(item, e)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-white transition ${isCurrent ? 'bg-blue-600' : 'bg-slate-700 hover:bg-blue-600'}`}
+                          title="Klik untuk membuka Pop-up Pemutar Musik"
+                        >
+                          {isCurrent ? <FiPause size={12} /> : <FiMusic size={12} />}
                         </button>
                       </td>
-                      <td className="py-2.5 font-bold truncate max-w-xs">{item.name}</td>
-                      <td className="py-2.5 opacity-70 truncate max-w-[150px]">{item.artist}</td>
+                      <td className="py-2.5 font-bold truncate max-w-xs cursor-pointer" onClick={() => togglePlayAudio(item)}>{item.name}</td>
+                      <td className="py-2.5 opacity-70 truncate max-w-[150px] cursor-pointer" onClick={() => togglePlayAudio(item)}>{item.artist}</td>
                       <td className="py-2.5 opacity-70">{item.date}</td>
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -536,6 +699,110 @@ const filteredMusic = musicList.filter(item => {
           </div>
         )}
       </div>
+
+      {/* POP-UP MODAL PEMUTAR MUSIK (HANYA MUNCUL KETIKA IKON DIKLIK EKSPLISIT) */}
+      {isPopupOpen && activeAudio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className={`w-full max-w-sm p-6 rounded-2xl border shadow-2xl flex flex-col items-center text-center gap-4 relative ${
+            mode === 'light' ? 'bg-white text-slate-800' : 'bg-[#16222A] text-slate-100 border-slate-700'
+          }`}>
+            
+            {/* Tombol Tutup Pop-up */}
+            <button 
+              onClick={() => setIsPopupOpen(false)} 
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-500/20 opacity-70 hover:opacity-100 transition"
+            >
+              <FiX size={18} />
+            </button>
+
+            <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Pemutar Musik Pop-up</span>
+
+            {/* Disk Album Visual */}
+            <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl my-1 ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }}>
+              <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/20">
+                <FiDisc size={16} />
+              </div>
+            </div>
+
+            {/* Info Musik */}
+            <div className="w-full px-2">
+              <h3 className="text-sm font-bold truncate" title={activeAudio.name}>
+                {activeAudio.name}
+              </h3>
+              <p className="text-xs opacity-60 truncate mt-0.5">
+                {activeAudio.artist}
+              </p>
+            </div>
+
+            {/* Progress Bar & Durasi */}
+            <div className="w-full space-y-1">
+              <input 
+                type="range" 
+                min={0} 
+                max={duration || 100} 
+                value={currentTime} 
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCurrentTime(val);
+                  if (audioRef.current) audioRef.current.currentTime = val;
+                }}
+                className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+              <div className="flex justify-between text-[10px] opacity-60">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Tombol Kontrol: Prev, Rewind 10s, Play/Pause, Fast Forward 10s, Next */}
+            <div className="flex items-center justify-center gap-3 my-1">
+              <button onClick={handlePrevTrack} className="p-2.5 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition text-slate-300 dark:text-slate-200" title="Lagu Sebelumnya">
+                <FiSkipBack size={16} />
+              </button>
+
+              <button onClick={() => skipTime(-10)} className="p-2.5 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition text-xs font-bold" title="Mundur 10 Detik">
+                -10s
+              </button>
+
+              <button 
+                onClick={() => togglePlayAudio(activeAudio)} 
+                className="p-3.5 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+                title={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? <FiPause size={18} /> : <FiPlay size={18} className="ml-0.5" />}
+              </button>
+
+              <button onClick={() => skipTime(10)} className="p-2.5 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition text-xs font-bold" title="Maju 10 Detik">
+                +10s
+              </button>
+
+              <button onClick={handleNextTrack} className="p-2.5 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition text-slate-300 dark:text-slate-200" title="Lagu Selanjutnya">
+                <FiSkipForward size={16} />
+              </button>
+            </div>
+
+            {/* Selector Kecepatan */}
+            <div className="w-full border-t border-slate-700/20 pt-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold opacity-60">Kecepatan Musik:</span>
+                <span className="text-xs font-bold text-blue-500">{playbackSpeed}x</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[0.5, 1, 1.25, 1.5, 2].map((speed) => (
+                  <button
+                    key={speed}
+                    onClick={() => changeSpeed(speed)}
+                    className={`py-1 rounded-lg text-[10px] font-semibold transition ${playbackSpeed === speed ? 'bg-blue-600 text-white' : 'bg-slate-500/10 hover:bg-slate-500/20'}`}
+                  >
+                    {speed}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* MODAL PINDAH FOLDER */}
       {movingTrack && (
@@ -567,21 +834,17 @@ const filteredMusic = musicList.filter(item => {
         </div>
       )}
 
-      {/* AUDIO PLAYER BAR */}
+      {/* ELEMENT AUDIO UTAMA (OTOMATIS BERPINDAH KE LAGU BERIKUTNYA) */}
       {activeAudio && (
-        <div className={`fixed z-40 shadow-2xl backdrop-blur-lg border ${mode === 'light' ? 'bg-white/95 text-slate-900 border-slate-200' : 'bg-[#16222A]/95 text-slate-100 border-slate-700'} bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl px-5 py-3 rounded-2xl flex items-center justify-between gap-4`}>
-          <div className="flex items-center gap-3 overflow-hidden flex-grow min-w-0">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 ${isPlaying ? 'animate-spin' : ''}`}>
-              <FiDisc size={20} />
-            </div>
-            <div className="truncate min-w-0">
-              <h4 className="text-xs font-bold truncate">{activeAudio.name}</h4>
-              <p className="text-[10px] opacity-60 truncate">{activeAudio.artist}</p>
-            </div>
-          </div>
-          <audio ref={audioRef} src={activeAudio.url} onEnded={() => setIsPlaying(false)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} controls className="h-8 w-[200px] shrink-0" />
-          <button onClick={() => { audioRef.current?.pause(); setActiveAudio(null); setIsPlaying(false); }} className="p-2 rounded-full hover:bg-black/10"><FiX size={16} /></button>
-        </div>
+        <audio 
+          ref={audioRef} 
+          src={activeAudio.url} 
+          onEnded={handleNextTrack} 
+          onPlay={() => setIsPlaying(true)} 
+          onPause={() => setIsPlaying(false)} 
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        />
       )}
 
     </div>
