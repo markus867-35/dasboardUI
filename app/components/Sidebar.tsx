@@ -523,6 +523,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
                 <Link href="/dashboard/setting/finance" className={getSubLinkStyle('/dashboard/setting/finance')} onClick={handleMenuClick}>
                 Finance
               </Link>
+              <Link href="/dashboard/setting/Tabungan" className={getSubLinkStyle('/dashboard/setting/Tabungan')} onClick={handleMenuClick}>
+                Tabungan
+              </Link>
             </div>
           )}
         </div>

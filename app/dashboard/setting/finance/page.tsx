@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase'; // Sesuaikan path supabase client Anda
+import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/app/context/ThemeContext';
 import { FiDollarSign, FiArrowUpRight, FiArrowDownLeft, FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
 
@@ -12,6 +12,45 @@ interface Transaction {
   type: 'income' | 'expense';
   category: string;
   date: string;
+}
+
+// Komponen Animasi Angka Mata Uang
+interface AnimatedCounterProps {
+  value: number;
+}
+
+function AnimatedCounter({ value }: AnimatedCounterProps) {
+  const [count, setCount] = useState<number>(0);
+
+  useEffect(() => {
+    let start = 0;
+    const duration = 2000; // Durasi animasi 2 detik
+    const incrementTime = 20; 
+    const steps = duration / incrementTime;
+    const increment = value / steps;
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return (
+    <span>
+      {new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+      }).format(count)}
+    </span>
+  );
 }
 
 export default function FinancePage() {
@@ -102,10 +141,6 @@ export default function FinancePage() {
 
   const remainingBalance = totalIncome - totalExpense;
 
-  const formatRupiah = (number: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
-  };
-
   return (
     <div className={`p-6 min-h-screen ${isDark ? 'bg-[#0b1329] text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
       
@@ -126,7 +161,7 @@ export default function FinancePage() {
         }`}>
           <span className="text-xs opacity-60 font-medium">Sisa Saldo Keuangan</span>
           <h2 className={`text-2xl font-black my-2 ${remainingBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            {formatRupiah(remainingBalance)}
+            <AnimatedCounter value={remainingBalance} />
           </h2>
           <span className="text-[10px] opacity-50">Total Bersih (Pemasukan - Pengeluaran)</span>
         </div>
@@ -141,7 +176,9 @@ export default function FinancePage() {
               <FiArrowDownLeft size={16} />
             </div>
           </div>
-          <h2 className="text-xl font-bold text-emerald-500 my-2">{formatRupiah(totalIncome)}</h2>
+          <h2 className="text-xl font-bold text-emerald-500 my-2">
+            <AnimatedCounter value={totalIncome} />
+          </h2>
           <span className="text-[10px] opacity-50">Akumulasi seluruh pemasukan</span>
         </div>
 
@@ -155,7 +192,9 @@ export default function FinancePage() {
               <FiArrowUpRight size={16} />
             </div>
           </div>
-          <h2 className="text-xl font-bold text-red-500 my-2">{formatRupiah(totalExpense)}</h2>
+          <h2 className="text-xl font-bold text-red-500 my-2">
+            <AnimatedCounter value={totalExpense} />
+          </h2>
           <span className="text-[10px] opacity-50">Akumulasi seluruh pengeluaran</span>
         </div>
 
@@ -294,7 +333,7 @@ export default function FinancePage() {
 
                   <div className="flex items-center gap-3">
                     <span className={`text-xs font-bold ${item.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {item.type === 'income' ? '+' : '-'} {formatRupiah(item.amount)}
+                      {item.type === 'income' ? '+' : '-'} {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.amount)}
                     </span>
                     <button 
                       onClick={() => handleDeleteTransaction(item.id)}
