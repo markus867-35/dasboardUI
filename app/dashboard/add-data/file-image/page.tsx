@@ -343,8 +343,8 @@ export default function FileImagePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedImage, activeImages]);
 
-  return (
-  <div className="p-0 sm:p-0 space-y-6 max-w-[1700px] mx-auto w-full">
+return (
+  <div className="w-full px-full sm:px-0 md:px-0 space-y-0 max-w-[1700px] mx-auto box-border">
     
     {/* HEADER & TOOLBAR */}
     <div className={`p-4 sm:p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
