@@ -657,9 +657,7 @@ const handleUpdateFolder = async (id: string | number) => {
 
 
 
-
-
-     {/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
+{/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
 {/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
 {/* MODAL PEMUTAR VIDEO (DENGAN FITUR DRAG / GESER KE MANA MANA) */}
 {activeVideo && (() => {
@@ -701,6 +699,7 @@ const handleUpdateFolder = async (id: string | number) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      {/* Elemen Pembungkus Modal dengan Resize */}
       <div 
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
@@ -708,14 +707,14 @@ const handleUpdateFolder = async (id: string | number) => {
           overflow: 'auto',
         }}
         className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
-          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[95vw] h-[90vh]' : 'w-[700px] h-auto'
+          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[95vw] h-[90vh]' : 'w-[700px] h-[500px]'
         } ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}
       >
         
-        {/* AREA HEADER YANG BISA DI-DRAG */}
+        {/* AREA HEADER */}
         <div 
           onMouseDown={handleMouseDown}
-          className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none"
+          className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none shrink-0 relative"
           title="Klik dan tahan di sini untuk menggeser jendela"
         >
           <div className="pr-20 overflow-hidden">
@@ -723,45 +722,41 @@ const handleUpdateFolder = async (id: string | number) => {
             <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
           </div>
 
-          {/* Tombol Kontrol Ukuran & Tutup */}
-          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0">
+          {/* Tombol Kontrol Ukuran dengan z-20 agar bisa diklik */}
+          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-20">
             <button 
               onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
-              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition"
-              title="Perkecil / Minimize"
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
             >
               {modalSize === 'small' ? 'Restore' : 'Minimize'}
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'large' ? 'normal' : 'large'); }} 
-              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition"
-              title="Perbesar / Expand"
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
             >
               {modalSize === 'large' ? 'Normal' : 'Expand'}
             </button>
             <button 
-              onClick={() => { setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
-              className="p-1 rounded-full hover:bg-red-600 transition"
+              onClick={(e) => { e.stopPropagation(); setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
+              className="p-1 rounded-full hover:bg-red-600 transition cursor-pointer"
             >
               <FiX size={14} />
             </button>
           </div>
         </div>
 
-        {/* Elemen Video Player Utama */}
-        <div className="w-full bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group flex-1">
+        {/* Elemen Video Player Utama (Menggunakan flex-1 dan min-h-0 agar ikut meresize) */}
+        <div className="w-full flex-1 min-h-0 bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
           <video 
-            key={activeVideo.url} // Tambahkan key agar video mereset & langsung play saat ganti video
+            key={activeVideo.url} 
             src={activeVideo.url} 
             controls 
             autoPlay
-            onEnded={handleNextVideo} // <-- FITUR BARU: Otomatis ke video berikutnya saat habis
-            className={`w-full object-contain transition-all ${
-              modalSize === 'small' ? 'max-h-[25vh]' : modalSize === 'large' ? 'h-full max-h-[75vh]' : 'max-h-[50vh]'
-            }`}
+            onEnded={handleNextVideo}
+            className="w-full h-full object-contain"
           />
           
-          {/* Tombol Navigasi Kiri/Kanan di Atas Layar Video (Muncul saat di-hover atau di mode large) */}
+          {/* Tombol Navigasi Kiri/Kanan */}
           <button 
             onClick={handlePrevVideo} 
             className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
@@ -778,8 +773,8 @@ const handleUpdateFolder = async (id: string | number) => {
           </button>
         </div>
 
-        {/* Tombol Navigasi Bawah & Aksi Lainnya */}
-        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs">
+        {/* Tombol Navigasi Bawah */}
+        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
             <button 
               onClick={handlePrevVideo}
