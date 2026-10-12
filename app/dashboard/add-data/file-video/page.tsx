@@ -261,7 +261,7 @@ const handleUpdateFolder = async (id: string | number) => {
 
   
   return (
-    <div className="p-6 space-y-6 relative">
+    <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
       
       {/* HEADER & TOOLBAR */}
       <div className={`p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
@@ -293,59 +293,69 @@ const handleUpdateFolder = async (id: string | number) => {
           </div>
         </div>
 
-        {/* TAB NAVIGASI FOLDER DI ATAS */}
-        <div className="mt-6 pt-5 border-t border-slate-700/20 flex flex-wrap items-center gap-2">
-          <button 
-            onClick={() => setSelectedFolderId('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 transition ${
-              selectedFolderId === 'all' ? 'bg-blue-600 text-white shadow' : mode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-            }`}
-          >
-            <FiVideo size={14} />
-            <span>Semua Video ({videoList.filter(v => v.folder_id === null || v.folder_id === undefined).length})</span>
-          </button>
 
-          {folders.map(folder => {
-            const isSelected = selectedFolderId === folder.id;
-            const count = videoList.filter(v => v.folder_id === folder.id).length;
-            return (
-              <button 
-                key={folder.id}
-                onClick={() => setSelectedFolderId(folder.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 transition ${
-                  isSelected ? 'bg-blue-600 text-white shadow' : mode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                }`}
-              >
-                <FiFolder size={14} />
-                <span>{folder.name} ({count})</span>
-              </button>
-            );
-          })}
 
-          {/* Tombol Buat Folder */}
-          {isCreatingFolder ? (
-            <form onSubmit={handleCreateFolder} className="flex items-center gap-1">
-              <input 
-                type="text" 
-                placeholder="Nama folder..." 
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                className={`px-3 py-1.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
-                autoFocus
-              />
-              <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-xl font-medium">Buat</button>
-              <button type="button" onClick={() => setIsCreatingFolder(false)} className="px-2 py-1.5 text-xs opacity-60">Batal</button>
-            </form>
-          ) : (
-            <button 
-              onClick={() => setIsCreatingFolder(true)}
-              className={`px-3 py-1.5 rounded-xl border border-dashed text-xs font-medium flex items-center gap-1.5 transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}
-            >
-              <FiFolderPlus size={14} className="text-blue-500" />
-              <span>Folder Baru</span>
-            </button>
-          )}
-        </div>
+
+{/* TAB NAVIGASI FOLDER DI ATAS */}
+<div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-700/20">
+  {/* Kontainer dengan horizontal scroll di mobile dan wrap normal di desktop */}
+  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none sm:flex-wrap">
+    
+    <button 
+      onClick={() => setSelectedFolderId('all')}
+      className={`px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 shrink-0 transition ${
+        selectedFolderId === 'all' ? 'bg-blue-600 text-white shadow' : mode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+      }`}
+    >
+      <FiVideo size={14} />
+      <span>Semua Video ({videoList.filter(v => v.folder_id === null || v.folder_id === undefined).length})</span>
+    </button>
+
+    {folders.map(folder => {
+      const isSelected = selectedFolderId === folder.id;
+      const count = videoList.filter(v => v.folder_id === folder.id).length;
+      return (
+        <button 
+          key={folder.id}
+          onClick={() => setSelectedFolderId(folder.id)}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 shrink-0 transition ${
+            isSelected ? 'bg-blue-600 text-white shadow' : mode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+          }`}
+        >
+          <FiFolder size={14} />
+          <span>{folder.name} ({count})</span>
+        </button>
+      );
+    })}
+
+    {/* Tombol Buat Folder */}
+    {isCreatingFolder ? (
+      <form onSubmit={handleCreateFolder} className="flex items-center gap-1 shrink-0">
+        <input 
+          type="text" 
+          placeholder="Nama folder..." 
+          value={newFolderName}
+          onChange={(e) => setNewFolderName(e.target.value)}
+          className={`px-3 py-1.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+          autoFocus
+        />
+        <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-xl font-medium shrink-0">Buat</button>
+        <button type="button" onClick={() => setIsCreatingFolder(false)} className="px-2 py-1.5 text-xs opacity-60 shrink-0">Batal</button>
+      </form>
+    ) : (
+      <button 
+        onClick={() => setIsCreatingFolder(true)}
+        className={`px-3 py-1.5 rounded-xl border border-dashed text-xs font-medium flex items-center gap-1.5 shrink-0 transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}
+      >
+        <FiFolderPlus size={14} className="text-blue-500" />
+        <span>Folder Baru</span>
+      </button>
+    )}
+  </div>
+</div>
+
+
+
 
         {/* INPUT UPLOAD VIDEO */}
         <div className="mt-6 pt-6 border-t border-slate-700/20">
@@ -381,11 +391,17 @@ const handleUpdateFolder = async (id: string | number) => {
           <span className="text-xs opacity-60">{filteredVideos.length} Berkas Video</span>
         </div>
 
-        {/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
+
+
+
+
+{/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
 {selectedFolderId === 'all' && folders.length > 0 && (
   <div className="mb-8">
     <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    
+    {/* Diubah dari grid menjadi horizontal scroll di mobile dan grid kembali di komputer/tablet */}
+    <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:overflow-visible scrollbar-none">
       {folders.map(folder => {
         const count = videoList.filter(v => v.folder_id === folder.id).length;
         const isEditing = editingFolderId === folder.id;
@@ -396,7 +412,7 @@ const handleUpdateFolder = async (id: string | number) => {
             onClick={() => {
               if (!isEditing) setSelectedFolderId(folder.id);
             }}
-            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between shrink-0 w-[240px] sm:w-auto ${
               mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
             }`}
           >
@@ -478,6 +494,9 @@ const handleUpdateFolder = async (id: string | number) => {
     <div className="border-b border-slate-700/20 my-6"></div>
   </div>
 )}
+
+
+
 
         <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">
           {selectedFolderId === 'all' ? 'Berkas Video Tanpa Folder' : `Video dalam "${currentFolderName}"`}

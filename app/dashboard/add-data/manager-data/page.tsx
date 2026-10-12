@@ -312,8 +312,8 @@ const handleCreateFolder = async (e: React.FormEvent) => {
   };
 
   return (
-    <div className={`p-6 space-y-6 max-w-10xl mx-auto min-h-screen transition-colors ${
-      isDark ? 'text-slate-100 bg-slate-950' : 'text-slate-800 bg-white'
+    <div className={`p-0 space-y-6 max-w-10xl mx-auto min-h-screen transition-colors ${
+      isDark ? 'text-slate-100 ' : 'text-slate-800 bg-white'
     }`}>
       
       {/* HEADER & BREADCRUMB */}

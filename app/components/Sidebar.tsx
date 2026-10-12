@@ -172,7 +172,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   };
 
   return (
-<aside className={`fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${getSidebarStyle()} ${
+<aside className={`fixed inset-y-0 left-0 z-70 w-64 transition-transform duration-300 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${getSidebarStyle()} ${
   // sisa kode Anda di sini
   // sisa kode Anda di sini
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'

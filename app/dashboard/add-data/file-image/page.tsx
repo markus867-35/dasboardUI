@@ -344,118 +344,122 @@ export default function FileImagePage() {
   }, [selectedImage, activeImages]);
 
   return (
-    <div className="p-6 space-y-6 relative">
-      
-      {/* HEADER & TOOLBAR */}
-      <div className={`p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            {currentFolder && (
-              <button 
-                onClick={() => setCurrentFolder(null)}
-                className="p-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-blue-600 hover:text-white transition"
-                title="Kembali ke Root"
-              >
-                <FiArrowLeft size={18} />
-              </button>
-            )}
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                File Image <span className="text-xs font-normal opacity-65">/ {currentFolder ? currentFolder.name : 'Galeri Utama'}</span>
-              </h1>
-              <p className="text-xs opacity-70 mt-0.5">
-                {currentFolder ? `Menampilkan isi folder: ${currentFolder.name}` : 'Kelola folder, tangkapan layar, dan aset visual Anda.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {!currentFolder && (
-              <button 
-                onClick={() => setIsCreateFolderOpen(true)}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2.5 rounded-xl font-medium transition flex-shrink-0 shadow-md"
-              >
-                <FiFolderPlus size={16} /> Buat Folder
-              </button>
-            )}
-
-            <div className={`flex items-center px-3 py-2 rounded-xl border ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-700'} w-full md:w-56`}>
-              <FiSearch className="opacity-50 mr-2" />
-              <input 
-                type="text" 
-                placeholder="Cari berkas atau folder..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs w-full"
-              />
-            </div>
-            <div className="flex border rounded-xl overflow-hidden border-slate-700/20">
-              <button onClick={() => setViewMode('grid')} className={`p-2.5 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'opacity-65 hover:opacity-100'}`}><FiGrid size={16} /></button>
-              <button onClick={() => setViewMode('list')} className={`p-2.5 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'opacity-65 hover:opacity-100'}`}><FiList size={16} /></button>
-            </div>
+  <div className="p-0 sm:p-0 space-y-6 max-w-[1700px] mx-auto w-full">
+    
+    {/* HEADER & TOOLBAR */}
+    <div className={`p-4 sm:p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {currentFolder && (
+            <button 
+              onClick={() => setCurrentFolder(null)}
+              className="p-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-blue-600 hover:text-white transition flex-shrink-0"
+              title="Kembali ke Root"
+            >
+              <FiArrowLeft size={18} />
+            </button>
+          )}
+          <div className="overflow-hidden">
+            <h1 className="text-base sm:text-xl font-bold flex items-center gap-2 truncate">
+              File Image <span className="text-xs font-normal opacity-65 truncate">/ {currentFolder ? currentFolder.name : 'Galeri Utama'}</span>
+            </h1>
+            <p className="text-xs opacity-70 mt-0.5 truncate">
+              {currentFolder ? `Menampilkan isi folder: ${currentFolder.name}` : 'Kelola folder, tangkapan layar, dan aset visual Anda.'}
+            </p>
           </div>
         </div>
 
-        {/* INPUT UPLOAD & PASTE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-700/20">
-          <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
-            <FiUpload className="text-blue-500 text-xl" />
-            <div className="text-left">
-              <p className="text-xs font-semibold">Upload Gambar {currentFolder ? `ke "${currentFolder.name}"` : 'ke Utama'}</p>
-              <p className="text-[10px] opacity-60">Pilih file (PNG, JPG, WEBP)</p>
-            </div>
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-          </label>
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto">
+          {!currentFolder && (
+            <button 
+              onClick={() => setIsCreateFolderOpen(true)}
+              className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2.5 rounded-xl font-medium transition flex-grow md:flex-grow-0 shadow-md"
+            >
+              <FiFolderPlus size={16} /> Buat Folder
+            </button>
+          )}
 
-          <div 
-            onPaste={handlePaste}
-            tabIndex={0}
-            className={`flex items-center justify-between p-4 rounded-xl border-2 border-dashed transition outline-none focus:border-blue-500 ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/30'}`}
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <FiClipboard className="text-emerald-500 text-xl flex-shrink-0" />
-              <div className="text-left truncate">
-                <p className="text-xs font-semibold">
-                  {pastedImageBase64 ? pastedImageName : "Klik di sini lalu Tekan Ctrl+V"}
-                </p>
-                <p className="text-[10px] opacity-60">
-                  {pastedImageBase64 ? "Gambar siap disimpan" : "Paste tangkapan layar / gambar"}
-                </p>
-              </div>
-            </div>
-
-            {pastedImageBase64 && (
-              <button 
-                onClick={handleSavePastedImage}
-                className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex-shrink-0 ml-2 shadow"
-              >
-                <FiCheck size={14} /> Simpan
-              </button>
-            )}
+          <div className={`flex items-center px-3 py-2 rounded-xl border ${mode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#0f172a] border-slate-700'} flex-grow md:w-56`}>
+            <FiSearch className="opacity-50 mr-2 shrink-0" />
+            <input 
+              type="text" 
+              placeholder="Cari berkas atau folder..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none text-xs w-full"
+            />
+          </div>
+          
+          <div className="flex border rounded-xl overflow-hidden border-slate-700/20 shrink-0">
+            <button onClick={() => setViewMode('grid')} className={`p-2.5 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'opacity-65 hover:opacity-100'}`}><FiGrid size={16} /></button>
+            <button onClick={() => setViewMode('list')} className={`p-2.5 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'opacity-65 hover:opacity-100'}`}><FiList size={16} /></button>
           </div>
         </div>
       </div>
 
-      {/* FORM BUAT FOLDER INLINE */}
-      {isCreateFolderOpen && !currentFolder && (
-        <form onSubmit={handleCreateFolder} className={`p-4 rounded-2xl border flex items-center gap-3 shadow-lg ${mode === 'light' ? 'bg-white border-blue-500/50' : 'bg-[#16222A] border-blue-500/50'}`}>
+      {/* INPUT UPLOAD & PASTE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-700/20">
+        <label className={`flex items-center justify-center gap-3 p-3.5 sm:p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
+          <FiUpload className="text-blue-500 text-xl shrink-0" />
+          <div className="text-left overflow-hidden">
+            <p className="text-xs font-semibold truncate">Upload Gambar {currentFolder ? `ke "${currentFolder.name}"` : 'ke Utama'}</p>
+            <p className="text-[10px] opacity-60">Pilih file (PNG, JPG, WEBP)</p>
+          </div>
+          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+        </label>
+
+        <div 
+          onPaste={handlePaste}
+          tabIndex={0}
+          className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border-2 border-dashed transition outline-none focus:border-blue-500 ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/30'}`}
+        >
+          <div className="flex items-center gap-3 overflow-hidden">
+            <FiClipboard className="text-emerald-500 text-xl flex-shrink-0" />
+            <div className="text-left truncate">
+              <p className="text-xs font-semibold truncate">
+                {pastedImageBase64 ? pastedImageName : "Klik di sini lalu Tekan Ctrl+V"}
+              </p>
+              <p className="text-[10px] opacity-60 truncate">
+                {pastedImageBase64 ? "Gambar siap disimpan" : "Paste tangkapan layar"}
+              </p>
+            </div>
+          </div>
+
+          {pastedImageBase64 && (
+            <button 
+              onClick={handleSavePastedImage}
+              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 sm:px-4 py-2 rounded-lg font-medium transition flex-shrink-0 ml-2 shadow"
+            >
+              <FiCheck size={14} /> Simpan
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* FORM BUAT FOLDER INLINE */}
+    {isCreateFolderOpen && !currentFolder && (
+      <form onSubmit={handleCreateFolder} className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-lg ${mode === 'light' ? 'bg-white border-blue-500/50' : 'bg-[#16222A] border-blue-500/50'}`}>
+        <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 flex-shrink-0">
             <FiFolder size={20} />
           </div>
-          <input 
-            type="text" 
-            placeholder="Masukkan nama folder baru..." 
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            className={`w-full p-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-slate-50 border-slate-300' : 'bg-[#0f172a] border-slate-700'}`}
-            autoFocus
-          />
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button type="submit" className="px-4 py-2.5 rounded-xl text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium shadow">Simpan</button>
-            <button type="button" onClick={() => setIsCreateFolderOpen(false)} className="px-4 py-2.5 rounded-xl text-xs bg-gray-500/10 opacity-70 hover:opacity-100">Batal</button>
-          </div>
-        </form>
-      )}
+          <span className="text-xs font-semibold sm:hidden">Buat Folder Baru</span>
+        </div>
+        <input 
+          type="text" 
+          placeholder="Masukkan nama folder baru..." 
+          value={newFolderName}
+          onChange={(e) => setNewFolderName(e.target.value)}
+          className={`w-full p-2.5 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-slate-50 border-slate-300' : 'bg-[#0f172a] border-slate-700'}`}
+          autoFocus
+        />
+        <div className="flex items-center gap-2 flex-shrink-0 justify-end">
+          <button type="submit" className="px-4 py-2.5 rounded-xl text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium shadow flex-grow sm:flex-grow-0">Simpan</button>
+          <button type="button" onClick={() => setIsCreateFolderOpen(false)} className="px-4 py-2.5 rounded-xl text-xs bg-gray-500/10 opacity-70 hover:opacity-100 flex-grow sm:flex-grow-0">Batal</button>
+        </div>
+      </form>
+    )}
 
       {/* KONTEN UTAMA: FOLDER & GAMBAR */}
       <div className={`min-h-[350px] p-6 rounded-2xl border transition-all ${getCardStyle()}`}>

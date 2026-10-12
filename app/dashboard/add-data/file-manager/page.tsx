@@ -326,7 +326,7 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     URL.revokeObjectURL(fileUrl);
   };
   return (
-    <div className="p-6 space-y-6 relative">
+    <div className="p-0 space-y-6 relative">
       {/* HEADER & TOOLBAR */}
       <div className={`p-5 rounded-2xl border transition-colors ${getCardStyle()}`}>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
