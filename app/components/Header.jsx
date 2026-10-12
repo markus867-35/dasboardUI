@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Swal from 'sweetalert2';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -12,6 +13,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 export default function Header() {
   const { mode, toggleMode, colorTheme, setColorTheme, toggleSidebar, isSidebarOpen } = useTheme();
   const { t } = useLanguage();
+  const router = useRouter();
   
   const [isRightMenuOpen, setIsRightMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -189,20 +191,26 @@ useEffect(() => {
             {/* KONTEN UTAMA */}
             <div className="flex flex-col space-y-5">
               
-              {/* 1. Profil Pengguna (Menggunakan Data Supabase) */}
-              <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0">
-                  {adminData.avatar_url ? (
-                    <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
-                  )}
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
-                </div>
-              </div>
+{/* 1. Profil Pengguna (Bisa diklik sekarang) */}
+        <div 
+          onClick={() => {
+            setIsRightMenuOpen(false);
+            router.push('/dashboard/setting/profile');
+          }}
+          className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 flex items-center space-x-3 cursor-pointer transition relative z-10"
+        >
+          <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0">
+            {adminData.avatar_url ? (
+              <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
+            )}
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
+            <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
+          </div>
+          </div>
 
               {/* 2. Pilihan Warna Tema */}
               <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-between">
