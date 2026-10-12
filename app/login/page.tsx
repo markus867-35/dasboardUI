@@ -11,55 +11,45 @@ export default function AuthPage() {
   const isDark = mode === 'dark';
   const router = useRouter();
 
-  // State untuk melacak posisi panel (true = DAFTAR di kanan, false = LOGIN di kiri)
   const [isSignUp, setIsSignUp] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // State Form LOGIN
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [showSignInPassword, setShowSignInPassword] = useState(false);
 
-  // State Form DAFTAR
   const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-// Handler LOGIN
-const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    // Contoh validasi dari tabel admins Supabase
-    const { data, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('email', signInData.email)
-      .single();
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', signInData.email)
+        .single();
 
-    if (error || !data) {
-      throw new Error('Email atau akun tidak ditemukan.');
+      if (error || !data) {
+        throw new Error('Email atau akun tidak ditemukan.');
+      }
+
+      if (data.password !== signInData.password) {
+        throw new Error('Password yang Anda masukkan salah.');
+      }
+
+      Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
+        localStorage.setItem('adminId', String(data.id));
+        router.push('/dashboard');
+      });
+    } catch (err: any) {
+      Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat login.', 'error');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (data.password !== signInData.password) {
-      throw new Error('Password yang Anda masukkan salah.');
-    }
-
-    Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
-      // Simpan ID admin yang sedang login ke browser localStorage
-      localStorage.setItem('adminId', String(data.id)); // Pastikan dikonversi ke string
-      
-      router.push('/dashboard');
-    });
-  } catch (err: any) { // 👈 Tambahkan : any di sini
-    Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat login.', 'error');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-// Handler DAFTAR
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => { // 👈 Tambahkan tipe di sini
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -67,11 +57,10 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
         throw new Error('Password minimal harus 6 karakter.');
       }
 
-      // Masukkan data ke tabel admins
       const { error } = await supabase.from('admins').insert([
         {
           name: signUpData.name,
-          username: signUpData.email.split('@')[0], // Generate username otomatis dari email
+          username: signUpData.email.split('@')[0],
           email: signUpData.email,
           password: signUpData.password,
           status: 'Aktif Bekerja',
@@ -81,9 +70,9 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
       if (error) throw error;
 
       Swal.fire('Berhasil!', 'Akun berhasil dibuat, silakan LOGIN.', 'success');
-      setIsSignUp(false); // Geser ke panel LOGIN
+      setIsSignUp(false);
       setSignUpData({ name: '', email: '', password: '' });
-    } catch (err: any) { // 👈 Tambahkan : any di sini
+    } catch (err: any) {
       Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat pendaftaran.', 'error');
     } finally {
       setLoading(false);
@@ -92,13 +81,13 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-200 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'}`}>
-      {/* Container Utama Box */}
-      <div className={`relative w-[850px] h-[520px] rounded-3xl shadow-2xl overflow-hidden flex transition-colors duration-200 ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+      
+      {/* Container Utama Box: Full width di mobile, fix width di md ke atas */}
+      <div className={`relative w-full max-w-[850px] min-h-[550px] md:h-[520px] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row transition-colors duration-200 ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
         
-        {/* --- FORM LOGIN (Di Kiri) --- */}
-        <div className={`absolute top-0 left-0 w-1/2 h-full flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out ${!isSignUp ? 'opacity-100 z-25 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
-          <h2 className="text-3xl font-bold mb-4">LOGIN</h2>
-          
+        {/* --- FORM LOGIN (Di Kiri pada Desktop) --- */}
+        <div className={`absolute md:static top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-6 md:p-8 transition-opacity duration-500 ease-in-out ${!isSignUp ? 'opacity-100 z-25 pointer-events-auto relative' : 'opacity-0 z-0 pointer-events-none absolute'}`}>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">LOGIN</h2>
           <span className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>LOGIN With Email & Password</span>
 
           <form onSubmit={handleSignIn} className="w-full space-y-3">
@@ -140,18 +129,23 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 disabled:opacity-50"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Proses...' : 'LOGIN'}
             </button>
           </form>
+
+          {/* Tombol Switch Khusus Tampilan Mobile */}
+          <div className="mt-4 md:hidden text-xs">
+            <span>Belum punya akun? </span>
+            <button onClick={() => setIsSignUp(true)} className="text-red-500 font-bold underline">Daftar</button>
+          </div>
         </div>
 
 
-        {/* --- FORM DAFTAR (Di Kanan) --- */}
-        <div className={`absolute top-0 right-0 w-1/2 h-full flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out ${isSignUp ? 'opacity-100 z-25 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
-          <h2 className="text-3xl font-bold mb-4">Create Account</h2>
-
+        {/* --- FORM DAFTAR (Di Kanan pada Desktop) --- */}
+        <div className={`absolute md:static top-0 right-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-6 md:p-8 transition-opacity duration-500 ease-in-out ${isSignUp ? 'opacity-100 z-25 pointer-events-auto relative' : 'opacity-0 z-0 pointer-events-none absolute'}`}>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">Create Account</h2>
           <span className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>Register with E-mail</span>
 
           <form onSubmit={handleSignUp} className="w-full space-y-3">
@@ -201,17 +195,23 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 mt-2 disabled:opacity-50"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition duration-200 mt-2 disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Memproses...' : 'DAFTAR'}
             </button>
           </form>
+
+          {/* Tombol Switch Khusus Tampilan Mobile */}
+          <div className="mt-4 md:hidden text-xs">
+            <span>Sudah punya akun? </span>
+            <button onClick={() => setIsSignUp(false)} className="text-red-500 font-bold underline">Login</button>
+          </div>
         </div>
 
 
-{/* --- PANEL GESER (SLIDING PANEL DENGAN BACKGROUND DINAMIS) --- */}
+        {/* --- PANEL GESER (SLIDING PANEL - HANYA MUNCUL DI LAYAR DESKTOP / md+) --- */}
         <div 
-          className={`absolute top-0 left-0 w-1/2 h-full text-white flex flex-col items-center justify-center p-8 text-center z-30 transition-transform duration-700 ease-in-out shadow-lg bg-cover bg-center ${
+          className={`hidden md:flex absolute top-0 left-0 w-1/2 h-full text-white flex-col items-center justify-center p-8 text-center z-30 transition-transform duration-700 ease-in-out shadow-lg bg-cover bg-center ${
             isSignUp ? 'translate-x-0' : 'translate-x-full'
           }`}
           style={{ 
@@ -226,7 +226,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
               <p className="text-sm mb-6 text-red-100">Sudah punya akun? Silakan masuk ke akun Anda.</p>
               <button 
                 onClick={() => setIsSignUp(false)}
-                className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300"
+                className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300 cursor-pointer"
               >
                 LOGIN
               </button>
@@ -237,7 +237,7 @@ const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
               <p className="text-sm mb-6 text-red-100">Daftar sekarang dan nikmati akses dashboard lengkap.</p>
               <button 
                 onClick={() => setIsSignUp(true)}
-                className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300"
+                className="border-2 border-white px-8 py-2.5 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300 cursor-pointer"
               >
                 DAFTAR
               </button>
