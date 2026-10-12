@@ -708,7 +708,7 @@ const handleUpdateFolder = async (id: string | number) => {
         }}
         className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
           modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[105vw] h-[98vh]' : 'w-[700px] h-[700px]'
-        } ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}
+        } ${mode === 'light' ? 'bg-tranparant text-slate-900 border-slate-200' : 'bg-tranparant text-slate-100 border-slate-700'}`}
       >
         
         {/* AREA HEADER */}
@@ -746,7 +746,7 @@ const handleUpdateFolder = async (id: string | number) => {
         </div>
 
         {/* Elemen Video Player Utama (Menggunakan flex-1 dan min-h-0 agar ikut meresize) */}
-        <div className="w-full flex-1 min-h-0 bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
+        <div className="w-full flex-1 min-h-0 bg-transparant rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
           <video 
             key={activeVideo.url} 
             src={activeVideo.url} 
