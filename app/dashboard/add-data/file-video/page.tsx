@@ -660,6 +660,7 @@ const handleUpdateFolder = async (id: string | number) => {
 
 
      {/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
+{/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
 {/* MODAL PEMUTAR VIDEO (DENGAN FITUR DRAG / GESER KE MANA MANA) */}
 {activeVideo && (() => {
   const currentVideoIndex = filteredVideos.findIndex(v => v.id === activeVideo.id);
@@ -700,18 +701,18 @@ const handleUpdateFolder = async (id: string | number) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-<div 
+      <div 
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
           resize: 'both',
           overflow: 'auto',
         }}
         className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
-          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[90vw] h-[85vh]' : 'w-[700px] h-auto'
+          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[95vw] h-[90vh]' : 'w-[700px] h-auto'
         } ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}
       >
         
-        {/* AREA HEADER YANG BISA DI-DRAG (DIARIK KE MANA-MANA) */}
+        {/* AREA HEADER YANG BISA DI-DRAG */}
         <div 
           onMouseDown={handleMouseDown}
           className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none"
@@ -736,7 +737,7 @@ const handleUpdateFolder = async (id: string | number) => {
               className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition"
               title="Perbesar / Expand"
             >
-              Expand
+              {modalSize === 'large' ? 'Normal' : 'Expand'}
             </button>
             <button 
               onClick={() => { setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
@@ -748,30 +749,32 @@ const handleUpdateFolder = async (id: string | number) => {
         </div>
 
         {/* Elemen Video Player Utama */}
-        <div className="w-full bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
+        <div className="w-full bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group flex-1">
           <video 
+            key={activeVideo.url} // Tambahkan key agar video mereset & langsung play saat ganti video
             src={activeVideo.url} 
             controls 
             autoPlay
+            onEnded={handleNextVideo} // <-- FITUR BARU: Otomatis ke video berikutnya saat habis
             className={`w-full object-contain transition-all ${
-              modalSize === 'small' ? 'max-h-[25vh]' : modalSize === 'large' ? 'max-h-[75vh]' : 'max-h-[50vh]'
+              modalSize === 'small' ? 'max-h-[25vh]' : modalSize === 'large' ? 'h-full max-h-[75vh]' : 'max-h-[50vh]'
             }`}
           />
           
-          {/* Tombol Navigasi Ganti Video di Atas Layar Video */}
+          {/* Tombol Navigasi Kiri/Kanan di Atas Layar Video (Muncul saat di-hover atau di mode large) */}
           <button 
             onClick={handlePrevVideo} 
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black transition shadow"
+            className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
             title="Video Sebelumnya"
           >
-            <FiSkipBack size={16} />
+            <FiSkipBack size={20} />
           </button>
           <button 
             onClick={handleNextVideo} 
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black transition shadow"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
             title="Video Selanjutnya"
           >
-            <FiSkipForward size={16} />
+            <FiSkipForward size={20} />
           </button>
         </div>
 
