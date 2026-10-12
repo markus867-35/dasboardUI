@@ -456,11 +456,13 @@ useEffect(() => {
 
 
 
-        {/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
+       {/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
 {selectedFolderId === 'all' && folders.length > 0 && (
   <div className="mb-8">
     <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    
+    {/* Diubah menjadi flex horizontal scroll di mobile dan grid kembali di layar sm ke atas */}
+    <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:overflow-visible scrollbar-none">
       {folders.map(folder => {
         const count = videoList.filter(v => v.folder_id === folder.id).length;
         const isEditing = editingFolderId === folder.id;
@@ -471,7 +473,7 @@ useEffect(() => {
             onClick={() => {
               if (!isEditing) setSelectedFolderId(folder.id);
             }}
-            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between shrink-0 w-[240px] sm:w-auto ${
               mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
             }`}
           >
@@ -553,7 +555,6 @@ useEffect(() => {
     <div className="border-b border-slate-700/20 my-6"></div>
   </div>
 )}
-
 
 
 
