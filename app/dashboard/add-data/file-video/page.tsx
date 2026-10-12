@@ -707,7 +707,7 @@ const handleUpdateFolder = async (id: string | number) => {
           overflow: 'auto',
         }}
         className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
-          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[95vw] h-[90vh]' : 'w-[700px] h-[500px]'
+          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[105vw] h-[98vh]' : 'w-[700px] h-[700px]'
         } ${mode === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-[#16222A] text-slate-100 border-slate-700'}`}
       >
         
