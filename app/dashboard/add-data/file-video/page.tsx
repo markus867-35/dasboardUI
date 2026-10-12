@@ -34,6 +34,8 @@ const [position, setPosition] = useState({ x: 0, y: 0 });
 const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 const [editingFolderId, setEditingFolderId] = useState<string | number | null>(null);
 const [editedFolderName, setEditedFolderName] = useState('');
+const [videoDimensions, setVideoDimensions] = useState({ width: 700, height: 500 });
+
 
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -259,6 +261,65 @@ const handleUpdateFolder = async (id: string | number) => {
 };
 
 
+
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    };
+
+    const handleWindowMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
+
+  // Letakkan useEffect ini di tingkat atas komponen utama FileVideoPage (bukan di dalam modal)
+useEffect(() => {
+  if (!activeVideo) return;
+
+  // Buat objek video sementara di memori untuk membaca ukuran aslinya secara instan
+  const tempVideo = document.createElement('video');
+  tempVideo.src = activeVideo.url;
+  
+  tempVideo.onloadedmetadata = () => {
+    const vWidth = tempVideo.videoWidth;
+    const vHeight = tempVideo.videoHeight;
+    
+    if (!vWidth || !vHeight) return;
+
+    const maxWidth = window.innerWidth * 0.85;
+    const maxHeight = window.innerHeight * 0.85;
+    
+    let width = vWidth;
+    let height = vHeight;
+    
+    if (width > maxWidth) {
+      height = (maxWidth / width) * height;
+      width = maxWidth;
+    }
+    if (height > maxHeight) {
+      width = (maxHeight / height) * width;
+      height = maxHeight;
+    }
+    
+    setVideoDimensions({ width: Math.round(width), height: Math.round(height + 110) });
+  };
+}, [activeVideo]);
+
   
   return (
     <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
@@ -395,13 +456,11 @@ const handleUpdateFolder = async (id: string | number) => {
 
 
 
-{/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
+        {/* JIKA DI 'SEMUA VIDEO', TAMPILKAN KARTU FOLDER DI ATAS */}
 {selectedFolderId === 'all' && folders.length > 0 && (
   <div className="mb-8">
     <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">Folder Anda</h3>
-    
-    {/* Diubah dari grid menjadi horizontal scroll di mobile dan grid kembali di komputer/tablet */}
-    <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:overflow-visible scrollbar-none">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {folders.map(folder => {
         const count = videoList.filter(v => v.folder_id === folder.id).length;
         const isEditing = editingFolderId === folder.id;
@@ -412,7 +471,7 @@ const handleUpdateFolder = async (id: string | number) => {
             onClick={() => {
               if (!isEditing) setSelectedFolderId(folder.id);
             }}
-            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between shrink-0 w-[240px] sm:w-auto ${
+            className={`group p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
               mode === 'light' ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'border-slate-800 bg-[#0f172a]/40 hover:bg-slate-800/60'
             }`}
           >
@@ -675,10 +734,7 @@ const handleUpdateFolder = async (id: string | number) => {
 
 
 
-
-{/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
-{/* MODAL PEMUTAR VIDEO (DENGAN TOMBOL GANTI VIDEO & RESIZE / MINIMIZE) */}
-{/* MODAL PEMUTAR VIDEO (DENGAN FITUR DRAG / GESER KE MANA MANA) */}
+{/* MODAL PEMUTAR VIDEO */}
 {activeVideo && (() => {
   const currentVideoIndex = filteredVideos.findIndex(v => v.id === activeVideo.id);
   
@@ -694,40 +750,47 @@ const handleUpdateFolder = async (id: string | number) => {
     setActiveVideo(filteredVideos[prevIndex]);
   };
 
-  // Handler untuk mulai menggeser (Drag)
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+  const vWidth = e.currentTarget.videoWidth;
+  const vHeight = e.currentTarget.videoHeight;
+  console.log("Resolusi Asli Video:", vWidth, vHeight); // Cek F12 Console browser Anda
+  
+  const maxWidth = window.innerWidth * 0.85;
+  const maxHeight = window.innerHeight * 0.85;
+  
+  let width = vWidth;
+  let height = vHeight;
+  
+  if (width > maxWidth) {
+    height = (maxWidth / width) * height;
+    width = maxWidth;
+  }
+  if (height > maxHeight) {
+    width = (maxHeight / height) * width;
+    height = maxHeight;
+  }
+  
+  setVideoDimensions({ width: Math.round(width), height: Math.round(height + 110) });
+};
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-none"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      {/* Elemen Pembungkus Modal dengan Resize */}
+    <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-none">
       <div 
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
+          width: modalSize === 'small' ? '320px' : modalSize === 'large' ? '95vw' : `${videoDimensions.width}px`,
+          height: modalSize === 'small' ? '300px' : modalSize === 'large' ? '95vh' : `${videoDimensions.height}px`,
           resize: 'both',
           overflow: 'auto',
         }}
-        className={`transition-shadow duration-200 rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
-          modalSize === 'small' ? 'w-[320px] h-[300px]' : modalSize === 'large' ? 'w-[105vw] h-[98vh]' : 'w-[700px] h-[700px]'
-        } ${mode === 'light' ? 'bg-tranparant text-slate-900 border-slate-200' : 'bg-tranparant text-slate-100 border-slate-700'}`}
+        className={`rounded-2xl p-4 border shadow-2xl relative flex flex-col pointer-events-auto select-none ${
+          mode === 'light' ? 'bg-transparent text-slate-900 border-slate-200' : 'bg-transparent text-slate-100 border-slate-700'
+        }`}
       >
         
         {/* AREA HEADER */}
@@ -741,7 +804,6 @@ const handleUpdateFolder = async (id: string | number) => {
             <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
           </div>
 
-          {/* Tombol Kontrol Ukuran dengan z-20 agar bisa diklik */}
           <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-20">
             <button 
               onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
@@ -764,18 +826,18 @@ const handleUpdateFolder = async (id: string | number) => {
           </div>
         </div>
 
-        {/* Elemen Video Player Utama (Menggunakan flex-1 dan min-h-0 agar ikut meresize) */}
-        <div className="w-full flex-1 min-h-0 bg-transparant rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
+        {/* ELEMEN VIDEO PLAYER UTAMA */}
+        <div className="w-full flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
           <video 
             key={activeVideo.url} 
             src={activeVideo.url} 
             controls 
             autoPlay
+            onLoadedMetadata={handleVideoLoadedMetadata}
             onEnded={handleNextVideo}
             className="w-full h-full object-contain"
           />
           
-          {/* Tombol Navigasi Kiri/Kanan */}
           <button 
             onClick={handlePrevVideo} 
             className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
@@ -792,7 +854,7 @@ const handleUpdateFolder = async (id: string | number) => {
           </button>
         </div>
 
-        {/* Tombol Navigasi Bawah */}
+        {/* TOMBOL NAVIGASI BAWAH */}
         <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
             <button 
