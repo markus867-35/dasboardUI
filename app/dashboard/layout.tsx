@@ -11,7 +11,7 @@ import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 import { useRouter } from "next/navigation";
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
-  const { isSidebarOpen, setIsSidebarOpen } = useTheme();
+  const { isSidebarOpen, setIsSidebarOpen,getThemeClasses } = useTheme();
   const { fontSize } = useFontSize() as FontSizeContextType;
   const [isAuthReady, setIsAuthReady] = useState(false);
   const router = useRouter();

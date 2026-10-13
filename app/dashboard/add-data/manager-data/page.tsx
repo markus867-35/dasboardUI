@@ -22,7 +22,7 @@ interface ItemNode {
 }
 
 export default function FileManagementPage() {
-  const { mode } = useTheme();
+  const { mode, colorTheme, getThemeClasses } = useTheme();
   const isDark = mode === 'dark';
 
   const [items, setItems] = useState<ItemNode[]>([]);
@@ -44,6 +44,45 @@ export default function FileManagementPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+
+
+
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
+  };
+
+
+
 
   const handleRename = async (id: string, e: React.FormEvent) => {
     e.preventDefault();
@@ -313,20 +352,18 @@ const handleCreateFolder = async (e: React.FormEvent) => {
 
   return (
     <div className={`p-0 space-y-6 max-w-10xl mx-auto min-h-screen transition-colors ${
-      isDark ? 'text-slate-100 ' : 'text-slate-800 bg-white'
+      isDark ? 'text-slate-100' : 'text-slate-800'
     }`}>
       
       {/* HEADER & BREADCRUMB */}
-      <div className={`p-6 border rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
+      <div className={`p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 ${getCardStyle()}`}>
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+          <div className="flex items-center gap-2 text-xs font-medium opacity-70">
             <span className="cursor-pointer hover:underline" onClick={() => setCurrentFolderId(null)}>File Manager</span>
             {currentFolderId !== null && (
               <>
                 <FiChevronRight className="w-3.5 h-3.5" />
-                <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                <span className="font-semibold">
                   {getCurrentFolderName()}
                 </span>
               </>
@@ -374,9 +411,7 @@ const handleCreateFolder = async (e: React.FormEvent) => {
       <div 
         ref={pasteAreaRef}
         tabIndex={0}
-        className={`p-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
-          isDark ? 'bg-slate-900/50 border-slate-700 hover:border-indigo-500' : 'bg-slate-50 border-slate-300 hover:border-indigo-500'
-        }`}
+        className={`p-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${getCardStyle()}`}
         onClick={() => {
           if (fileInputRef.current) fileInputRef.current.click();
         }}
@@ -386,16 +421,14 @@ const handleCreateFolder = async (e: React.FormEvent) => {
         </div>
         <div>
           <p className="text-xs font-bold">Klik di sini lalu tekan <kbd className="px-1.5 py-0.5 border rounded bg-indigo-600 text-white font-mono">Ctrl + V</kbd> untuk menempel gambar</p>
-          <p className="text-[11px] text-slate-400 mt-1">Atau klik untuk memilih file dari komputer Anda</p>
+          <p className="text-[11px] opacity-70 mt-1">Atau klik untuk memilih file dari komputer Anda</p>
         </div>
       </div>
 
       {/* FILTER BAR: PENCARIAN & TOGGLE */}
-      <div className={`p-4 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
+      <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 ${getCardStyle()}`}>
         <div className="relative w-full sm:w-80">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
           <input 
             type="text"
             placeholder="Cari berkas atau folder..."
@@ -437,9 +470,7 @@ const handleCreateFolder = async (e: React.FormEvent) => {
 
       {/* MODAL BUAT FOLDER */}
       {isCreatingFolder && (
-        <div className={`p-4 border rounded-2xl flex items-center justify-between gap-4 ${
-          isDark ? 'bg-slate-900 border-indigo-500/50' : 'bg-indigo-50/50 border-indigo-200'
-        }`}>
+        <div className={`p-4 rounded-2xl flex items-center justify-between gap-4 ${getCardStyle()}`}>
           <form onSubmit={handleCreateFolder} className="flex items-center gap-3 w-full">
             <FiFolder className="w-5 h-5 text-indigo-500 shrink-0" />
             <input 
@@ -473,22 +504,20 @@ const handleCreateFolder = async (e: React.FormEvent) => {
       )}
 
       {/* KONTEN UTAMA: FOLDER & FILE */}
-      <div className={`p-6 border rounded-2xl shadow-sm space-y-4 min-h-[400px] flex flex-col ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className={`text-xs font-medium pb-3 border-b flex justify-between items-center ${
-          isDark ? 'text-slate-400 border-slate-800' : 'text-slate-500 border-slate-100'
+      <div className={`p-6 rounded-2xl shadow-sm space-y-4 min-h-[400px] flex flex-col ${getCardStyle()}`}>
+        <div className={`text-xs font-medium pb-3 border-b flex justify-between items-center opacity-80 ${
+          isDark ? 'border-slate-800' : 'border-slate-200'
         }`}>
-          <span>Lokasi: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{getCurrentFolderName()}</strong></span>
+          <span>Lokasi: <strong className="font-semibold">{getCurrentFolderName()}</strong></span>
           <span>Total Item: {currentItems.length}</span>
         </div>
 
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-xs text-slate-400 py-24">
+          <div className="flex-1 flex items-center justify-center text-xs opacity-60 py-24">
             <span>Memuat data...</span>
           </div>
         ) : currentItems.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-xs text-slate-400 py-24 space-y-2">
+          <div className="flex-1 flex flex-col items-center justify-center text-xs opacity-60 py-24 space-y-2">
             <FiFolder className="w-10 h-10 opacity-30" />
             <span>Folder ini masih kosong atau pencarian tidak ditemukan.</span>
           </div>
@@ -505,9 +534,7 @@ const handleCreateFolder = async (e: React.FormEvent) => {
                     setSelectedFile(item);
                   }
                 }}
-                className={`group relative p-4 border rounded-2xl flex items-center justify-between transition-all shadow-sm cursor-pointer ${
-                  isDark ? 'bg-slate-950 border-slate-800 hover:border-indigo-500' : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
-                }`}
+                className={`group relative p-4 border rounded-2xl flex items-center justify-between transition-all shadow-sm cursor-pointer ${getCardStyle()}`}
               >
                 <div className="flex items-center gap-3 truncate w-full">
                   <div className={`p-3 rounded-xl shrink-0 ${
@@ -538,10 +565,10 @@ const handleCreateFolder = async (e: React.FormEvent) => {
                     </form>
                   ) : (
                     <div className="truncate w-full">
-                      <h3 className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                      <h3 className="text-xs font-bold truncate">
                         {item.name}
                       </h3>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[10px] opacity-60">
                         {item.type === 'folder' ? 'Folder' : item.size || 'File Dokumen'} • {item.created_at?.split('T')[0]}
                       </p>
                     </div>
@@ -576,7 +603,7 @@ const handleCreateFolder = async (e: React.FormEvent) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className={`border-b ${isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+              <thead className={`border-b opacity-80 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                 <tr>
                   <th className="py-3 px-4">Nama</th>
                   <th className="py-3 px-4">Tipe</th>
@@ -594,9 +621,7 @@ const handleCreateFolder = async (e: React.FormEvent) => {
                       if (item.type === 'folder') setCurrentFolderId(item.id);
                       else setSelectedFile(item);
                     }}
-                    className={`cursor-pointer transition-colors ${
-                      isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'
-                    }`}
+                    className="cursor-pointer transition-colors hover:opacity-75"
                   >
                     <td className="py-3 px-4 flex items-center gap-3 font-medium">
                       {item.type === 'folder' ? <FiFolder className="w-4 h-4 text-amber-500" /> : getFileIcon(item.name)}
@@ -616,12 +641,12 @@ const handleCreateFolder = async (e: React.FormEvent) => {
                           <button type="button" onClick={() => setEditingId(null)} className="p-1 bg-slate-600 text-white rounded text-xs"><FiX className="w-3 h-3" /></button>
                         </form>
                       ) : (
-                        <span className={isDark ? 'text-slate-200' : 'text-slate-800'}>{item.name}</span>
+                        <span>{item.name}</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-slate-400 uppercase">{item.type}</td>
-                    <td className="py-3 px-4 text-slate-400">{item.size || '-'}</td>
-                    <td className="py-3 px-4 text-slate-400">{item.created_at?.split('T')[0]}</td>
+                    <td className="py-3 px-4 opacity-70 uppercase">{item.type}</td>
+                    <td className="py-3 px-4 opacity-70">{item.size || '-'}</td>
+                    <td className="py-3 px-4 opacity-70">{item.created_at?.split('T')[0]}</td>
                     <td className="py-3 px-4 text-right">
                       {editingId !== item.id && (
                         <div className="flex items-center justify-end gap-1">
@@ -653,140 +678,133 @@ const handleCreateFolder = async (e: React.FormEvent) => {
           </div>
         )}
       </div>
-{/* POP-UP / MODAL DETAIL PRATINJAU */}
-{selectedFile && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-xs p-4 animate-in fade-in">
-    <div className={`transition-all duration-300 rounded-2xl shadow-2xl border overflow-hidden  bg-transparent relative flex flex-col ${
-      isMaximized 
-        ? 'w-full h-full max-w-none max-h-none bg-transparent rounded-none' 
-        : 'w-full max-w-lg'
-    } ${
-      isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800 '
-    }`}>
-      
-      {/* HEADER MODAL */}
-      <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${
-        isDark ? 'bg-transparent border-slate-800' : 'bg-transparent border-slate-200'
-      }`}>
-        <h3 className="text-xs font-bold truncate flex items-center gap-2">
-          <span className="scale-75 origin-left inline-block">
-            {getFileIcon(selectedFile.name)}
-          </span> 
-          {selectedFile.name}
-        </h3>
 
-        <div className="flex items-center  gap-3 text-slate-400">
-          <button 
-            onClick={() => {
-              setIsMinimized(false);
-              setIsMaximized(false);
-            }} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Beranda / Reset"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          </button>
-          
-          <button 
-            onClick={() => setIsMinimized(!isMinimized)} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Minimize"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4"/></svg>
-          </button>
-
-          <button 
-            onClick={() => setIsMaximized(!isMaximized)} 
-            className="hover:text-indigo-500 transition-colors p-1"
-            title="Maximize"
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          </button>
-
-          <button 
-            onClick={() => setSelectedFile(null)} 
-            className="hover:text-red-500 transition-colors p-1"
-            title="Tutup"
-          >
-            <FiX className="w-4 h-4 pointer-events-none" />
-          </button>
-        </div>
-      </div>
-
-      {/* KONTEN UTAMA MODAL */}
-      {!isMinimized && (
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {selectedFile.url && (
-            <div className={`w-full bg-transparent rounded-xl overflow-hidden flex items-center justify-center border border-slate-800 ${
-              isMaximized ? 'h-[60vh]' : 'h-64'
-            }`}>
-              <TextViewer 
-                file={selectedFile} 
-                isDark={isDark} 
-                onUpdateContent={(fileId, newContent) => {
-                  setItems(items.map(item => item.id === fileId ? { ...item, content: newContent } : item));
-                  setSelectedFile({ ...selectedFile, content: newContent });
-                }} 
-              />
-            </div>
-          )}
-
-          {/* Bagian Bawah dengan Efek Hover (Group) */}
-          <div className="relative group p-2 rounded-xl transition-all">
+      {/* POP-UP / MODAL DETAIL PRATINJAU */}
+      {selectedFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className={`transition-all duration-300 rounded-2xl shadow-2xl border overflow-hidden relative flex flex-col ${
+            isMaximized 
+              ? 'w-full h-full max-w-none max-h-none rounded-none' 
+              : 'w-full max-w-lg'
+          } ${getCardStyle()}`}>
             
-            {/* Teks petunjuk saat kursor belum diarahkan */}
-            <div className="text-xs text-slate-400 text-center py-3 group-hover:hidden border border-dashed rounded-xl border-slate-700/50">
-              Arahkan kursor ke sini untuk melihat detail & URL file...
-            </div>
+            {/* HEADER MODAL */}
+            <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${
+              isDark ? 'border-slate-800' : 'border-slate-200'
+            }`}>
+              <h3 className="text-xs font-bold truncate flex items-center gap-2">
+                <span className="scale-75 origin-left inline-block">
+                  {getFileIcon(selectedFile.name)}
+                </span> 
+                {selectedFile.name}
+              </h3>
 
-            {/* Konten detail & tombol yang disembunyikan sampai di-hover */}
-            <div className="space-y-4 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
-              
-              <div className="space-y-1 text-xs text-slate-400">
-                <p>Ukuran: <span className="text-slate-200 font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
-                <p>Dibuat: <span className="text-slate-200 font-medium">{selectedFile.created_at}</span></p>
-              </div>
-
-              {selectedFile.url && (
-                <div className="flex items-center gap-2 pt-2">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={selectedFile.url} 
-                    className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
-                      isDark ? 'bg-slate-950 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
-                    }`}
-                  />
-                  <button
-                    onClick={() => copyToClipboard(selectedFile.url!)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
-                  >
-                    {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
-                    {copied ? 'Disalin' : 'Salin URL'}
-                  </button>
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <a 
-                  href={selectedFile.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+              <div className="flex items-center gap-3 opacity-70">
+                <button 
+                  onClick={() => {
+                    setIsMinimized(false);
+                    setIsMaximized(false);
+                  }} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Beranda / Reset"
                 >
-                  <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
-                </a>
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </button>
+                
+                <button 
+                  onClick={() => setIsMinimized(!isMinimized)} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Minimize"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4"/></svg>
+                </button>
+
+                <button 
+                  onClick={() => setIsMaximized(!isMaximized)} 
+                  className="hover:text-indigo-500 transition-colors p-1"
+                  title="Maximize"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </button>
+
+                <button 
+                  onClick={() => setSelectedFile(null)} 
+                  className="hover:text-red-500 transition-colors p-1"
+                  title="Tutup"
+                >
+                  <FiX className="w-4 h-4 pointer-events-none" />
+                </button>
               </div>
-
             </div>
-          </div>
 
+            {/* KONTEN UTAMA MODAL */}
+            {!isMinimized && (
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {selectedFile.url && (
+                  <div className={`w-full rounded-xl overflow-hidden flex items-center justify-center border ${
+                    isDark ? 'border-slate-800' : 'border-slate-200'
+                  } ${isMaximized ? 'h-[60vh]' : 'h-64'}`}>
+                    <TextViewer 
+                      file={selectedFile} 
+                      isDark={isDark} 
+                      onUpdateContent={(fileId, newContent) => {
+                        setItems(items.map(item => item.id === fileId ? { ...item, content: newContent } : item));
+                        setSelectedFile({ ...selectedFile, content: newContent });
+                      }} 
+                    />
+                  </div>
+                )}
+
+                <div className="relative group p-2 rounded-xl transition-all">
+                  <div className="text-xs opacity-60 text-center py-3 group-hover:hidden border border-dashed rounded-xl border-slate-700/50">
+                    Arahkan kursor ke sini untuk melihat detail & URL file...
+                  </div>
+
+                  <div className="space-y-4 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                    <div className="space-y-1 text-xs opacity-70">
+                      <p>Ukuran: <span className="font-medium">{selectedFile.size || 'Tidak diketahui'}</span></p>
+                      <p>Dibuat: <span className="font-medium">{selectedFile.created_at}</span></p>
+                    </div>
+
+                    {selectedFile.url && (
+                      <div className="flex items-center gap-2 pt-2">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={selectedFile.url} 
+                          className={`w-full px-3 py-2 text-xs border rounded-xl outline-none ${
+                            isDark ? 'bg-slate-950 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300'
+                          }`}
+                        />
+                        <button
+                          onClick={() => copyToClipboard(selectedFile.url!)}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 transition"
+                        >
+                          {copied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
+                          {copied ? 'Disalin' : 'Salin URL'}
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-2">
+                      <a 
+                        href={selectedFile.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+                      >
+                        <FiExternalLink className="w-4 h-4" /> Buka di Tab Baru
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
         </div>
       )}
-
-    </div>
-  </div>
-)}
 
     </div>
   );
@@ -848,16 +866,14 @@ function TextViewer({
 
   const ext = file.name?.split('.').pop()?.toLowerCase() || '';
 
-  // Jika file gambar
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
     return (
-      <div className="w-full h-full flex items-center bg-transparent justify-center bg-slate-950">
+      <div className="w-full h-full flex items-center justify-center bg-slate-950">
         <img src={file.url} alt={file.name} className="max-h-full max-w-full object-contain" />
       </div>
     );
   }
 
-  // Jika file teks/skrip
   return (
     <div className="flex flex-col h-full w-full bg-slate-950">
       <div className="flex items-center justify-between px-3 py-2 bg-slate-900 border-b border-slate-800 text-xs shrink-0">

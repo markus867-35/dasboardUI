@@ -11,7 +11,7 @@ import LanguageDropdown from '@/app/components/LanguageDropdown';
 import { useLanguage } from '@/app/context/LanguageContext';
 
 export default function Header() {
-  const { mode, toggleMode, colorTheme, setColorTheme, toggleSidebar, isSidebarOpen } = useTheme();
+  const { mode, toggleMode, colorTheme, setColorTheme, toggleSidebar, getThemeClasses, isSidebarOpen } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
   
@@ -93,15 +93,38 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Bagian Kanan: Desktop Menu */}
+{/* Bagian Kanan: Desktop Menu (Dropdown) */}
       <div className="hidden lg:flex items-center space-x-4">
         <div className="flex items-center space-x-2 bg-slate-800/40 px-3 py-1.5 rounded-xl border border-slate-700">
           <span className="text-xs text-slate-300 font-medium">{t('theme')}</span>
-          <button onClick={() => setColorTheme('navy')} className={`w-4 h-4 rounded-full bg-[#222D3D] border ${colorTheme === 'navy' ? 'ring-2 ring-white' : ''}`} title="Navy" />
-          <button onClick={() => setColorTheme('indigo')} className={`w-4 h-4 rounded-full bg-indigo-600 border ${colorTheme === 'indigo' ? 'ring-2 ring-white' : ''}`} title="Indigo" />
-          <button onClick={() => setColorTheme('emerald')} className={`w-4 h-4 rounded-full bg-emerald-600 border ${colorTheme === 'emerald' ? 'ring-2 ring-white' : ''}`} title="Emerald" />
+          <div className="relative">
+            <select
+              value={colorTheme}
+              onChange={(e) => setColorTheme(e.target.value)}
+              className="bg-slate-900 text-slate-200 text-xs rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none pr-8"
+            >
+              <option value="navy">Navy</option>
+              <option value="slate">Slate</option>
+              <option value="midnight">Midnight</option>
+              <option value="emerald">Emerald</option>
+              <option value="purple">Purple</option>
+              <option value="indigo">Indigo</option>
+              <option value="rose">Rose</option>
+              <option value="amber">Amber</option>
+              <option value="cyan">Cyan</option>
+              <option value="red">Crimson</option>
+              <option value="dark">Onyx (Dark)</option>
+            </select>
+            {/* Icon panah kecil */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
+        
         <FontSizeDropdown />
         <LanguageDropdown />
 
@@ -212,24 +235,35 @@ useEffect(() => {
           </div>
           </div>
 
-              {/* 2. Pilihan Warna Tema */}
-              <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-between">
-                <span className="text-sm text-slate-300">Tema Warna</span>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => setColorTheme('navy')} 
-                    className={`w-5 h-5 rounded-full bg-[#222D3D] border-2 ${colorTheme === 'navy' ? 'border-white' : 'border-transparent'}`} 
-                  />
-                  <button 
-                    onClick={() => setColorTheme('indigo')} 
-                    className={`w-5 h-5 rounded-full bg-indigo-600 border-2 ${colorTheme === 'indigo' ? 'border-white' : 'border-transparent'}`} 
-                  />
-                  <button 
-                    onClick={() => setColorTheme('emerald')} 
-                    className={`w-5 h-5 rounded-full bg-emerald-600 border-2 ${colorTheme === 'emerald' ? 'border-white' : 'border-transparent'}`} 
-                  />
-                </div>
-              </div>
+{/* 2. Pilihan Warna Tema (Dropdown ke Bawah) */}
+<div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-between">
+  <span className="text-sm text-slate-300">Tema Warna</span>
+  <div className="relative">
+    <select
+      value={colorTheme}
+      onChange={(e) => setColorTheme(e.target.value)}
+      className="bg-slate-900 text-slate-200 text-xs rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none pr-8"
+    >
+      <option value="navy">Navy</option>
+      <option value="slate">Slate</option>
+      <option value="midnight">Midnight</option>
+      <option value="emerald">Emerald</option>
+      <option value="purple">Purple</option>
+      <option value="indigo">Indigo</option>
+      <option value="rose">Rose</option>
+      <option value="amber">Amber</option>
+      <option value="cyan">Cyan</option>
+      <option value="red">Crimson</option>
+      <option value="dark">Onyx (Dark)</option>
+    </select>
+    {/* Icon panah kecil di sebelah kanan */}
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </div>
+</div>
 
               {/* 3. Pengaturan Teks & Bahasa */}
               <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex flex-col space-y-3">

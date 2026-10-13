@@ -2,7 +2,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 type ThemeMode = 'dark' | 'light';
-type ColorTheme = 'navy' | 'indigo' | 'emerald';
+type ColorTheme = 
+  | 'navy' 
+  | 'indigo' 
+  | 'emerald' 
+  | 'slate' 
+  | 'midnight' 
+  | 'purple' 
+  | 'rose' 
+  | 'amber' 
+  | 'cyan' 
+  | 'red' 
+  | 'dark';
 
 interface ThemeContextType {
   mode: ThemeMode;
@@ -68,6 +79,54 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           bgMain: 'bg-[#064e3b] text-white',
           bgSidebar: 'bg-[#065f46] text-slate-200 border-r border-emerald-900',
           bgCard: 'bg-[#047857] text-white shadow-xl',
+        };
+      case 'slate':
+        return {
+          bgMain: 'bg-slate-950 text-white',
+          bgSidebar: 'bg-slate-900 text-slate-100 border-r border-slate-800',
+          bgCard: 'bg-slate-900 text-white shadow-xl border border-slate-800',
+        };
+      case 'midnight':
+        return {
+          bgMain: 'bg-[#020617] text-white',
+          bgSidebar: 'bg-[#030712] text-indigo-200 border-r border-indigo-950',
+          bgCard: 'bg-[#0f172a] text-white shadow-xl',
+        };
+      case 'purple':
+        return {
+          bgMain: 'bg-[#2e1065] text-white',
+          bgSidebar: 'bg-[#3b0764] text-purple-100 border-r border-purple-900',
+          bgCard: 'bg-[#581c87] text-white shadow-xl',
+        };
+      case 'rose':
+        return {
+          bgMain: 'bg-[#4c0519] text-white',
+          bgSidebar: 'bg-[#881337] text-rose-100 border-r border-rose-900',
+          bgCard: 'bg-[#9f1239] text-white shadow-xl',
+        };
+      case 'amber':
+        return {
+          bgMain: 'bg-[#451a03] text-white',
+          bgSidebar: 'bg-[#78350f] text-amber-100 border-r border-amber-900',
+          bgCard: 'bg-[#92400e] text-white shadow-xl',
+        };
+      case 'cyan':
+        return {
+          bgMain: 'bg-[#082f49] text-white',
+          bgSidebar: 'bg-[#083344] text-cyan-100 border-r border-cyan-900',
+          bgCard: 'bg-[#0e7490] text-white shadow-xl',
+        };
+      case 'red':
+        return {
+          bgMain: 'bg-[#450a0a] text-white',
+          bgSidebar: 'bg-[#7f1d1d] text-red-100 border-r border-red-900',
+          bgCard: 'bg-[#991b1b] text-white shadow-xl',
+        };
+      case 'dark':
+        return {
+          bgMain: 'bg-black text-white',
+          bgSidebar: 'bg-zinc-900 text-zinc-100 border-r border-zinc-800',
+          bgCard: 'bg-zinc-900 text-white shadow-xl border border-zinc-800',
         };
       case 'navy':
       default:

@@ -28,7 +28,7 @@ export default function Sidebar() {
   // State lokal...
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-  const getSidebarStyle = () => {
+const getSidebarStyle = () => {
     switch (sidebarTheme) {
       case 'sidebar-slate':
         return 'bg-slate-900 text-slate-100 border-r border-slate-800';
@@ -38,8 +38,18 @@ export default function Sidebar() {
         return 'bg-[#064e3b] text-emerald-100 border-r border-emerald-900';
       case 'sidebar-purple':
         return 'bg-[#3b0764] text-purple-100 border-r border-purple-900';
+      case 'sidebar-indigo':
+        return 'bg-[#312e81] text-indigo-100 border-r border-indigo-900';
+      case 'sidebar-rose':
+        return 'bg-[#881337] text-rose-100 border-r border-rose-900';
+      case 'sidebar-amber':
+        return 'bg-[#78350f] text-amber-100 border-r border-amber-900';
+      case 'sidebar-cyan':
+        return 'bg-[#083344] text-cyan-100 border-r border-cyan-900';
+      case 'sidebar-red':
+        return 'bg-[#7f1d1d] text-red-100 border-r border-red-900';
       case 'sidebar-dark':
-        return 'bg-zinc-900 text-zinc-100 border-r border-zinc-800';
+        return 'bg-black text-zinc-100 border-r border-zinc-900';
       case 'sidebar-navy':
       default:
         return 'bg-[#111827] text-white border-r border-gray-800';
@@ -733,38 +743,38 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         </button>
 
         {/* Panel Pilihan Tema yang Muncul Hanya Saat isThemeMenuOpen bernilai true */}
-        {isThemeMenuOpen && (
-          <div className="mt-3 pt-3 border-t border-white/10 flex flex-col space-y-2 animate-fadeIn">
-            <span className="text-[10px] text-slate-300 uppercase tracking-wider">Pilih Warna Sidebar:</span>
-            
-            <div className="grid grid-cols-2 gap-1.5">
-              <button 
-                onClick={() => { setSidebarTheme('sidebar-navy');  }} 
-                className={`px-2 py-1.5 text-[10px] rounded bg-gray-900 text-white border ${sidebarTheme === 'sidebar-navy' ? 'border-white ring-1 ring-white' : 'border-transparent'}`}
-              >
-                Navy
-              </button>
-              <button 
-                onClick={() => { setSidebarTheme('sidebar-slate');  }} 
-                className={`px-2 py-1.5 text-[10px] rounded bg-slate-800 text-white border ${sidebarTheme === 'sidebar-slate' ? 'border-white ring-1 ring-white' : 'border-transparent'}`}
-              >
-                Slate
-              </button>
-              <button 
-                onClick={() => { setSidebarTheme('sidebar-emerald');  }} 
-                className={`px-2 py-1.5 text-[10px] rounded bg-emerald-900 text-white border ${sidebarTheme === 'sidebar-emerald' ? 'border-white ring-1 ring-white' : 'border-transparent'}`}
-              >
-                Emerald
-              </button>
-              <button 
-                onClick={() => { setSidebarTheme('sidebar-purple'); }} 
-                className={`px-2 py-1.5 text-[10px] rounded bg-purple-900 text-white border ${sidebarTheme === 'sidebar-purple' ? 'border-white ring-1 ring-white' : 'border-transparent'}`}
-              >
-                Purple
-              </button>
-            </div>
-          </div>
-        )}
+{isThemeMenuOpen && (
+  <div className="mt-3 pt-3 border-t border-white/10 flex flex-col space-y-2 animate-fadeIn">
+    <span className="text-[10px] text-slate-300 uppercase tracking-wider">Pilih Warna Sidebar:</span>
+    
+    <div className="grid grid-cols-2 gap-1.5">
+      {[
+        { id: 'sidebar-navy', label: 'Navy', bg: 'bg-gray-900' },
+        { id: 'sidebar-slate', label: 'Slate', bg: 'bg-slate-800' },
+        { id: 'sidebar-emerald', label: 'Emerald', bg: 'bg-emerald-900' },
+        { id: 'sidebar-purple', label: 'Purple', bg: 'bg-purple-900' },
+        { id: 'sidebar-indigo', label: 'Indigo', bg: 'bg-indigo-900' },
+        { id: 'sidebar-rose', label: 'Rose', bg: 'bg-rose-900' },
+        { id: 'sidebar-amber', label: 'Amber', bg: 'bg-amber-900' },
+        { id: 'sidebar-cyan', label: 'Cyan', bg: 'bg-cyan-950' },
+        { id: 'sidebar-red', label: 'Crimson', bg: 'bg-red-900' },
+        { id: 'sidebar-dark', label: 'Onyx', bg: 'bg-black' },
+      ].map((theme) => (
+        <button
+          key={theme.id}
+          onClick={() => setSidebarTheme(theme.id)}
+          className={`px-2 py-1.5 text-[10px] rounded text-white border font-medium transition-all duration-150 ${theme.bg} ${
+            sidebarTheme === theme.id 
+              ? 'border-white ring-1 ring-white shadow-sm' 
+              : 'border-transparent opacity-80 hover:opacity-100'
+          }`}
+        >
+          {theme.label}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
       </div>
 

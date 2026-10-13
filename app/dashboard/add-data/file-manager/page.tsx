@@ -31,7 +31,7 @@ const determineFileType = (filename: string): FileItem['type'] => {
 };
 
 export default function FileManagerPage() {
-  const { mode } = useTheme();
+  const { mode, colorTheme, getThemeClasses } = useTheme();
   
   const [files, setFiles] = useState<FileItem[]>([]);
   const [currentFolderStack, setCurrentFolderStack] = useState<string[]>(['root']);
@@ -82,10 +82,38 @@ export default function FileManagerPage() {
     fetchFilesFromSupabase();
   }, []);
 
-  const getCardStyle = () => {
-    return mode === 'light' 
-      ? 'bg-white text-slate-800 border-slate-200 shadow-sm' 
-      : 'bg-[#16222A] text-slate-100 border-slate-800 shadow-xl';
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
   };
 
 const determineFileType = (filename: string): FileItem['type'] => {

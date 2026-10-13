@@ -1,7 +1,20 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 
-type SidebarTheme = 'sidebar-dark' | 'sidebar-navy' | 'sidebar-slate' | 'sidebar-midnight' | 'sidebar-emerald' | 'sidebar-purple'; // <-- Tambahkan tema baru di sini
+// 1. Tambahkan semua varian tema baru ke dalam tipe data SidebarTheme
+type SidebarTheme = 
+  | 'sidebar-dark' 
+  | 'sidebar-navy' 
+  | 'sidebar-slate' 
+  | 'sidebar-midnight' 
+  | 'sidebar-emerald' 
+  | 'sidebar-purple'
+  | 'sidebar-indigo'
+  | 'sidebar-rose'
+  | 'sidebar-amber'
+  | 'sidebar-cyan'
+  | 'sidebar-red'
+  | 'sidebar-emerald'; // (Atau sesuaikan dengan daftar lengkap di tombol Anda)
 
 interface SidebarThemeContextType {
   sidebarTheme: SidebarTheme;
