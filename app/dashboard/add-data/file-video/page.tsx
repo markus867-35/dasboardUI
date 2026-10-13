@@ -35,6 +35,8 @@ const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 const [editingFolderId, setEditingFolderId] = useState<string | number | null>(null);
 const [editedFolderName, setEditedFolderName] = useState('');
 const [videoDimensions, setVideoDimensions] = useState({ width: 700, height: 500 });
+const [editingVideoId, setEditingVideoId] = useState<string | number | null>(null);
+const [editedVideoName, setEditedVideoName] = useState('');
 
 
 
@@ -348,6 +350,34 @@ useEffect(() => {
   };
 }, [activeVideo]);
 
+
+const handleUpdateVideoName = async (id: string | number) => {
+  if (!editedVideoName.trim()) {
+    setEditingVideoId(null);
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('video_tracks') // Sesuaikan dengan nama tabel database Anda (misal: video_tracks atau music_tracks)
+      .update({ name: editedVideoName.trim() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // Perbarui state lokal agar langsung berubah tanpa perlu refresh
+    setVideoList(videoList.map(v => v.id === id ? { ...v, name: editedVideoName.trim() } : v));
+    setEditingVideoId(null);
+    setEditedVideoName('');
+  } catch (error) {
+    console.error('Gagal mengubah nama video:', error);
+    alert('Terjadi kesalahan saat mengubah nama video.');
+  }
+};
+
+
+
+
   
   return (
     <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
@@ -357,7 +387,7 @@ useEffect(() => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              File Video <span className="text-xs font-normal opacity-60">/ Pustaka Video & Rekaman Supabase</span>
+              File Video <span className="text-xs font-normal opacity-60">/ Pustaka Video & Rekaman </span>
             </h1>
             <p className="text-xs opacity-70 mt-0.5">
               Kelola video tutorial, dokumentasi layar, dan arsip media visual Anda.
@@ -454,7 +484,7 @@ useEffect(() => {
               <p className="text-xs font-semibold">
                 {uploading ? 'Mengunggah Video ke Supabase...' : `Upload Video ke: "${currentFolderName}"`}
               </p>
-              <p className="text-[10px] opacity-60">Langsung simpan ke Supabase Storage</p>
+              <p className="text-[10px] opacity-60"></p>
             </div>
             <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploading} className="hidden" />
           </label>
@@ -586,11 +616,15 @@ useEffect(() => {
 
 
 
-        <h3 className="text-xs font-semibold opacity-60 mb-3 uppercase tracking-wider">
-          {selectedFolderId === 'all' ? 'Berkas Video Tanpa Folder' : `Video dalam "${currentFolderName}"`}
-        </h3>
 
-        {loading ? (
+
+
+
+
+
+
+
+ {loading ? (
           <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data video dari Supabase...</div>
         ) : filteredVideos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
@@ -618,6 +652,17 @@ useEffect(() => {
                   
                   {/* Tombol Aksi di Mode Grid (Sudut Kanan Atas) */}
                   <div className="absolute top-2 right-2 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setEditingVideoId(item.id);
+                        setEditedVideoName(item.name);
+                      }} 
+                      className="p-2 rounded-full bg-black/60 text-white hover:bg-blue-600 shadow-md"
+                      title="Ubah Nama"
+                    >
+                      <FiEdit2 size={13} />
+                    </button>
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
@@ -652,9 +697,28 @@ useEffect(() => {
                   </span>
                 </div>
 
-                {/* Keterangan */}
+                {/* Keterangan & Form Edit Nama */}
                 <div className="p-3 flex flex-col justify-between flex-grow">
-                  <span className="text-xs font-bold truncate w-full" title={item.name}>{item.name}</span>
+                  {editingVideoId === item.id ? (
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="text"
+                        value={editedVideoName}
+                        onChange={(e) => setEditedVideoName(e.target.value)}
+                        className="px-2 py-1 text-xs border rounded bg-slate-800 text-white outline-none w-full"
+                        autoFocus
+                      />
+                      <button 
+                        onClick={() => handleUpdateVideoName(item.id)}
+                        className="px-2 py-1 bg-blue-600 text-white text-[10px] rounded shrink-0"
+                      >
+                        Simpan
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold truncate w-full" title={item.name}>{item.name}</span>
+                  )}
+
                   <div className="flex justify-between items-center text-[10px] opacity-50 mt-2">
                     <span>{item.size}</span>
                     <span>{item.date}</span>
@@ -684,15 +748,46 @@ useEffect(() => {
                     className="hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
                   >
                     <td className="py-3 font-mono opacity-50">{index + 1}</td>
-                    <td className="py-3 font-bold flex items-center gap-2 truncate max-w-xs">
-                      <FiPlay className="text-blue-500 shrink-0" size={12} />
-                      <span className="truncate">{item.name}</span>
+                    <td className="py-3 font-bold truncate max-w-xs">
+                      {editingVideoId === item.id ? (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <input 
+                            type="text"
+                            value={editedVideoName}
+                            onChange={(e) => setEditedVideoName(e.target.value)}
+                            className="px-2 py-1 text-xs border rounded bg-slate-800 text-white outline-none w-full"
+                            autoFocus
+                          />
+                          <button 
+                            onClick={() => handleUpdateVideoName(item.id)}
+                            className="px-2 py-1 bg-blue-600 text-white text-[10px] rounded shrink-0"
+                          >
+                            Simpan
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 truncate">
+                          <FiPlay className="text-blue-500 shrink-0" size={12} />
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 opacity-70">{item.duration}</td>
                     <td className="py-3 opacity-70">{item.size}</td>
                     <td className="py-3 opacity-70">{item.date}</td>
                     <td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setEditingVideoId(item.id);
+                            setEditedVideoName(item.name);
+                          }} 
+                          className="p-1.5 hover:text-blue-500 transition opacity-60 hover:opacity-100"
+                          title="Ubah Nama"
+                        >
+                          <FiEdit2 size={13} />
+                        </button>
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
@@ -722,6 +817,16 @@ useEffect(() => {
           </div>
         )}
       </div>
+
+
+
+
+
+
+
+
+
+
 
       {/* MODAL PINDAH FOLDER */}
       {movingVideo && (

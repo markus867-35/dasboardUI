@@ -367,7 +367,7 @@ const getCardStyle = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-              File Music <span className="text-xs font-normal opacity-60">/ Pustaka Audio Supabase</span>
+              File Music <span className="text-xs font-normal opacity-60">/ Audio </span>
             </h1>
             <p className="text-xs opacity-70 mt-0.5">Kelola berkas audio, folder, dan trek musik latar.</p>
           </div>
@@ -809,6 +809,10 @@ const getCardStyle = () => {
           </div>
         )}
       </div>
+
+
+
+      
 
       {/* POP-UP MODAL PEMUTAR MUSIK (HANYA MUNCUL KETIKA IKON DIKLIK EKSPLISIT) */}
       {isPopupOpen && activeAudio && (
