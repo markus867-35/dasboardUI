@@ -106,3 +106,23 @@ aside,
 .no-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.4); /* Batang sedikit lebih terlihat saat di-hover */
 }
+
+/* Styling untuk Scrollbar Utama Halaman */
+::-webkit-scrollbar {
+  width: 6px; /* Lebar scrollbar vertikal */
+  height: 6px; /* Tinggi scrollbar horizontal */
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* Latar belakang jalur scrollbar transparan */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.25); /* Warna batang scrollbar samar/transparan */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5); /* Batang sedikit lebih jelas saat kursor berada di atasnya */
+}

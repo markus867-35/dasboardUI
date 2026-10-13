@@ -185,10 +185,14 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 <aside className={`fixed inset-y-0 left-0 z-70 w-64 min-h-screen transition-transform duration-300 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${getSidebarStyle()} ${
   isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
 }`}>
-<div className="p-6 flex items-center justify-between relative z-50">
-  <h1 className="text-3xl font-bold tracking-wider text-white italic">
-    Data-save-Markus
-  </h1>
+<div className="p-3 flex items-center justify-between relative z-50 h-16 border-b border-white/20">
+  {/* Berikan kelas relative dan h-16 pada pembungkus agar posisinya akurat */}
+  <div className="w-full flex items-center justify-center relative">
+    <h1 className="text-2xl font-bold tracking-wider text-white italic">
+      Data-save
+    </h1>
+  </div>
+
 
   {/* Tombol Close Khusus Mobile */}
 {/* Tombol Close Khusus Mobile */}
@@ -583,10 +587,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
-
 {/* BAGIAN ATAS: Nama Admin & Tombol Setting */}
-<div className="p-6 flex flex-col space-y-4 relative">
-  <div className="flex flex-col space-y-3 border-b border-white/10 pb-4 relative">
+<div className="p-6 flex flex-col space-y-1 relative border-t border-white/10">
+  <div className="flex flex-col space-y-1 border-b border-white/15 pb-1 relative">
     
     {/* 1. Profil Pengguna (Full Lebar) */}
     <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3 w-full shadow-sm">
