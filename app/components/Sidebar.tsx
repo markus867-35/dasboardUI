@@ -742,40 +742,39 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           </svg>
         </button>
 
-        {/* Panel Pilihan Tema yang Muncul Hanya Saat isThemeMenuOpen bernilai true */}
-{isThemeMenuOpen && (
-  <div className="mt-3 pt-3 border-t border-white/10 flex flex-col space-y-2 animate-fadeIn">
-    <span className="text-[10px] text-slate-300 uppercase tracking-wider">Pilih Warna Sidebar:</span>
-    
-    <div className="grid grid-cols-2 gap-1.5">
-      {[
-        { id: 'sidebar-navy', label: 'Navy', bg: 'bg-gray-900' },
-        { id: 'sidebar-slate', label: 'Slate', bg: 'bg-slate-800' },
-        { id: 'sidebar-emerald', label: 'Emerald', bg: 'bg-emerald-900' },
-        { id: 'sidebar-purple', label: 'Purple', bg: 'bg-purple-900' },
-        { id: 'sidebar-indigo', label: 'Indigo', bg: 'bg-indigo-900' },
-        { id: 'sidebar-rose', label: 'Rose', bg: 'bg-rose-900' },
-        { id: 'sidebar-amber', label: 'Amber', bg: 'bg-amber-900' },
-        { id: 'sidebar-cyan', label: 'Cyan', bg: 'bg-cyan-950' },
-        { id: 'sidebar-red', label: 'Crimson', bg: 'bg-red-900' },
-        { id: 'sidebar-dark', label: 'Onyx', bg: 'bg-black' },
-      ].map((theme) => (
-        <button
-          key={theme.id}
-          onClick={() => setSidebarTheme(theme.id)}
-          className={`px-2 py-1.5 text-[10px] rounded text-white border font-medium transition-all duration-150 ${theme.bg} ${
-            sidebarTheme === theme.id 
-              ? 'border-white ring-1 ring-white shadow-sm' 
-              : 'border-transparent opacity-80 hover:opacity-100'
-          }`}
-        >
-          {theme.label}
-        </button>
-      ))}
+      {/* Panel Pilihan Tema yang Muncul Hanya Saat isThemeMenuOpen bernilai true */}
+  {isThemeMenuOpen && (
+    <div className="mt-3 pt-3 border-t border-white/10 flex flex-col space-y-2 animate-fadeIn">
+      <span className="text-[10px] text-slate-300 uppercase tracking-wider">Pilih Warna Sidebar:</span>
+      
+      <div className="grid grid-cols-2 gap-1.5">
+        {[
+          { id: 'sidebar-navy', label: 'Navy', bg: 'bg-gray-900' },
+          { id: 'sidebar-slate', label: 'Slate', bg: 'bg-slate-800' },
+          { id: 'sidebar-emerald', label: 'Emerald', bg: 'bg-emerald-900' },
+          { id: 'sidebar-purple', label: 'Purple', bg: 'bg-purple-900' },
+          { id: 'sidebar-indigo', label: 'Indigo', bg: 'bg-indigo-900' },
+          { id: 'sidebar-rose', label: 'Rose', bg: 'bg-rose-900' },
+          { id: 'sidebar-amber', label: 'Amber', bg: 'bg-amber-900' },
+          { id: 'sidebar-cyan', label: 'Cyan', bg: 'bg-cyan-950' },
+          { id: 'sidebar-red', label: 'Crimson', bg: 'bg-red-900' },
+          { id: 'sidebar-dark', label: 'Onyx', bg: 'bg-black' },
+        ].map((theme) => (
+          <button
+            key={theme.id}
+            onClick={() => setSidebarTheme(theme.id as any)} // 👈 Tambahkan 'as any' di sini
+            className={`px-2 py-1.5 text-[10px] rounded text-white border font-medium transition-all duration-150 ${theme.bg} ${
+              sidebarTheme === theme.id 
+                ? 'border-white ring-1 ring-white shadow-sm' 
+                : 'border-transparent opacity-80 hover:opacity-100'
+            }`}
+          >
+            {theme.label}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-)}
-
+  )}
       </div>
 
     </aside>
