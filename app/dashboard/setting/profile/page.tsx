@@ -549,12 +549,14 @@ const uploadAndSaveAvatar = async (file: File) => {
               </div>
             </div>
 
-            {/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
+
+
+{/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
             <div className={`flex flex-col justify-between h-full p-4 rounded-xl border ${isDark ? 'border-slate-700/30 bg-slate-800/20' : 'border-slate-200 bg-slate-50'}`}>
               <div>
                 <h3 className="text-md font-medium mb-2">Riwayat Foto Sebelumnya</h3>
                 <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Klik &quot;Gunakan&quot; untuk memasang foto atau &quot;Hapus&quot; untuk membuangnya dari riwayat.
+                  Klik &quot;Lihat&quot; untuk memperbesar foto, &quot;Gunakan&quot; untuk memasang, atau &quot;Hapus&quot; dari riwayat.
                 </p>
               </div>
 
@@ -570,16 +572,88 @@ const uploadAndSaveAvatar = async (file: File) => {
                     <div key={idx} className="w-24 h-24 rounded-xl overflow-hidden border-2 border-slate-600 shadow-sm relative group">
                       <img src={histUrl} alt={`Riwayat ${idx + 1}`} className="w-full h-full object-contain bg-slate-900" />
                       
+                      {/* Container Tombol Aksi saat Hover */}
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition p-1">
+                        
+                        {/* Tombol Lihat - Membuka SweetAlert dengan Navigasi Panah */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            let currentIndex = idx; // Mulai dari foto riwayat yang sedang diklik
+
+                            const renderSwalContent = () => {
+                              const currentUrl = avatarHistory[currentIndex];
+                              return `
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                                  <div style="width: 280px; height: 280px; border-radius: 50%; overflow: hidden; border: 4px solid #3b82f6; position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center;">
+                                    <img src="${currentUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+                                    
+                                    ${avatarHistory.length > 1 ? `
+                                      <button type="button" id="swal-hist-prev" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 10;">&lt;</button>
+                                      <button type="button" id="swal-hist-next" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 10;">&gt;</button>
+                                    ` : ''}
+                                  </div>
+                                  <p style="font-size: 14px; font-weight: 500; margin: 0; color: ${isDark ? '#cbd5e1' : '#334155'};">
+                                    Riwayat Foto ke-${currentIndex + 1} dari ${avatarHistory.length}
+                                  </p>
+                                </div>
+                              `;
+                            };
+
+                            Swal.fire({
+                              title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + '">Detail Riwayat Foto</span>',
+                              html: renderSwalContent(),
+                              showCloseButton: false,
+                              showConfirmButton: false,
+                              background: 'transparent',
+                              didOpen: () => {
+                                const attachEvents = () => {
+                                  const prevBtn = document.getElementById('swal-hist-prev');
+                                  const nextBtn = document.getElementById('swal-hist-next');
+
+                                  if (prevBtn) {
+                                    prevBtn.onclick = () => {
+                                      currentIndex = (currentIndex === 0) ? avatarHistory.length - 1 : currentIndex - 1;
+                                      const contentEl = Swal.getHtmlContainer();
+                                      if (contentEl) {
+                                        contentEl.innerHTML = renderSwalContent();
+                                        attachEvents();
+                                      }
+                                    };
+                                  }
+
+                                  if (nextBtn) {
+                                    nextBtn.onclick = () => {
+                                      currentIndex = (currentIndex === avatarHistory.length - 1) ? 0 : currentIndex + 1;
+                                      const contentEl = Swal.getHtmlContainer();
+                                      if (contentEl) {
+                                        contentEl.innerHTML = renderSwalContent();
+                                        attachEvents();
+                                      }
+                                    };
+                                  }
+                                };
+                                attachEvents();
+                              }
+                            });
+                          }}
+                          className="w-full bg-slate-700 hover:bg-slate-600 text-white text-[10px] py-1 px-1 rounded font-semibold transition flex items-center justify-center gap-1"
+                        >
+                          <span>🔍</span> Lihat
+                        </button>
+
+                        {/* Tombol Gunakan */}
                         <button
                           type="button"
                           onClick={() => {
                             setAvatarUrl(histUrl);
                           }}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 px-1 rounded font-semibold transition"
                         >
                           Gunakan
                         </button>
+
+                        {/* Tombol Hapus */}
                         <button
                           type="button"
                           onClick={async () => {
@@ -591,7 +665,7 @@ const uploadAndSaveAvatar = async (file: File) => {
                               .eq('id', adminId);
                             Swal.fire('Terhapus', 'Foto berhasil dihapus dari riwayat.', 'success');
                           }}
-                          className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                          className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-1 rounded font-semibold transition"
                         >
                           Hapus
                         </button>
