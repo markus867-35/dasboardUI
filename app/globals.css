@@ -126,3 +126,42 @@ aside,
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.5); /* Batang sedikit lebih jelas saat kursor berada di atasnya */
 }
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+}
+
+
+
+@keyframes walkCasual {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  /* Siklus langkah kecil bolak-balik saat berjalan ke kanan */
+  12.5% { transform: translateX(25px) translateY(-3px) rotate(1deg); }
+  25%   { transform: translateX(50px) translateY(0) rotate(0deg); }
+  37.5% { transform: translateX(75px) translateY(-3px) rotate(1deg); }
+  50%   { 
+    /* Titik terjauh di kanan, berbalik arah */
+    transform: translateX(100px) translateY(0) rotate(-180deg); 
+  }
+  /* Siklus langkah kecil saat berjalan kembali ke kiri */
+  62.5% { transform: translateX(75px) translateY(-3px) rotate(-179deg); }
+  75%   { transform: translateX(50px) translateY(0) rotate(-180deg); }
+  87.5% { transform: translateX(25px) translateY(-3px) rotate(-179deg); }
+  100% {
+    transform: translateX(0) translateY(0) rotate(-360deg);
+  }
+}
+
+.animate-walk-side {
+  display: inline-block;
+  animation: walkCasual 5s ease-in-out infinite;
+}

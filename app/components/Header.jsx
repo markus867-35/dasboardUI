@@ -82,17 +82,22 @@ useEffect(() => {
         )}
       </button>
 
-      {/* Bagian judul dengan gambar ikon di sampingnya */}
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg sm:text-xl font-bold tracking-wide">{t('dashboard')}</h2>
-        <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center bg-slate-800/40 shrink-0">
-          <img 
-            src="https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80" 
-            alt="Dashboard Icon" 
-            className="w-full h-full object-cover" 
-          />
-        </div>
-      </div>
+{/* Bagian judul dengan gambar ikon di sampingnya */}
+<div className="flex items-center gap-3">
+  {/* Teks dengan animasi belah & turun dari atas */}
+  <h2 className="text-lg sm:text-xl font-bold tracking-wide animate-slide-down">
+    {t('dashboard')}
+  </h2>
+
+  {/* Gambar ikon dengan animasi berjalan ke kanan dan ke kiri */}
+  <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center bg-slate-800/40 shrink-0 animate-walk-side">
+    <img 
+      src="https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80" 
+      alt="Dashboard Icon" 
+      className="w-full h-full object-cover" 
+    />
+  </div>
+</div>
     </div>
 
     {/* Bagian Kanan: Desktop Menu (Diselaraskan tinggi h-11 agar rata semua) */}
