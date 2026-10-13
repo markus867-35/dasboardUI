@@ -150,7 +150,7 @@ aside,
   37.5% { transform: translateX(75px) translateY(-3px) rotate(1deg); }
   50%   { 
     /* Titik terjauh di kanan, berbalik arah */
-    transform: translateX(100px) translateY(0) rotate(-180deg); 
+    transform: translateX(100) translateY(0) rotate(-180deg); 
   }
   /* Siklus langkah kecil saat berjalan kembali ke kiri */
   62.5% { transform: translateX(75px) translateY(-3px) rotate(-179deg); }

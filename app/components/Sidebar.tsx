@@ -655,9 +655,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           <span>Kelola</span>
         </button>
 
-        {/* DROPDOWN MENU PENGATURAN ADMIN */}
+{/* DROPDOWN MENU PENGATURAN ADMIN */}
         {isAdminMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 p-2 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-1">
+          <div className="absolute left-0 -translate-x-27 mt-3 w-48 p-1 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-2">
             <Link 
               href="/dashboard/setting/profile"
               onClick={() => setIsAdminMenuOpen(false)}
