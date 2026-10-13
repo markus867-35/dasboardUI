@@ -23,7 +23,7 @@ interface AdminProfile {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { mode } = useTheme();
+  const { mode, colorTheme, getThemeClasses } = useTheme();
   const isDark = mode === 'dark';
  const [adminId, setAdminId] = useState<string | null>(null);
 
@@ -61,6 +61,50 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
 useEffect(() => {
     checkUserAndFetchProfile();
   }, []);
+
+
+
+
+
+
+
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
+  };
+
+
+
+
 
 
 
@@ -428,7 +472,7 @@ const uploadAndSaveAvatar = async (file: File) => {
   }
 
   return (
-    <div className={`min-h-screen p-4 sm:p-8 transition-colors duration-200 ${isDark ? 'text-slate-100 bg-slate-950' : 'text-slate-800 bg-white'}`}>
+    <div className={`min-h-screen p-4 sm:p-8 transition-colors duration-200 ${getCardStyle()}`}>
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header Title */}
@@ -438,62 +482,56 @@ const uploadAndSaveAvatar = async (file: File) => {
             Kelola informasi profil, foto, dan keamanan akun Anda 
           </p>
         </div>
-{/* Bagian Foto Profil & Upload */}
+
         {/* Bagian Foto Profil & Upload */}
-<div className={`p-6 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-  <h2 className="text-xl font-semibold mb-6">Foto Profil & Riwayat</h2>
-  
-  {/* Layout dibagi 2 kolom: Kiri (Upload/Utama), Kanan (Riwayat) */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-    
-    {/* KOLOM KIRI: Foto Utama & Tombol Ganti */}
-    <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 p-4 rounded-xl border border-slate-700/30 bg-slate-800/20">
-      
-      {/* Bagian Foto yang saat diklik memunculkan SweetAlert */}
-      <div 
-        onClick={() => {
-          Swal.fire({
-            title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + '">Foto Profil</span>',
-            html: `
-              <div class="flex flex-col items-center justify-center space-y-3">
-                {/* Background diberi warna gelap (#1e293b) agar sisa ruang foto kecil terlihat rapi */}
-                <div class="w-80 h-80 rounded-full bg-slate-900 overflow-hidden border-4 border-blue-500 shadow-xl flex items-center justify-center">
-                  <img src="${avatarUrl || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-contain" />
+        <div className={`p-6 rounded-2xl shadow-sm ${getCardStyle()}`}>
+          <h2 className="text-xl font-semibold mb-6">Foto Profil & Riwayat</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            
+            {/* KOLOM KIRI: Foto Utama & Tombol Ganti */}
+            <div className={`flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 p-4 rounded-xl border ${isDark ? 'border-slate-700/30 bg-slate-800/20' : 'border-slate-200 bg-slate-50'}`}>
+              
+              <div 
+                onClick={() => {
+                  Swal.fire({
+                    title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + '">Foto Profil</span>',
+                    html: `
+                      <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-80 h-80 rounded-full bg-slate-900 overflow-hidden border-4 border-blue-500 shadow-xl flex items-center justify-center">
+                          <img src="${avatarUrl || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-contain" />
+                        </div>
+                        <p class="text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}">${formData.name ? `${formData.name} (@${formData.username})` : 'Admin Profil'}</p>
+                      </div>
+                    `,
+                    showCloseButton: false,
+                    showConfirmButton: false,
+                    background: 'transparent',
+                  });
+                }}
+                className="relative group cursor-pointer"
+                title="Klik untuk melihat foto"
+              >
+                <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-blue-500 shadow-md bg-slate-900 relative flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-contain transition duration-200 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400">
+                      {formData.name ? formData.name.charAt(0).toUpperCase() : 'A'}
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-200">
+                    <span className="text-xl">🔍</span>
+                    <span className="text-[10px] font-semibold mt-1">Lihat Foto</span>
+                  </div>
                 </div>
-                <p class="text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}">${formData.name ? `${formData.name} (@${formData.username})` : 'Admin Profil'}</p>
               </div>
-            `,
-            showCloseButton: false,
-            showConfirmButton: false,
-            background: 'transparent',
-          });
-        }}
-        className="relative group cursor-pointer"
-        title="Klik untuk melihat foto"
-      >
-        {/* Mengubah object-cover menjadi object-contain & menambahkan background gelap */}
-        <div className="w-55 h-55 rounded-full overflow-hidden border-4 border-blue-500 shadow-md bg-slate-900 relative flex items-center justify-center">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-contain transition duration-200 group-hover:scale-105" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400">
-              {formData.name ? formData.name.charAt(0).toUpperCase() : 'A'}
-            </div>
-          )}
-
-          {/* Overlay petunjuk saat kursor diarahkan (hover) */}
-          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-200">
-            <span className="text-xl">🔍</span>
-            <span className="text-[10px] font-semibold mt-1">Lihat Foto</span>
-          </div>
-        </div>
-      </div>
-
 
               <div className="space-y-3 w-full">
-<p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-  {formData.bio || 'Belum ada bio'}
-</p>
+                <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {formData.bio || 'Belum ada bio'}
+                </p>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -511,161 +549,64 @@ const uploadAndSaveAvatar = async (file: File) => {
               </div>
             </div>
 
+            {/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
+            <div className={`flex flex-col justify-between h-full p-4 rounded-xl border ${isDark ? 'border-slate-700/30 bg-slate-800/20' : 'border-slate-200 bg-slate-50'}`}>
+              <div>
+                <h3 className="text-md font-medium mb-2">Riwayat Foto Sebelumnya</h3>
+                <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Klik &quot;Gunakan&quot; untuk memasang foto atau &quot;Hapus&quot; untuk membuangnya dari riwayat.
+                </p>
+              </div>
 
-
-
-
-
-
-{/* KOLOM KANAN: Kumpulan Riwayat Foto Sebelumnya */}
-<div className="flex flex-col justify-between h-full p-4 rounded-xl border border-slate-700/30 bg-slate-800/20">
-  <div>
-    <h3 className="text-md font-medium mb-2">Riwayat Foto Sebelumnya</h3>
-    <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-      Klik "Gunakan" untuk memasang foto atau "Hapus" untuk membuangnya dari riwayat.
-    </p>
-  </div>
-
-  {avatarHistory.length === 0 ? (
-    <div className="py-6 text-center">
-      <p className={`text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-        Belum ada riwayat foto profil sebelumnya.
-      </p>
-    </div>
-  ) : (
-    <div className="flex flex-wrap gap-3 max-h-56 overflow-y-auto p-1">
-      {avatarHistory.map((histUrl, idx) => (
-        <div key={idx} className="w-30 h-30 rounded-xl overflow-hidden border-2 border-slate-600 shadow-sm relative group">
-          <img src={histUrl} alt={`Riwayat ${idx + 1}`} className="w-full h-full object-contain bg-slate-900" />
-          
-          {/* Container Tombol Aksi saat Hover */}
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition p-1">
-            
-            {/* Tombol Lihat - Membuka SweetAlert dengan Tombol Panah di dalam Lingkaran */}
-            <button
-              type="button"
-              onClick={() => {
-                let currentIndex = idx; // Mulai dari foto yang sedang diklik
-
-                const renderSwalContent = () => {
-                  const currentUrl = avatarHistory[currentIndex];
-                  return `
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                      <!-- Lingkaran Preview Foto dengan Posisi Relative untuk Tombol Panah -->
-                      <div style="width: 320px; height: 320px; border-radius: 50%; overflow: hidden; border: 4px solid #3b82f6; position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center;">
-                        
-                        <img id="swal-history-img" src="${currentUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
-                        
-                        <!-- Tombol Panah Kiri (<) di dalam lingkaran jika riwayat lebih dari 1 -->
-                        ${avatarHistory.length > 1 ? `
-                          <button type="button" id="swal-prev-btn" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s;">
-                            &lt;
-                          </button>
-                          
-                          <button type="button" id="swal-next-btn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s;">
-                            &gt;
-                          </button>
-                        ` : ''}
+              {avatarHistory.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className={`text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Belum ada riwayat foto profil sebelumnya.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-3 max-h-56 overflow-y-auto p-1">
+                  {avatarHistory.map((histUrl, idx) => (
+                    <div key={idx} className="w-24 h-24 rounded-xl overflow-hidden border-2 border-slate-600 shadow-sm relative group">
+                      <img src={histUrl} alt={`Riwayat ${idx + 1}`} className="w-full h-full object-contain bg-slate-900" />
+                      
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition p-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarUrl(histUrl);
+                          }}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                        >
+                          Gunakan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const updatedHistory = avatarHistory.filter((item) => item !== histUrl);
+                            setAvatarHistory(updatedHistory);
+                            await supabase
+                              .from('admins')
+                              .update({ avatar_history: updatedHistory })
+                              .eq('id', adminId);
+                            Swal.fire('Terhapus', 'Foto berhasil dihapus dari riwayat.', 'success');
+                          }}
+                          className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
+                        >
+                          Hapus
+                        </button>
                       </div>
-
-                      <p id="swal-history-info" style="font-size: 14px; font-weight: 500; margin: 0; color: ${isDark ? '#cbd5e1' : '#334155'};">
-                        Riwayat Foto ke-${currentIndex + 1} dari ${avatarHistory.length}
-                      </p>
                     </div>
-                  `;
-                };
-
-                Swal.fire({
-                  title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + '">Detail Riwayat Foto</span>',
-                  html: renderSwalContent(),
-                  showCloseButton: false,
-                  showConfirmButton: false,
-                  background: 'transparent', // Diubah menjadi transparent
-                  didOpen: () => {
-                    const attachEvents = () => {
-                      const prevBtn = document.getElementById('swal-prev-btn');
-                      const nextBtn = document.getElementById('swal-next-btn');
-
-                      if (prevBtn) {
-                        prevBtn.onclick = () => {
-                          currentIndex = (currentIndex === 0) ? avatarHistory.length - 1 : currentIndex - 1;
-                          // Update konten SweetAlert secara dinamis saat tombol diklik
-                          const contentEl = Swal.getHtmlContainer();
-                          if (contentEl) {
-                            contentEl.innerHTML = renderSwalContent();
-                            attachEvents(); // Pasang ulang event listener setelah re-render
-                          }
-                        };
-                      }
-
-                      if (nextBtn) {
-                        nextBtn.onclick = () => {
-                          currentIndex = (currentIndex === avatarHistory.length - 1) ? 0 : currentIndex + 1;
-                          const contentEl = Swal.getHtmlContainer();
-                          if (contentEl) {
-                            contentEl.innerHTML = renderSwalContent();
-                            attachEvents();
-                          }
-                        };
-                      }
-                    };
-
-                    attachEvents();
-                  }
-                });
-              }}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white text-[10px] py-1 px-2 rounded font-semibold transition flex items-center justify-center gap-1"
-            >
-              <span>🔍</span> Lihat
-            </button>
-
-            {/* Tombol Gunakan */}
-            <button
-              type="button"
-              onClick={async () => {
-                setAvatarUrl(histUrl);
-                await supabase.from('admins').update({ avatar_url: histUrl }).eq('id', adminId);
-                Swal.fire('Berhasil', 'Foto profil dikembalikan ke riwayat terpilih.', 'success');
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
-            >
-              Gunakan
-            </button>
-
-            {/* Tombol Hapus */}
-            <button
-              type="button"
-              onClick={async () => {
-                const updatedHistory = avatarHistory.filter((item) => item !== histUrl);
-                setAvatarHistory(updatedHistory);
-
-                const { error } = await supabase
-                  .from('admins')
-                  .update({ avatar_history: updatedHistory })
-                  .eq('id', adminId);
-
-                if (error) {
-                  Swal.fire('Gagal', 'Gagal menghapus riwayat foto dari database.', 'error');
-                } else {
-                  Swal.fire('Terhapus', 'Foto berhasil dihapus dari riwayat.', 'success');
-                }
-              }}
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-semibold transition"
-            >
-              Hapus
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
+                  ))}
+                </div>
+              )}
+            </div>
 
           </div>
         </div>
         
         {/* Bagian Detail Profil */}
-        <form onSubmit={handleSaveProfile} className={`p-6 rounded-2xl border shadow-sm space-y-4 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <form onSubmit={handleSaveProfile} className={`p-6 rounded-2xl shadow-sm space-y-4 ${getCardStyle()}`}>
           <h2 className="text-xl font-semibold mb-2">Detail Informasi</h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -705,7 +646,6 @@ const uploadAndSaveAvatar = async (file: File) => {
               />
             </div>
 
-            {/* Tanggal Lahir, Bulan, Tahun */}
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1">Tanggal Lahir</label>
               <div className="grid grid-cols-3 gap-3">
@@ -754,14 +694,14 @@ const uploadAndSaveAvatar = async (file: File) => {
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1">Bio</label>
-<textarea
-  name="bio"
-  rows={3}
-  value={formData.bio || ''}
-  onChange={handleInputChange}
-  placeholder="Tuliskan sedikit tentang diri Anda..."
-  className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-></textarea>
+              <textarea
+                name="bio"
+                rows={3}
+                value={formData.bio || ''}
+                onChange={handleInputChange}
+                placeholder="Tuliskan sedikit tentang diri Anda..."
+                className={`w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+              ></textarea>
             </div>
           </div>
 
@@ -776,86 +716,83 @@ const uploadAndSaveAvatar = async (file: File) => {
           </div>
         </form>
 
-{/* Bagian Reset / Ubah Password */}
-<form onSubmit={handleUpdatePassword} className={`p-6 rounded-2xl border shadow-sm space-y-4 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-  <h2 className="text-xl font-semibold mb-2">Keamanan & Ubah Password</h2>
-  
-  <div className="space-y-4">
-    {/* Password Saat Ini */}
-    <div>
-      <label className="block text-sm font-medium mb-1">Password Saat Ini</label>
-      <div className="relative">
-        <input
-          type={showPassword.current ? "text" : "password"}
-          value={passwords.currentPassword}
-          onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-          className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-          required
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
-        >
-          {showPassword.current ? '👁️‍🗨️' : '👁️'}
-        </button>
-      </div>
-    </div>
+        {/* Bagian Reset / Ubah Password */}
+        <form onSubmit={handleUpdatePassword} className={`p-6 rounded-2xl shadow-sm space-y-4 ${getCardStyle()}`}>
+          <h2 className="text-xl font-semibold mb-2">Keamanan & Ubah Password</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Password Saat Ini</label>
+              <div className="relative">
+                <input
+                  type={showPassword.current ? "text" : "password"}
+                  value={passwords.currentPassword}
+                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                  className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+                >
+                  {showPassword.current ? '👁️‍🗨️' : '👁️'}
+                </button>
+              </div>
+            </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {/* Password Baru */}
-      <div>
-        <label className="block text-sm font-medium mb-1">Password Baru</label>
-        <div className="relative">
-          <input
-            type={showPassword.new ? "text" : "password"}
-            value={passwords.newPassword}
-            onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-            className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
-          >
-            {showPassword.new ? '👁️‍🗨️' : '👁️'}
-          </button>
-        </div>
-      </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Password Baru</label>
+                <div className="relative">
+                  <input
+                    type={showPassword.new ? "text" : "password"}
+                    value={passwords.newPassword}
+                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                    className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+                  >
+                    {showPassword.new ? '👁️‍🗨️' : '👁️'}
+                  </button>
+                </div>
+              </div>
 
-      {/* Konfirmasi Password Baru */}
-      <div>
-        <label className="block text-sm font-medium mb-1">Konfirmasi Password Baru</label>
-        <div className="relative">
-          <input
-            type={showPassword.confirm ? "text" : "password"}
-            value={passwords.confirmPassword}
-            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-            className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
-          >
-            {showPassword.confirm ? '👁️‍🗨️️' : '👁️'}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Konfirmasi Password Baru</label>
+                <div className="relative">
+                  <input
+                    type={showPassword.confirm ? "text" : "password"}
+                    value={passwords.confirmPassword}
+                    onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                    className={`w-full px-4 py-2 pr-10 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none text-sm"
+                  >
+                    {showPassword.confirm ? '👁️‍🗨' : '👁️'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-  <div className="flex justify-end pt-2">
-    <button
-      type="submit"
-      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition shadow"
-    >
-      Perbarui Password
-    </button>
-  </div>
-</form>
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition shadow"
+            >
+              Perbarui Password
+            </button>
+          </div>
+        </form>
 
       </div>
     </div>

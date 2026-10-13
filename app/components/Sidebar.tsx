@@ -182,11 +182,9 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   };
 
   return (
-<aside className={`fixed inset-y-0 left-0 z-70 w-64 transition-transform duration-300 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${getSidebarStyle()} ${
-  // sisa kode Anda di sini
-  // sisa kode Anda di sini
-      isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-    }`}>
+<aside className={`fixed inset-y-0 left-0 z-70 w-64 min-h-screen transition-transform duration-300 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${getSidebarStyle()} ${
+  isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+}`}>
 <div className="p-6 flex items-center justify-between relative z-50">
   <h1 className="text-3xl font-bold tracking-wider text-white italic">
     Data-save-Markus
@@ -586,109 +584,122 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 
 
 
-
-{/* BAGIAN ATAS: Nama Admin & Tombol Setting dengan Dropdown */}
-<div className="p-6 flex flex-col space-y-6 relative">
-      <div className="flex items-center justify-between border-b border-white/10 pb-4 relative">
-        
-        {/* 1. Profil Pengguna (Menggunakan Data Dinamis dari Supabase) */}
-        <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3 w-full">
-          
-          {/* Avatar Bulat (Bisa diklik untuk memunculkan SweetAlert) */}
-          <div 
-            onClick={() => {
-              Swal.fire({
-                title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + ' text-xl font-bold">Foto Profil</span>',
-                html: `
-                  <div class="flex flex-col items-center justify-center space-y-4 py-2">
-                    <div class="w-64 h-64 rounded-full bg-transparent overflow-hidden border-4 border-blue-500 shadow-2xl">
-                      <img src="${adminData.avatar_url || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-cover" />
-                    </div>
-                    <p class="text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}">${adminData.name}</p>
-                  </div>
-                `,
-                showCloseButton: false,
-                showConfirmButton: false,
-                width: '550px',
-                background: 'transparent',
-
-              });
-            }}
-            className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0 border border-indigo-400 cursor-pointer group hover:opacity-90 transition"
-            title="Klik untuk melihat foto"
-          >
-            {adminData.avatar_url ? (
-              <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
-            )}
-          </div>
-
-          {/* Nama, Email, dan Status Online */}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
-            <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
-            <span className="text-[10px] text-emerald-400 font-medium inline-block mt-0.5">● Online</span>
-          </div>
-
-        </div>
-
-
-
-
-
-
-
-    {/* Tombol Setting dengan Toggle Dropdown */}
-    <button
-      type="button"
-      onClick={() => {
-        setIsAdminMenuOpen(!isAdminMenuOpen);
-        setIsThemeMenuOpen(false); // Menutup menu tema jika sedang terbuka
-      }}
-      className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all cursor-pointer flex-shrink-0"
-      title="Pengaturan Admin"
-    >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    </button>
-
-    {/* DROPDOWN MENU PENGATURAN ADMIN */}
-    {isAdminMenuOpen && (
-      <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-1">
-<Link 
-  href="/dashboard/setting/profile"
-  onClick={() => setIsAdminMenuOpen(false)}
-  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
->
-  <FiUser size={16} /> 
-  <span>Profil Akun</span>
-</Link>
-
-<Link 
-  href="/dashboard/setting/change-password"
-  onClick={() => setIsAdminMenuOpen(false)}
-  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
->
-  <FiShield size={16} /> 
-  <span>Keamanan & Sandi</span>
-</Link>
-
-        <div className="border-t border-white/10 my-1"></div>
-
-<button 
-      onClick={handleLogout}
-      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
-    >
-      <FiLogOut size={16} /> 
-      <span>🚪 Keluar (Logout)</span>
-    </button>
+{/* BAGIAN ATAS: Nama Admin & Tombol Setting */}
+<div className="p-6 flex flex-col space-y-4 relative">
+  <div className="flex flex-col space-y-3 border-b border-white/10 pb-4 relative">
+    
+    {/* 1. Profil Pengguna (Full Lebar) */}
+    <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center space-x-3 w-full shadow-sm">
+      
+      {/* Avatar Bulat (Bisa diklik untuk SweetAlert) */}
+      <div 
+        onClick={() => {
+          Swal.fire({
+            title: '<span class="' + (isDark ? 'text-slate-100' : 'text-slate-900') + ' text-xl font-bold">Foto Profil</span>',
+            html: `
+              <div class="flex flex-col items-center justify-center space-y-4 py-2">
+                <div class="w-64 h-64 rounded-full bg-transparent overflow-hidden border-4 border-blue-500 shadow-2xl">
+                  <img src="${adminData.avatar_url || 'https://via.placeholder.com/150'}" alt="Foto Profil Utama" class="w-full h-full object-cover" />
+                </div>
+                <p class="text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}">${adminData.name}</p>
+              </div>
+            `,
+            showCloseButton: false,
+            showConfirmButton: false,
+            width: '550px',
+            background: 'transparent',
+          });
+        }}
+        className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-base overflow-hidden shrink-0 border border-indigo-400 cursor-pointer group hover:opacity-90 transition"
+        title="Klik untuk melihat foto"
+      >
+        {adminData.avatar_url ? (
+          <img src={adminData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+        ) : (
+          adminData.name ? adminData.name.charAt(0).toUpperCase() : 'A'
+        )}
       </div>
-    )}
+
+      {/* Nama, Email, dan Status Online */}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white truncate">{adminData.name}</p>
+        <p className="text-xs text-slate-400 truncate">{adminData.email}</p>
+        <span className="text-[10px] text-emerald-400 font-medium inline-block mt-0.5">● Online</span>
+      </div>
+    </div>
+
+    {/* 2. Baris Kedua: Dibungkus Card Rapi agar Sejajar & Tidak Mengganggu */}
+    <div className="p-3 bg-slate-800/60 hover:bg-slate-800 rounded-xl border border-slate-700/80 flex items-center justify-between transition">
+      <div className="flex flex-col">
+        <span className="text-xs font-semibold text-slate-200">Pengaturan Akun</span>
+        <span className="text-[10px] text-slate-400">Kelola profil & sandi</span>
+      </div>
+      
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => {
+            setIsAdminMenuOpen(!isAdminMenuOpen);
+            setIsThemeMenuOpen(false);
+          }}
+          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer flex items-center space-x-1.5 text-xs font-medium shadow"
+          title="Pengaturan Admin"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Kelola</span>
+        </button>
+
+        {/* DROPDOWN MENU PENGATURAN ADMIN */}
+        {isAdminMenuOpen && (
+          <div className="absolute right-0 mt-2 w-48 p-2 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/15 shadow-2xl z-50 flex flex-col space-y-1">
+            <Link 
+              href="/dashboard/setting/profile"
+              onClick={() => setIsAdminMenuOpen(false)}
+              className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
+            >
+              <FiUser size={16} /> 
+              <span>Profil Akun</span>
+            </Link>
+
+            <Link 
+              href="/dashboard/setting/change-password"
+              onClick={() => setIsAdminMenuOpen(false)}
+              className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-white/10 text-slate-200 transition-all flex items-center space-x-2"
+            >
+              <FiShield size={16} /> 
+              <span>Keamanan & Sandi</span>
+            </Link>
+
+            <div className="border-t border-white/10 my-1"></div>
+
+            <button 
+              onClick={handleLogout}
+              className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
+            >
+              <FiLogOut size={16} /> 
+              <span>🚪 Keluar (Logout)</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
 
   </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
 {/* ========================================== */}
 {/* AREA TANGGAL BUAT / REGISTRASI AKUN        */}
