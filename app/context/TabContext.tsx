@@ -24,16 +24,6 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('app_tabs');
-      if (saved) {
-        try { 
-          setTabs(JSON.parse(saved)); 
-        } catch { 
-          /* ignore */ 
-        }
-      }
-    }
   }, []);
 
   useEffect(() => {
@@ -65,9 +55,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
     setTabs((prevTabs: TabItem[]) => {
       const exists = prevTabs.some((tab: TabItem) => tab.path === pathname);
       if (!exists) {
-        const updatedTabs = [...prevTabs, { name: tabName, path: pathname }];
-        localStorage.setItem('app_tabs', JSON.stringify(updatedTabs));
-        return updatedTabs;
+        return [...prevTabs, { name: tabName, path: pathname }];
       }
       return prevTabs;
     });
@@ -77,9 +65,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
     e.stopPropagation();
     setTabs((prevTabs: TabItem[]) => {
       if (prevTabs.length <= 1) return prevTabs;
-      const updatedTabs = prevTabs.filter((tab: TabItem) => tab.path !== path);
-      localStorage.setItem('app_tabs', JSON.stringify(updatedTabs));
-      return updatedTabs;
+      return prevTabs.filter((tab: TabItem) => tab.path !== path);
     });
   };
 

@@ -85,3 +85,24 @@ aside,
 .sidebar {
   padding-top: 1rem !important; 
 }
+
+
+
+/* Custom Scrollbar Transparan & Tipis */
+.no-scrollbar::-webkit-scrollbar {
+  height: 4px; /* Tinggi scrollbar horizontal tipis */
+  background: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Jalur scrollbar transparan */
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.2); /* Warna batang scrollbar samar/transparan */
+  border-radius: 4px;
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.4); /* Batang sedikit lebih terlihat saat di-hover */
+}
