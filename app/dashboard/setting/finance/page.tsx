@@ -53,8 +53,13 @@ function AnimatedCounter({ value }: AnimatedCounterProps) {
   );
 }
 
+
+
+
+
+
 export default function FinancePage() {
-  const { mode } = useTheme();
+  const { mode, colorTheme, getThemeClasses } = useTheme();
   const isDark = mode === 'dark';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -141,8 +146,47 @@ export default function FinancePage() {
 
   const remainingBalance = totalIncome - totalExpense;
 
-  return (
-    <div className={`p-6 min-h-screen ${isDark ? 'bg-[#0b1329] text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+
+
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
+  };
+
+
+
+
+ return (
+   <div className={`p-6 min-h-screen text-slate-100' : 'bg-slate-100 text-slate-900'} ${getCardStyle()}`}>
       
       {/* Header Halaman */}
       <div className="mb-6">
@@ -156,9 +200,7 @@ export default function FinancePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         
         {/* Sisa Saldo */}
-        <div className={`p-4 rounded-2xl border shadow-inner flex flex-col justify-between ${
-          isDark ? 'bg-[#16222A]/80 border-slate-700/80' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between ${getCardStyle()}`}>
           <span className="text-xs opacity-60 font-medium">Sisa Saldo Keuangan</span>
           <h2 className={`text-2xl font-black my-2 ${remainingBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
             <AnimatedCounter value={remainingBalance} />
@@ -167,9 +209,7 @@ export default function FinancePage() {
         </div>
 
         {/* Total Uang Masuk */}
-        <div className={`p-4 rounded-2xl border shadow-inner flex flex-col justify-between ${
-          isDark ? 'bg-[#16222A]/80 border-slate-700/80' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between ${getCardStyle()}`}>
           <div className="flex items-center justify-between">
             <span className="text-xs opacity-60 font-medium">Total Uang Masuk</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
@@ -183,9 +223,7 @@ export default function FinancePage() {
         </div>
 
         {/* Total Uang Keluar */}
-        <div className={`p-4 rounded-2xl border shadow-inner flex flex-col justify-between ${
-          isDark ? 'bg-[#16222A]/80 border-slate-700/80' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between ${getCardStyle()}`}>
           <div className="flex items-center justify-between">
             <span className="text-xs opacity-60 font-medium">Total Uang Keluar</span>
             <div className="p-2 rounded-xl bg-red-500/10 text-red-500">
@@ -204,9 +242,7 @@ export default function FinancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Kolom Kiri: Form Tambah Transaksi */}
-        <div className={`p-5 rounded-2xl border h-fit shadow-md ${
-          isDark ? 'bg-[#16222A]/80 border-slate-700/80' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`p-5 rounded-2xl border h-fit ${getCardStyle()}`}>
           <h3 className="text-sm font-bold mb-4 pb-2 border-b border-slate-700/20">Tambah Transaksi Baru</h3>
           
           <form onSubmit={handleAddTransaction} className="space-y-3">
@@ -290,9 +326,7 @@ export default function FinancePage() {
         </div>
 
         {/* Kolom Kanan: Riwayat Transaksi */}
-        <div className={`lg:col-span-2 p-5 rounded-2xl border shadow-md flex flex-col ${
-          isDark ? 'bg-[#16222A]/80 border-slate-700/80' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`lg:col-span-2 p-5 rounded-2xl border flex flex-col ${getCardStyle()}`}>
           <h3 className="text-sm font-bold mb-4 pb-2 border-b border-slate-700/20 flex justify-between items-center">
             <span>Riwayat Transaksi</span>
             <span className="text-xs opacity-60 font-normal">{transactions.length} Total Transaksi</span>
