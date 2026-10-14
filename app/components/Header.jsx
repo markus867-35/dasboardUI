@@ -63,12 +63,12 @@ useEffect(() => {
 
   return (
   <header className="h-20 bg-inherit border-b border-slate-700/35 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-50 backdrop-blur-md">
-    {/* Bagian Kiri: Tombol Toggle Sidebar & Judul */}
+{/* Bagian Kiri: Tombol Toggle Sidebar & Judul */}
     <div className="flex items-center space-x-3 sm:space-x-4">
       <button
         type="button"
         onClick={() => toggleSidebar()}
-        className="relative z-40 p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-200 transition-all cursor-pointer pointer-events-auto shrink-0"
+        className="relative z-40 p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-200 transition-all cursor-pointer pointer-events-auto shrink-0 inline-block animate-spin-wheel"
         aria-label={isSidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
       >
         {isSidebarOpen ? (

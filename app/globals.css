@@ -165,3 +165,18 @@ aside,
   display: inline-block;
   animation: walkCasual 5s ease-in-out infinite;
 }
+
+
+@keyframes spinWheel {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-wheel {
+  /* Tambahkan kata 'infinite' di sini agar berputar selamanya */
+  animation: spinWheel 0.5s linear infinite; 
+}
