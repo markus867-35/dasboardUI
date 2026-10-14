@@ -37,7 +37,8 @@
     "recharts": "^3.10.1",
     "sweetalert2": "^11.26.25",
     "sweetalert2-react-content": "^5.1.2",
-    "tinymce": "^8.9.1"
+    "tinymce": "^8.9.1",
+    "tiptap-extension-resize-image": "^1.4.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

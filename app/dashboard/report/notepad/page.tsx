@@ -20,6 +20,8 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 import TextAlign from '@tiptap/extension-text-align';
+import ImageResize from 'tiptap-extension-resize-image';
+
 
 // HAPUS baris-baris ini karena 'supabase' sudah diimpor di atas:
 // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -81,14 +83,22 @@ const editor = useEditor({
       Color,
       FontFamily,
       // Highlight.configure({ multicolor: true }), // <-- Hapus atau komen baris ini agar tidak error
-      Image.configure({
-        allowBase64: true,
-      }),
+Image.configure({
+  allowBase64: true,
+  inline: true,
+  HTMLAttributes: {
+    class: 'draggable-image',
+  },
+}).extend({
+  // Menandai node gambar agar bisa ditarik/digeser oleh mouse
+  draggable: true, 
+}),
       TextAlign.configure({ types: ['heading', 'paragraph'] }), // <-- Tambahkan ini
       Table.configure({ resizable: true }),
       TableRow,
       CustomTableHeader,
       CustomTableCell,
+      ImageResize,
       
     ],
     content: content,
@@ -173,10 +183,11 @@ return (
           background-color: ${isDark ? '#1e293b' : '#f1f5f9'};
         }
         .ProseMirror img {
+          display: inline-block;
           max-width: 100%;
           height: auto;
           border-radius: 6px;
-          margin: 8px 0;
+          margin: 4px 8px 4px 0;
         }
         .ProseMirror .selectedCell:after {
           z-index: 2;
