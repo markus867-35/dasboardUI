@@ -185,12 +185,16 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
 <aside className={`fixed inset-y-0 left-0 z-70 w-64 min-h-screen transition-transform duration-300 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${getSidebarStyle()} ${
   isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
 }`}>
+
 <div className="p-3 flex items-center justify-between relative z-50 h-16 border-b border-white/20 overflow-hidden">
   <div className="w-full flex items-center relative overflow-hidden">
-    <h1 className="text-2xl font-bold tracking-wider text-white italic animate-marquee">
-      👻 DATA SAVE MARKUS 👻
-    </h1>
+    <Link href="/dashboard" className="inline-block hover:opacity-80 transition-opacity">
+      <h1 className="text-2xl font-bold tracking-wider text-white italic animate-marquee cursor-pointer">
+        👻 DATA SAVE MARKUS 👻
+      </h1>
+    </Link>
   </div>
+
 
 
 

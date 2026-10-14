@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'; // <-- Cukup gunakan ini saja
 import { useTheme } from '@/app/context/ThemeContext'; 
 import { 
   Folder, FolderPlus, FileText, Plus, Trash2, Edit3, 
-  Save, X, ChevronRight, Menu, Search, Table as TableIcon, Image as ImageIcon, Bold, Italic, List, ListOrdered 
+  Save, X, ChevronRight, Menu, Search, Table as TableIcon, Image as ImageIcon, Bold, Italic, List, ListOrdered ,AlignLeft, AlignCenter, AlignRight, AlignJustify
 } from 'lucide-react';
 
 // Import TipTap untuk Rich Text Editor (Tabel & Gambar)
@@ -16,6 +16,10 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Image } from '@tiptap/extension-image';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
+import TextAlign from '@tiptap/extension-text-align';
 
 // HAPUS baris-baris ini karena 'supabase' sudah diimpor di atas:
 // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -35,27 +39,66 @@ interface NoteType {
   updated_at: string;
 }
 
+
+// --- CUSTOM TABLE CELL & HEADER AGAR BISA DIWARNAI BACKGROUNDNYA ---
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      backgroundColor: {
+        default: null,
+        parseHTML: element => element.style.backgroundColor.replace(/['"]+/g, ''),
+        renderHTML: attributes => {
+          if (!attributes.backgroundColor) return {};
+          return { style: `background-color: ${attributes.backgroundColor}` };
+        },
+      },
+    };
+  },
+});
+
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      backgroundColor: {
+        default: null,
+        parseHTML: element => element.style.backgroundColor.replace(/['"]+/g, ''),
+        renderHTML: attributes => {
+          if (!attributes.backgroundColor) return {};
+          return { style: `background-color: ${attributes.backgroundColor}` };
+        },
+      },
+    };
+  },
+});
+
 function NoteEditorComponent({ content, onChange, isDark }: { content: string; onChange: (html: string) => void; isDark: boolean }) {
-  const editor = useEditor({
+const editor = useEditor({
     extensions: [
       StarterKit,
+      TextStyle,
+      Color,
+      FontFamily,
+      // Highlight.configure({ multicolor: true }), // <-- Hapus atau komen baris ini agar tidak error
       Image.configure({
         allowBase64: true,
       }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }), // <-- Tambahkan ini
       Table.configure({ resizable: true }),
       TableRow,
-      TableHeader,
-      TableCell,
+      CustomTableHeader,
+      CustomTableCell,
+      
     ],
     content: content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML()); // <-- Diubah menggunakan prop onChange agar tersinkronisasi ke parent
+      onChange(editor.getHTML()); 
     },
     editorProps: {
       attributes: {
         class: `prose max-w-none focus:outline-none min-h-[400px] p-4 ${isDark ? 'text-slate-200 prose-invert' : 'text-slate-800'}`,
       },
-      // Penanganan Paste: Upload gambar otomatis ke Supabase Storage
       handlePaste: (view, event) => {
         const items = event.clipboardData?.items;
         if (!items) return false;
@@ -66,38 +109,29 @@ function NoteEditorComponent({ content, onChange, isDark }: { content: string; o
             const file = item.getAsFile();
             if (!file) continue;
 
-            // Proses upload ke Supabase Storage secara asinkron
-(async () => {
-            try {
-              const fileName = `note-img-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
-              console.log("Mulai mengunggah file:", fileName); // Cek apakah ini muncul di console
+            (async () => {
+              try {
+                const fileName = `note-img-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+                const { data, error } = await supabase.storage
+                  .from('notes-images')
+                  .upload(fileName, file);
 
-              const { data, error } = await supabase.storage
-                .from('notes-images')
-                .upload(fileName, file);
+                if (error) throw error;
 
-              if (error) {
-                console.error("Detail Error Supabase Storage:", error); // Cek error spesifik dari Supabase
-                throw error;
+                const { data: { publicUrl } } = supabase.storage
+                  .from('notes-images')
+                  .getPublicUrl(fileName);
+
+                editor?.chain().focus().setImage({ src: publicUrl }).run();
+
+                if (editor) {
+                  onChange(editor.getHTML());
+                }
+              } catch (err) {
+                console.error('Gagal total saat mengunggah gambar:', err);
+                alert('Gagal mengunggah gambar ke server. Cek Console F12.');
               }
-
-              console.log("Upload berhasil, mengambil Public URL...");
-              const { data: { publicUrl } } = supabase.storage
-                .from('notes-images')
-                .getPublicUrl(fileName);
-
-              console.log("Public URL didapat:", publicUrl);
-
-              editor?.chain().focus().setImage({ src: publicUrl }).run();
-
-              if (editor) {
-                onChange(editor.getHTML());
-              }
-            } catch (err) {
-              console.error('Gagal total saat mengunggah gambar:', err);
-              alert('Gagal mengunggah gambar ke server. Cek Console F12.');
-            }
-          })();
+            })();
 
             return true;
           }
@@ -107,17 +141,15 @@ function NoteEditorComponent({ content, onChange, isDark }: { content: string; o
     },
   });
 
-useEffect(() => {
+  useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       const isDifferent = editor.getHTML() !== content;
       if (isDifferent) {
-        // Hapus argumen 'false' dan biarkan kosong atau gunakan objek konfigurasi
         editor.commands.setContent(content || ''); 
       }
     }
   }, [content, editor]);
-
-  return (
+return (
     <div className={`flex flex-col flex-1 w-full h-full border rounded-lg overflow-hidden ${isDark ? 'border-slate-700/60 bg-slate-900/50' : 'border-slate-300 bg-white'}`}>
       
       <style jsx global>{`
@@ -156,57 +188,190 @@ useEffect(() => {
         }
       `}</style>
 
-      {/* Toolbar Editor dengan Tombol Kontrol Tabel Tambahan */}
-      <div className={`flex flex-wrap items-center gap-1.5 p-2 border-b ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-100 border-slate-200'}`}>
-        <button
-          type="button"
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          className={`p-1.5 rounded text-xs transition ${editor?.isActive('bold') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
-          title="Bold"
-        >
-          <Bold className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          className={`p-1.5 rounded text-xs transition ${editor?.isActive('italic') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
-          title="Italic"
-        >
-          <Italic className="w-4 h-4" />
-        </button>
-        <div className={`w-[1px] h-5 mx-1 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
-        <button
-          type="button"
-          onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
-          title="Sisipkan Tabel"
-        >
-          <TableIcon className="w-3.5 h-3.5 text-indigo-400" /> + Tabel
-        </button>
+      {/* --- TOOLBAR UTAMA YANG LEBIH RAPI & RESPONSIF --- */}
+      <div className={`flex flex-wrap items-center gap-2 p-2.5 border-b ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-100 border-slate-200'}`}>
         
-{/* Tombol Hapus Tabel */}
-{editor?.can().deleteTable() && (
-  <button
-    type="button"
-    onClick={() => editor?.chain().focus().deleteTable().run()}
-    className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 transition border border-red-500/30"
-    title="Hapus Tabel Keseluruhan"
-  >
-    Hapus Tabel
-  </button>
-)}
+        {/* GRUP 1: Font & Ukuran Teks */}
+        <div className="flex items-center gap-1.5">
+          <select
+            onChange={(e) => editor?.chain().focus().setFontFamily(e.target.value).run()}
+            className={`px-2 py-1 rounded text-xs border outline-none ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-800'}`}
+            title="Jenis Font"
+          >
+            <option value="Inter">Inter</option>
+            <option value="Calibri">Calibri</option>
+            <option value="Arial">Arial</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+          </select>
 
-        <button
-          type="button"
-          onClick={() => {
-            const url = prompt('Masukkan URL Gambar:');
-            if (url) editor?.chain().focus().setImage({ src: url }).run();
-          }}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
-          title="Sisipkan Gambar via URL"
-        >
-          <ImageIcon className="w-3.5 h-3.5 text-emerald-400" /> + Gambar
-        </button>
+          <select
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!editor) return;
+              if (val === 'paragraph') editor.chain().focus().setParagraph().run();
+              else if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
+              else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+              else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
+            }}
+            className={`px-2 py-1 rounded text-xs border outline-none ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-800'}`}
+            title="Gaya Teks"
+          >
+            <option value="paragraph">Teks Normal</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+          </select>
+        </div>
+
+        <div className={`w-[1px] h-5 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+
+        {/* GRUP 2: Format Teks (Bold, Italic, Warna) */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive('bold') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Bold"
+          >
+            <Bold className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive('italic') ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Italic"
+          >
+            <Italic className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-1 ml-1 px-1">
+            <span className="text-[10px] opacity-70">Warna:</span>
+            <input 
+              type="color" 
+              onInput={(e) => editor?.chain().focus().setColor((e.target as HTMLInputElement).value).run()}
+              className="w-5 h-5 rounded border-0 cursor-pointer bg-transparent"
+              title="Warna Teks"
+            />
+          </div>
+        </div>
+
+        <div className={`w-[1px] h-5 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+
+        {/* GRUP 3: Perataan Teks (Alignment) */}
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive({ textAlign: 'left' }) ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Rata Kiri"
+          >
+            <AlignLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive({ textAlign: 'center' }) ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Rata Tengah"
+          >
+            <AlignCenter className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive({ textAlign: 'right' }) ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Rata Kanan"
+          >
+            <AlignRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().setTextAlign('justify').run()}
+            className={`p-1.5 rounded text-xs transition ${editor?.isActive({ textAlign: 'justify' }) ? 'bg-indigo-600 text-white' : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700')}`}
+            title="Justify"
+          >
+            <AlignJustify className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className={`w-[1px] h-5 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+
+        {/* GRUP 4: Tabel & Media */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+            title="Sisipkan Tabel"
+          >
+            <TableIcon className="w-3.5 h-3.5 text-indigo-400" /> + Tabel
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const url = prompt('Masukkan URL Gambar:');
+              if (url) editor?.chain().focus().setImage({ src: url }).run();
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+            title="Sisipkan Gambar"
+          >
+            <ImageIcon className="w-3.5 h-3.5 text-emerald-400" /> + Gambar
+          </button>
+        </div>
+
+        {/* GRUP 5: Kontrol Tambahan Tabel (Hanya muncul jika kursor di dalam tabel) */}
+        {editor?.can().addRowAfter() && (
+          <div className="flex flex-wrap items-center gap-1 w-full pt-2 mt-1 border-t border-slate-600/30">
+            <span className="text-[10px] opacity-70 font-semibold mr-1">Tabel Aksi:</span>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().addRowAfter().run()}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+            >
+              + Baris
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().addColumnAfter().run()}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-300'}`}
+            >
+              + Kolom
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().deleteRow().run()}
+              className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-600/10 text-red-400 hover:bg-red-600/20 transition border border-red-500/20"
+            >
+              Hapus Baris
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().deleteColumn().run()}
+              className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-600/10 text-red-400 hover:bg-red-600/20 transition border border-red-500/20"
+            >
+              Hapus Kolom
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().deleteTable().run()}
+              className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 transition border border-red-500/30"
+            >
+              Hapus Tabel
+            </button>
+
+            {/* Warna Background Sel */}
+            <div className="flex items-center gap-1 ml-auto pl-2 border-l border-slate-600/40">
+              <span className="text-[10px] opacity-70">Warna Sel:</span>
+              <button type="button" onClick={() => editor?.chain().focus().setCellAttribute('backgroundColor', '#3b82f6').run()} className="w-3.5 h-3.5 rounded-full bg-blue-500 hover:scale-110 transition" title="Biru" />
+              <button type="button" onClick={() => editor?.chain().focus().setCellAttribute('backgroundColor', '#10b981').run()} className="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:scale-110 transition" title="Hijau" />
+              <button type="button" onClick={() => editor?.chain().focus().setCellAttribute('backgroundColor', '#ef4444').run()} className="w-3.5 h-3.5 rounded-full bg-red-500 hover:scale-110 transition" title="Merah" />
+              <button type="button" onClick={() => editor?.chain().focus().setCellAttribute('backgroundColor', '#f59e0b').run()} className="w-3.5 h-3.5 rounded-full bg-amber-500 hover:scale-110 transition" title="Kuning" />
+              <button type="button" onClick={() => editor?.chain().focus().setCellAttribute('backgroundColor', null).run()} className="px-1.5 py-0.5 text-[10px] rounded bg-slate-500/20 text-slate-300">Reset</button>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <div className="flex-1 overflow-y-auto cursor-text p-2">
@@ -215,6 +380,7 @@ useEffect(() => {
     </div>
   );
 }
+
 
 export default function NoteManagerPage() {
   const [folders, setFolders] = useState<FolderType[]>([]);
