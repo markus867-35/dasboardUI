@@ -31,7 +31,7 @@ const INITIAL_COUNTRIES: CountryItem[] = [
 
 export default function CountryList() {
   const themeContext = useTheme() as any;
-  const { mode } = useTheme(); 
+  const { mode, colorTheme, getThemeClasses } = useTheme(); 
 
   // Penentuan mode gelap yang bersumber langsung dari mode context atau DOM class secara reaktif
   const isDarkMode = mode === 'dark' || themeContext?.theme === 'dark' || themeContext?.isDarkMode === true;
@@ -153,16 +153,55 @@ export default function CountryList() {
       return matchesSearch && matchesRegion;
     });
   }, [searchQuery, selectedRegion, countries]);
+  
+
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
+  };
+
+
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${getCardStyle()}}`}>
       <div className="max-w-10xl mx-auto p-4 md:p-8">
         
         {/* Header & Tombol Aksi */}
+{/* Header & Tombol Aksi */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b pb-6 border-slate-700/50">
           <div>
-            <h1 className={`text-2xl md:text-3xl font-extrabold flex items-center gap-3 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`}>
-              <FiGlobe /> Direktori Negara di Dunia
+            <h1 className={`text-2xl md:text-3xl font-extrabold flex items-center gap-3  ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`}>
+              {/* Tambahkan animate-spin-wheel di sini */}
+              <FiGlobe className="animate-spin-wheel" /> Direktori Negara di Dunia
             </h1>
             <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               Kelola dan cari informasi direktori negara.
