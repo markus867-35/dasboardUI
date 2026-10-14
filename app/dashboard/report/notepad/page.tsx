@@ -419,7 +419,7 @@ export default function NoteManagerPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { mode } = useTheme(); 
+  const { mode, colorTheme, getThemeClasses } = useTheme(); 
   const isDark = mode === 'dark';
 
   // 1. Fetch Folders
@@ -601,18 +601,55 @@ export default function NoteManagerPage() {
     n.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+const getCardStyle = () => {
+    if (mode === 'light') {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-indigo-100 text-indigo-950 border border-indigo-300 shadow-md';
+        case 'emerald': return 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-md';
+        case 'slate': 
+        case 'midnight': 
+        case 'dark': return 'bg-slate-200 text-slate-900 border border-slate-300 shadow-md';
+        case 'purple': return 'bg-purple-100 text-purple-950 border border-purple-300 shadow-md';
+        case 'rose': return 'bg-rose-100 text-rose-950 border border-rose-300 shadow-md';
+        case 'amber': return 'bg-amber-100 text-amber-950 border border-amber-300 shadow-md';
+        case 'cyan': return 'bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-md';
+        case 'red': return 'bg-red-100 text-red-950 border border-red-300 shadow-md';
+        case 'navy':
+        default: return 'bg-slate-100 text-slate-900 border border-slate-300 shadow-md';
+      }
+    } else {
+      switch (colorTheme) {
+        case 'indigo': return 'bg-[#3730a3] text-white shadow-xl border border-indigo-700/50';
+        case 'emerald': return 'bg-[#047857] text-white shadow-xl border border-emerald-700/50';
+        case 'slate': return 'bg-slate-900 text-white shadow-xl border border-slate-800';
+        case 'midnight': return 'bg-[#0f172a] text-white shadow-xl border border-indigo-950';
+        case 'purple': return 'bg-[#581c87] text-white shadow-xl border border-purple-900';
+        case 'rose': return 'bg-[#9f1239] text-white shadow-xl border border-rose-900';
+        case 'amber': return 'bg-[#92400e] text-white shadow-xl border border-amber-900';
+        case 'cyan': return 'bg-[#0e7490] text-white shadow-xl border border-cyan-900';
+        case 'red': return 'bg-[#991b1b] text-white shadow-xl border border-red-900';
+        case 'dark': return 'bg-zinc-900 text-white shadow-xl border border-zinc-800';
+        case 'navy':
+        default: return 'bg-[#1B2A35] text-white shadow-xl border border-slate-700/60';
+      }
+    }
+  };
+
+
+
+
   return (
-    <div className={`flex h-screen overflow-hidden font-sans relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#111827] text-slate-100'}`}>
+    <div className={`flex h-screen overflow-hidden font-sans relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
       
       {/* TOMBOL MENGAMBANG UNTUK MEMBUKA KEMBALI JIKA PANEL KIRI DITUTUP */}
       {!isLeftSidebarOpen && (
         <button 
           type="button"
           onClick={() => setIsLeftSidebarOpen(true)}
-          className={`absolute left-4 top-3 z-30 p-2 rounded-lg border shadow-lg transition flex items-center gap-2 ${isDark ? 'bg-slate-800 border-slate-700 text-indigo-400 hover:bg-slate-700' : 'bg-white border-slate-300 text-indigo-600 hover:bg-slate-100'}`}
+          className={`absolute left-4 top-3 z-30 p-2 rounded-lg border shadow-lg transition flex items-center gap-2 ${getCardStyle()}`}
           title="Buka Daftar Folder & Catatan"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
           <span className="text-xs font-medium">Menu</span>
@@ -621,13 +658,14 @@ export default function NoteManagerPage() {
 
       {/* CONTAINER PANEL SEBELAH KIRI (FOLDER & LIST CATATAN) */}
       <div className={`
-        flex transition-all duration-300 ease-in-out z-20 h-full
+        flex transition-all duration-300 ease-in-out z-20 h-full border-r
+        ${isDark ? 'border-slate-800' : 'border-slate-200'}
         ${isLeftSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 w-0 overflow-hidden'}
       `}>
         
         {/* 1. SIDEBAR: FOLDERS */}
-        <div className={`w-64 border-r flex flex-col h-full shrink-0 ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
-          <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-slate-700/60' : 'border-slate-200'}`}>
+        <div className={`w-64 border-r flex flex-col h-full shrink-0 ${getCardStyle()}`}>
+          <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
             <h1 className="font-bold text-lg tracking-wide text-indigo-400 flex items-center gap-2">
               <Folder className="w-5 h-5 text-indigo-400" /> Daftar Folder
             </h1>
@@ -640,7 +678,6 @@ export default function NoteManagerPage() {
               >
                 <Plus className="w-4 h-4" />
               </button>
-              {/* Tombol Tutup Panel Kiri */}
               <button 
                 type="button"
                 onClick={() => setIsLeftSidebarOpen(false)}
@@ -656,7 +693,7 @@ export default function NoteManagerPage() {
 
           {/* Input Buat Folder */}
           {isCreatingFolder && (
-            <form onSubmit={handleCreateFolder} className={`p-3 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+            <form onSubmit={handleCreateFolder} className={`p-3 border-b ${isDark ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
               <input 
                 type="text" 
                 placeholder="Nama folder..." 
@@ -693,7 +730,7 @@ export default function NoteManagerPage() {
                 ) : (
                   <div 
                     onClick={() => setSelectedFolderId(folder.id)}
-                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition ${selectedFolderId === folder.id ? (isDark ? 'bg-[#222D3D] text-indigo-300 font-medium border-l-4 border-indigo-500' : 'bg-indigo-50 text-indigo-600 font-medium border-l-4 border-indigo-600') : (isDark ? 'hover:bg-slate-800/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600')}`}
+                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition ${selectedFolderId === folder.id ? (isDark ? 'bg-indigo-600/20 text-indigo-300 font-medium border-l-4 border-indigo-500' : 'bg-indigo-50 text-indigo-600 font-medium border-l-4 border-indigo-600') : (isDark ? 'hover:bg-slate-800/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600')}`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
                       <Folder className={`w-4 h-4 ${selectedFolderId === folder.id ? 'text-indigo-400' : 'text-slate-400'}`} />
@@ -728,8 +765,8 @@ export default function NoteManagerPage() {
         </div>
 
         {/* 2. SUB-SIDEBAR: NOTES LIST */}
-        <div className={`w-72 border-r flex flex-col h-full shrink-0 ${isDark ? 'bg-[#1A2230] border-slate-700/60' : 'bg-white border-slate-200'}`}>
-          <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-slate-700/60' : 'border-slate-200'}`}>
+        <div className={`w-72 border-r flex flex-col h-full shrink-0 ${getCardStyle()}`}>
+          <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
             <h2 className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Daftar Catatan</h2>
             <button 
               type="button"
@@ -743,7 +780,7 @@ export default function NoteManagerPage() {
           </div>
 
           {/* Search Notes */}
-          <div className={`p-3 border-b ${isDark ? 'border-slate-700/40' : 'border-slate-200'}`}>
+          <div className={`p-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <input 
@@ -758,7 +795,7 @@ export default function NoteManagerPage() {
 
           {/* Input Buat Catatan */}
           {isCreatingNote && (
-            <form onSubmit={handleCreateNote} className={`p-3 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+            <form onSubmit={handleCreateNote} className={`p-3 border-b ${isDark ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
               <input 
                 type="text" 
                 placeholder="Judul catatan..." 
@@ -780,7 +817,7 @@ export default function NoteManagerPage() {
               <div 
                 key={note.id}
                 onClick={() => setSelectedNote(note)}
-                className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition ${selectedNote?.id === note.id ? (isDark ? 'bg-[#222D3D] border-l-4 border-amber-500 text-white' : 'bg-amber-50 border-l-4 border-amber-500 text-slate-900') : (isDark ? 'hover:bg-slate-800/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600')}`}
+                className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition ${selectedNote?.id === note.id ? (isDark ? 'bg-amber-500/20 border-l-4 border-amber-500 text-white' : 'bg-amber-50 border-l-4 border-amber-500 text-slate-900') : (isDark ? 'hover:bg-slate-800/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600')}`}
               >
                 <div className="flex items-start gap-2.5 truncate">
                   <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${selectedNote?.id === note.id ? 'text-amber-400' : 'text-slate-400'}`} />
@@ -807,21 +844,20 @@ export default function NoteManagerPage() {
 
       </div>
 
-      {/* MAIN CONTENT: NOTEPAD EDITOR (AKAN MEMENUHI LAYAR KETIKA PANEL KIRI DITUTUP) */}
-      <div className={`flex-1 flex flex-col h-full overflow-hidden ${isDark ? 'bg-[#111827]' : 'bg-slate-50'}`}>
+      {/* MAIN CONTENT: NOTEPAD EDITOR */}
+      <div className={`flex-1 flex flex-col h-full overflow-hidden ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
         {selectedNote ? (
           <>
             {/* Header Notepad */}
-            <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between gap-2 ${isDark ? 'border-slate-700/60 bg-[#1A2230]/50' : 'border-slate-200 bg-white'}`}>
+            <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between gap-2 ${getCardStyle()}`}>
               <div className="flex items-center gap-2.5 truncate">
-                {/* Tombol Toggle Panel Kiri dari dalam Header */}
                 <button 
                   type="button"
                   onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-                  className={`p-2 rounded-lg border flex items-center justify-center transition ${isDark ? 'bg-slate-800 border-slate-700 text-indigo-400 hover:bg-slate-700' : 'bg-white border-slate-300 text-indigo-600 hover:bg-indigo-100'}`}
+                  className={`p-2 rounded-lg border flex items-center justify-center transition ${getCardStyle()}`}
                   title={isLeftSidebarOpen ? "Sembunyikan Panel Kiri" : "Tampilkan Panel Kiri"}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
