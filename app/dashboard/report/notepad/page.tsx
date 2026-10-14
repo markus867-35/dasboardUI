@@ -152,7 +152,7 @@ const editor = useEditor({
 return (
     <div className={`flex flex-col flex-1 w-full h-full border rounded-lg overflow-hidden ${isDark ? 'border-slate-700/60 bg-slate-900/50' : 'border-slate-300 bg-white'}`}>
       
-      <style jsx global>{`
+<style jsx global>{`
         .ProseMirror table {
           border-collapse: collapse;
           table-layout: fixed;
@@ -163,7 +163,7 @@ return (
         .ProseMirror td, .ProseMirror th {
           min-width: 1em;
           border: 2px solid ${isDark ? '#475569' : '#cbd5e1'};
-          padding: 6px 8px;
+          padding: 10px 12px; /* Padding diperbesar agar baris terasa lebih tinggi dan lega */
           vertical-align: top;
           box-sizing: border-box;
           position: relative;
@@ -185,6 +185,21 @@ return (
           left: 0; right: 0; top: 0; bottom: 0;
           background: rgba(99, 102, 241, 0.15);
           pointer-events: none;
+        }
+
+        /* Garis Handle Penarik Lebar Kolom */
+        .ProseMirror .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: -2px;
+          width: 4px;
+          background-color: #3b82f6;
+          pointer-events: none;
+          z-index: 20;
+        }
+        .ProseMirror table.resize-cursor {
+          cursor: col-resize;
         }
       `}</style>
 
