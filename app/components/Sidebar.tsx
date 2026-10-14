@@ -231,7 +231,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
   className={getLinkStyle('/dashboard')} 
   onClick={handleMenuClick}
 >
-  <FiGrid size={18} className="mr-3" /> Dashboard
+  <FiGrid size={18} className="mr-3 animate-spin-wheel" /> Dashboard
 </Link>
         
         {/* 1. Add Data */}
@@ -321,7 +321,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
 <div className="flex items-center gap-3">
-  <FiGlobe size={18} /> 
+  <FiGlobe size={18} className="animate-spin-wheel" />
   <span>Global Atlas</span>
 </div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.list ? 'rotate-90' : ''}`}>
@@ -521,7 +521,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-medium hover:bg-[#253644] hover:text-white text-slate-300 transition-all cursor-pointer"
           >
 <div className="flex items-center gap-3">
-  <FiSettings size={18} /> 
+  <FiSettings size={18} className="animate-spin-wheel" />
   <span>Setting</span>
 </div>
             <span className={`text-2xl transform transition-transform duration-200 ${openMenus.setting ? 'rotate-90' : ''}`}>
