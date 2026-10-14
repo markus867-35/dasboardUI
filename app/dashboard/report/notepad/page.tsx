@@ -20,8 +20,6 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 import TextAlign from '@tiptap/extension-text-align';
-import ImageResize from 'tiptap-extension-resize-image';
-
 
 // HAPUS baris-baris ini karena 'supabase' sudah diimpor di atas:
 // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -98,7 +96,7 @@ Image.configure({
       TableRow,
       CustomTableHeader,
       CustomTableCell,
-      ImageResize,
+      
       
     ],
     content: content,
