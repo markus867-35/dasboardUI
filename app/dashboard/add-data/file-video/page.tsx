@@ -957,32 +957,33 @@ const handleSaveYouTubeLink = async () => {
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
 
-const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-  const vWidth = e.currentTarget.videoWidth;
-  const vHeight = e.currentTarget.videoHeight;
-  console.log("Resolusi Asli Video:", vWidth, vHeight); // Cek F12 Console browser Anda
-  
-  const maxWidth = window.innerWidth * 0.85;
-  const maxHeight = window.innerHeight * 0.85;
-  
-  let width = vWidth;
-  let height = vHeight;
-  
-  if (width > maxWidth) {
-    height = (maxWidth / width) * height;
-    width = maxWidth;
-  }
-  if (height > maxHeight) {
-    width = (maxHeight / height) * width;
-    height = maxHeight;
-  }
-  
-  setVideoDimensions({ width: Math.round(width), height: Math.round(height + 110) });
-};
+  const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const vWidth = e.currentTarget.videoWidth;
+    const vHeight = e.currentTarget.videoHeight;
+    console.log("Resolusi Asli Video:", vWidth, vHeight);
+    
+    const maxWidth = window.innerWidth * 0.85;
+    const maxHeight = window.innerHeight * 0.85;
+    
+    let width = vWidth;
+    let height = vHeight;
+    
+    if (width > maxWidth) {
+      height = (maxWidth / width) * height;
+      width = maxWidth;
+    }
+    if (height > maxHeight) {
+      width = (maxHeight / height) * width;
+      height = maxHeight;
+    }
+    
+    setVideoDimensions({ width: Math.round(width), height: Math.round(height + 110) });
+  };
 
   return (
     <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-none">
       <div 
+        id="video-modal-container"
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
           width: modalSize === 'small' ? '320px' : modalSize === 'large' ? '95vw' : `${videoDimensions.width}px`,
@@ -995,76 +996,76 @@ const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Eve
         }`}
       >
         
-{/* AREA HEADER */}
-<div 
-  onMouseDown={handleMouseDown}
-  className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none shrink-0 relative"
-  title="Klik dan tahan di sini untuk menggeser jendela"
->
-  <div className="pr-20 overflow-hidden">
-    <h2 className="text-xs font-bold truncate">{activeVideo.name}</h2>
-    <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
-  </div>
+        {/* AREA HEADER */}
+        <div 
+          onMouseDown={handleMouseDown}
+          className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none shrink-0 relative z-30"
+          title="Klik dan tahan di sini untuk menggeser jendela"
+        >
+          <div className="pr-20 overflow-hidden">
+            <h2 className="text-xs font-bold truncate">{activeVideo.name}</h2>
+            <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
+          </div>
 
-  <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-20">
-    <button 
-      onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
-      className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
-    >
-      {modalSize === 'small' ? 'Restore' : 'Minimize'}
-    </button>
-    
-{/* Tombol Expand / Fullscreen Layar Penuh Browser */}
-    <button 
-      onClick={(e) => { 
-        e.stopPropagation(); 
-        const modalElement = document.getElementById('video-modal-container');
-        if (!document.fullscreenElement && modalElement) {
-          modalElement.requestFullscreen().catch((err: any) => { // <-- Pastikan ada (err: any) di sini
-            console.error("Gagal masuk mode fullscreen:", err);
-          });
-        } else {
-          document.exitFullscreen();
-        }
-      }} 
-      className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
-    >
-      Full Screen
-    </button>
+          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-30">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
+            >
+              {modalSize === 'small' ? 'Restore' : 'Minimize'}
+            </button>
+            
+            {/* Tombol Full Screen Browser */}
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                const modalElement = document.getElementById('video-modal-container');
+                if (!document.fullscreenElement && modalElement) {
+                  modalElement.requestFullscreen().catch((err: any) => {
+                    console.error("Gagal masuk mode fullscreen:", err);
+                  });
+                } else {
+                  document.exitFullscreen();
+                }
+              }} 
+              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
+            >
+              Full Screen
+            </button>
 
-    <button 
-      onClick={(e) => { e.stopPropagation(); setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
-      className="p-1 rounded-full hover:bg-red-600 transition cursor-pointer"
-    >
-      <FiX size={14} />
-    </button>
-  </div>
-</div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
+              className="p-1 rounded-full hover:bg-red-600 transition cursor-pointer"
+            >
+              <FiX size={14} />
+            </button>
+          </div>
+        </div>
 
         {/* ELEMEN VIDEO PLAYER UTAMA */}
         <div className="w-full flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
-<iframe
-  src={`https://www.youtube.com/embed/${
-    activeVideo.url.includes('/shorts/') 
-      ? activeVideo.url.split('/shorts/')[1]?.split('?')[0] 
-      : activeVideo.url.split('v=')[1]?.split('&')[0]
-  }?autoplay=1&enablejsapi=1`}
-  className="w-full h-full"
-  title={activeVideo.name}
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-  allowFullScreen // <-- Pastikan atribut ini ada
-/>
+          <iframe
+            src={`https://www.youtube.com/embed/${
+              activeVideo.url.includes('/shorts/') 
+                ? activeVideo.url.split('/shorts/')[1]?.split('?')[0] 
+                : activeVideo.url.split('v=')[1]?.split('&')[0]
+            }?autoplay=1&enablejsapi=1`}
+            className="w-full h-full relative z-10"
+            title={activeVideo.name}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
           
           <button 
             onClick={handlePrevVideo} 
-            className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
+            className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-20"
             title="Video Sebelumnya"
           >
             <FiSkipBack size={20} />
           </button>
           <button 
             onClick={handleNextVideo} 
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-10"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition shadow-lg z-20"
             title="Video Selanjutnya"
           >
             <FiSkipForward size={20} />
@@ -1072,7 +1073,7 @@ const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Eve
         </div>
 
         {/* TOMBOL NAVIGASI BAWAH */}
-        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs shrink-0">
+        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-700/20 text-xs shrink-0 z-30">
           <div className="flex items-center gap-1.5">
             <button 
               onClick={handlePrevVideo}
