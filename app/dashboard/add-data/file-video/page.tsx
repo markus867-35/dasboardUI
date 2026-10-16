@@ -407,6 +407,20 @@ const handleSaveYouTubeLink = async () => {
   }
 };
 
+
+// Fungsi bantu untuk mengambil ID YouTube dari URL biasa atau Shorts
+const getYouTubeThumbnail = (url: string) => {
+  if (!url) return '';
+  let videoId = '';
+  if (url.includes('/shorts/')) {
+    videoId = url.split('/shorts/')[1]?.split('?')[0];
+  } else if (url.includes('v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0];
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0];
+  }
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+};
   
   return (
     <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
@@ -676,94 +690,94 @@ const handleSaveYouTubeLink = async () => {
 
 
  {loading ? (
-          <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data video dari Supabase...</div>
-        ) : filteredVideos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
-            <FiVideo size={48} className="mb-2" />
-            <p>Tidak ada berkas video yang ditemukan.</p>
+  <div className="flex items-center justify-center h-64 text-xs opacity-60">Memuat data video dari Supabase...</div>
+) : filteredVideos.length === 0 ? (
+  <div className="flex flex-col items-center justify-center h-64 opacity-50 text-xs">
+    <FiVideo size={48} className="mb-2" />
+    <p>Tidak ada berkas video yang ditemukan.</p>
+  </div>
+) : viewMode === 'grid' ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {filteredVideos.map((item) => (
+      <div 
+        key={item.id} 
+        onClick={() => setActiveVideo(item)}
+        className="group flex flex-col rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-transparent hover:border-blue-500/40 cursor-pointer transition relative"
+      >
+        {/* Thumbnail / Box Video Cover dengan Gambar YouTube Resmi */}
+        <div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
+          {item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')) ? (
+            // Jika link YouTube, tampilkan gambar Thumbnail berkualitas tinggi
+            <img 
+              src={
+                item.url.includes('/shorts/') 
+                  ? `https://img.youtube.com/vi/${item.url.split('/shorts/')[1]?.split('?')[0]}/hqdefault.jpg` 
+                  : item.url.includes('youtu.be/')
+                  ? `https://img.youtube.com/vi/${item.url.split('youtu.be/')[1]?.split('?')[0]}/hqdefault.jpg`
+                  : `https://img.youtube.com/vi/${item.url.split('v=')[1]?.split('&')[0]}/hqdefault.jpg`
+              }
+              alt={item.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+          ) : (
+            // Jika file video biasa dari Supabase Storage
+            <video 
+              src={`${item.url}#t=0.001`}
+              preload="metadata"
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
+          
+          {/* Tombol Aksi di Mode Grid (Sudut Kanan Atas) */}
+          <div className="absolute top-2 right-2 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setEditingVideoId(item.id);
+                setEditedVideoName(item.name);
+              }} 
+              className="p-2 rounded-full bg-black/60 text-white hover:bg-blue-600 shadow-md"
+              title="Ubah Nama"
+            >
+              <FiEdit2 size={13} />
+            </button>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setMovingVideo(item); 
+              }}
+              className="p-2 rounded-full bg-black/60 text-white hover:bg-indigo-600 shadow-md"
+              title="Pindah Folder"
+            >
+              <FiMove size={13} />
+            </button>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleDeleteVideo(item.id, item.url); 
+              }}
+              className="p-2 rounded-full bg-black/60 text-white hover:bg-red-600 shadow-md"
+              title="Hapus Video"
+            >
+              <FiTrash2 size={13} />
+            </button>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredVideos.map((item) => (
-              <div 
-                key={item.id} 
-                onClick={() => setActiveVideo(item)}
-                className="group flex flex-col rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-transparent hover:border-blue-500/40 cursor-pointer transition relative"
-              >
-               {/* Thumbnail / Box Video Cover dengan Pengecekan YouTube */}
-<div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
-  {item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')) ? (
-    // Jika link YouTube, tampilkan thumbnail embed atau iframe kecil
-    <div className="w-full h-full relative pointer-events-none">
-      <iframe
-        src={`https://www.youtube.com/embed/${
-          item.url.includes('/shorts/') 
-            ? item.url.split('/shorts/')[1]?.split('?')[0] 
-            : item.url.split('v=')[1]?.split('&')[0]
-        }?controls=0&disablekb=1&modestbranding=1`}
-        className="w-full h-full scale-125 object-cover"
-        title={item.name}
-      />
-    </div>
-  ) : (
-    // Jika file video biasa dari Supabase Storage
-    <video 
-      src={`${item.url}#t=0.001`}
-      preload="metadata"
-      muted
-      playsInline
-      className="w-full h-full object-cover"
-    />
-  )}
 
-  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
-  
-  {/* Tombol Aksi di Mode Grid (Sudut Kanan Atas) */}
-  <div className="absolute top-2 right-2 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-    <button 
-      onClick={(e) => { 
-        e.stopPropagation(); 
-        setEditingVideoId(item.id);
-        setEditedVideoName(item.name);
-      }} 
-      className="p-2 rounded-full bg-black/60 text-white hover:bg-blue-600 shadow-md"
-      title="Ubah Nama"
-    >
-      <FiEdit2 size={13} />
-    </button>
-    <button 
-      onClick={(e) => { 
-        e.stopPropagation(); 
-        setMovingVideo(item); 
-      }}
-      className="p-2 rounded-full bg-black/60 text-white hover:bg-indigo-600 shadow-md"
-      title="Pindah Folder"
-    >
-      <FiMove size={13} />
-    </button>
-    <button 
-      onClick={(e) => { 
-        e.stopPropagation(); 
-        handleDeleteVideo(item.id, item.url); 
-      }}
-      className="p-2 rounded-full bg-black/60 text-white hover:bg-red-600 shadow-md"
-      title="Hapus Video"
-    >
-      <FiTrash2 size={13} />
-    </button>
-  </div>
+          {/* Tombol Play Hover */}
+          <div className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transform transition group-hover:scale-110">
+              <FiPlay size={20} className="ml-0.5" />
+            </div>
+          </div>
 
-  {/* Tombol Play Hover */}
-  <div className="absolute inset-0 flex items-center justify-center z-20">
-    <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transform transition group-hover:scale-110">
-      <FiPlay size={20} className="ml-0.5" />
-    </div>
-  </div>
-
-  <span className="absolute bottom-2 right-2 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-mono">
-    {item.duration}
-  </span>
-</div>
+          <span className="absolute bottom-2 right-2 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+            {item.duration}
+          </span>
+        </div>
 
                 {/* Keterangan & Form Edit Nama */}
                 <div className="p-3 flex flex-col justify-between flex-grow">
