@@ -37,6 +37,7 @@ const [editedFolderName, setEditedFolderName] = useState('');
 const [videoDimensions, setVideoDimensions] = useState({ width: 700, height: 500 });
 const [editingVideoId, setEditingVideoId] = useState<string | number | null>(null);
 const [editedVideoName, setEditedVideoName] = useState('');
+const [youtubeInputUrl, setYoutubeInputUrl] = useState('');
 
 
 
@@ -376,7 +377,35 @@ const handleUpdateVideoName = async (id: string | number) => {
 };
 
 
+const handleSaveYouTubeLink = async () => {
+  if (!youtubeInputUrl) return;
+  setUploading(true);
 
+  try {
+    // Simpan ke Supabase database (bukan storage)
+    const { error } = await supabase
+      .from('video_tracks')
+      .insert([
+        { 
+          name: 'Video YouTube', 
+          url: youtubeInputUrl, // Link YouTube masuk ke kolom url
+          size: 'YouTube',
+          folder_id: selectedFolderId === 'all' ? null : selectedFolderId,
+          date: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+        }
+      ]);
+
+    if (error) throw error;
+
+    alert('Link video berhasil ditambahkan!');
+    setYoutubeInputUrl('');
+    // Panggil ulang fungsi fetch data video Anda di sini agar galeri ter-refresh
+  } catch (error) {
+    console.error('Gagal menyimpan:', error.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   
   return (
@@ -476,20 +505,42 @@ const handleUpdateVideoName = async (id: string | number) => {
 
 
 
-        {/* INPUT UPLOAD VIDEO */}
-        <div className="mt-6 pt-6 border-t border-slate-700/20">
-          <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
-            <FiUpload className="text-blue-500 text-xl" />
-            <div className="text-left">
-              <p className="text-xs font-semibold">
-                {uploading ? 'Mengunggah Video ke Supabase...' : `Upload Video ke: "${currentFolderName}"`}
-              </p>
-              <p className="text-[10px] opacity-60"></p>
-            </div>
-            <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploading} className="hidden" />
-          </label>
-        </div>
+{/* INPUT LINK YOUTUBE (MENGGANTIKAN UPLOAD FILE SUPABASE) */}
+<div className="mt-6 pt-6 border-t border-slate-700/20">
+  <div className={`p-4 rounded-xl border-2 border-dashed transition ${mode === 'light' ? 'border-slate-300 bg-slate-50' : 'border-slate-700 bg-slate-800/50'}`}>
+    <div className="flex items-center gap-3 mb-2">
+      <FiUpload className="text-blue-500 text-xl shrink-0" />
+      <div>
+        <p className="text-xs font-semibold">
+          Tambah Video ke Folder: "{currentFolderName}"
+        </p>
+        <p className="text-[10px] opacity-60">
+          Masukkan link YouTube (Unlisted/Publik) untuk menghemat kuota Supabase.
+        </p>
       </div>
+    </div>
+
+    {/* Form Input untuk Link YouTube */}
+    <div className="flex gap-2 mt-3">
+      <input 
+        type="text" 
+        placeholder="Tempel link YouTube di sini (cth: https://youtu.be/...)" 
+        value={youtubeInputUrl}
+        onChange={(e) => setYoutubeInputUrl(e.target.value)}
+        className={`flex-1 px-3 py-2 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+      />
+      <button 
+        type="button"
+        onClick={handleSaveYouTubeLink} // Fungsi untuk menyimpan ke tabel video_tracks
+        disabled={uploading}
+        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-xl font-medium shrink-0 transition"
+      >
+        {uploading ? 'Menyimpan...' : 'Simpan Video'}
+      </button>
+    </div>
+  </div>
+</div>
+</div>
 
       {/* AREA TAMPILAN GALERI VIDEO */}
       <div className={`min-h-[400px] p-6 rounded-2xl border transition-all ${getCardStyle()}`}>
@@ -639,63 +690,80 @@ const handleUpdateVideoName = async (id: string | number) => {
                 onClick={() => setActiveVideo(item)}
                 className="group flex flex-col rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-transparent hover:border-blue-500/40 cursor-pointer transition relative"
               >
-                {/* Thumbnail / Box Video Cover dengan Pratinjau Frame */}
-                <div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
-                  <video 
-                    src={`${item.url}#t=0.001`}
-                    preload="metadata"
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
-                  
-                  {/* Tombol Aksi di Mode Grid (Sudut Kanan Atas) */}
-                  <div className="absolute top-2 right-2 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setEditingVideoId(item.id);
-                        setEditedVideoName(item.name);
-                      }} 
-                      className="p-2 rounded-full bg-black/60 text-white hover:bg-blue-600 shadow-md"
-                      title="Ubah Nama"
-                    >
-                      <FiEdit2 size={13} />
-                    </button>
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setMovingVideo(item); 
-                      }}
-                      className="p-2 rounded-full bg-black/60 text-white hover:bg-indigo-600 shadow-md"
-                      title="Pindah Folder"
-                    >
-                      <FiMove size={13} />
-                    </button>
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        handleDeleteVideo(item.id, item.url); 
-                      }}
-                      className="p-2 rounded-full bg-black/60 text-white hover:bg-red-600 shadow-md"
-                      title="Hapus Video"
-                    >
-                      <FiTrash2 size={13} />
-                    </button>
-                  </div>
+               {/* Thumbnail / Box Video Cover dengan Pengecekan YouTube */}
+<div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
+  {item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')) ? (
+    // Jika link YouTube, tampilkan thumbnail embed atau iframe kecil
+    <div className="w-full h-full relative pointer-events-none">
+      <iframe
+        src={`https://www.youtube.com/embed/${
+          item.url.includes('/shorts/') 
+            ? item.url.split('/shorts/')[1]?.split('?')[0] 
+            : item.url.split('v=')[1]?.split('&')[0]
+        }?controls=0&disablekb=1&modestbranding=1`}
+        className="w-full h-full scale-125 object-cover"
+        title={item.name}
+      />
+    </div>
+  ) : (
+    // Jika file video biasa dari Supabase Storage
+    <video 
+      src={`${item.url}#t=0.001`}
+      preload="metadata"
+      muted
+      playsInline
+      className="w-full h-full object-cover"
+    />
+  )}
 
-                  {/* Tombol Play Hover */}
-                  <div className="absolute inset-0 flex items-center justify-center z-20">
-                    <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transform transition group-hover:scale-110">
-                      <FiPlay size={20} className="ml-0.5" />
-                    </div>
-                  </div>
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
+  
+  {/* Tombol Aksi di Mode Grid (Sudut Kanan Atas) */}
+  <div className="absolute top-2 right-2 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+    <button 
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        setEditingVideoId(item.id);
+        setEditedVideoName(item.name);
+      }} 
+      className="p-2 rounded-full bg-black/60 text-white hover:bg-blue-600 shadow-md"
+      title="Ubah Nama"
+    >
+      <FiEdit2 size={13} />
+    </button>
+    <button 
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        setMovingVideo(item); 
+      }}
+      className="p-2 rounded-full bg-black/60 text-white hover:bg-indigo-600 shadow-md"
+      title="Pindah Folder"
+    >
+      <FiMove size={13} />
+    </button>
+    <button 
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        handleDeleteVideo(item.id, item.url); 
+      }}
+      className="p-2 rounded-full bg-black/60 text-white hover:bg-red-600 shadow-md"
+      title="Hapus Video"
+    >
+      <FiTrash2 size={13} />
+    </button>
+  </div>
 
-                  <span className="absolute bottom-2 right-2 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-mono">
-                    {item.duration}
-                  </span>
-                </div>
+  {/* Tombol Play Hover */}
+  <div className="absolute inset-0 flex items-center justify-center z-20">
+    <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transform transition group-hover:scale-110">
+      <FiPlay size={20} className="ml-0.5" />
+    </div>
+  </div>
+
+  <span className="absolute bottom-2 right-2 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+    {item.duration}
+  </span>
+</div>
 
                 {/* Keterangan & Form Edit Nama */}
                 <div className="p-3 flex flex-col justify-between flex-grow">
@@ -962,15 +1030,17 @@ const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Eve
 
         {/* ELEMEN VIDEO PLAYER UTAMA */}
         <div className="w-full flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
-          <video 
-            key={activeVideo.url} 
-            src={activeVideo.url} 
-            controls 
-            autoPlay
-            onLoadedMetadata={handleVideoLoadedMetadata}
-            onEnded={handleNextVideo}
-            className="w-full h-full object-contain"
-          />
+<iframe
+  src={`https://www.youtube.com/embed/${
+    activeVideo.url.includes('/shorts/') 
+      ? activeVideo.url.split('/shorts/')[1]?.split('?')[0] 
+      : activeVideo.url.split('v=')[1]?.split('&')[0]
+  }?autoplay=1&enablejsapi=1`}
+  className="w-full h-full"
+  title={activeVideo.name}
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowFullScreen // <-- Pastikan atribut ini ada
+/>
           
           <button 
             onClick={handlePrevVideo} 
