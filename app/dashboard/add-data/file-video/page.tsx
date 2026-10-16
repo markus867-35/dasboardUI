@@ -110,7 +110,7 @@ const getCardStyle = () => {
 
       if (trackError) throw trackError;
       if (trackData) setVideoList(trackData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal memuat data:', error);
     } finally {
       setLoading(false);
@@ -133,7 +133,7 @@ const getCardStyle = () => {
         setNewFolderName('');
         setIsCreatingFolder(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal membuat folder:', error);
       alert('Gagal membuat folder baru.');
     }
@@ -150,7 +150,7 @@ const getCardStyle = () => {
       setFolders(folders.filter(f => f.id !== id));
       setVideoList(videoList.map(v => v.folder_id === id ? { ...v, folder_id: null } : v));
       if (selectedFolderId === id) setSelectedFolderId('all');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal menghapus folder:', error);
       alert('Gagal menghapus folder.');
     }
@@ -162,7 +162,7 @@ const getCardStyle = () => {
       if (error) throw error;
       setVideoList(videoList.map(v => v.id === videoId ? { ...v, folder_id: targetFolderId } : v));
       setMovingVideo(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal memindahkan video:', error);
       alert('Gagal memindahkan video ke folder.');
     }
@@ -252,7 +252,7 @@ const getCardStyle = () => {
         setActiveVideo(null);
       }
       setVideoList(videoList.filter(item => item.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal menghapus video:', error);
       alert('Gagal menghapus video dari database.');
     }
@@ -285,7 +285,7 @@ const handleUpdateFolder = async (id: string | number) => {
     // Perbarui state lokal dengan benar
     setFolders(folders.map(f => f.id === id ? { ...f, name: editedFolderName.trim() } : f));
     setEditingFolderId(null);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gagal mengubah nama folder:', error);
     alert('Gagal mengubah nama folder.');
   }
@@ -370,7 +370,7 @@ const handleUpdateVideoName = async (id: string | number) => {
     setVideoList(videoList.map(v => v.id === id ? { ...v, name: editedVideoName.trim() } : v));
     setEditingVideoId(null);
     setEditedVideoName('');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gagal mengubah nama video:', error);
     alert('Terjadi kesalahan saat mengubah nama video.');
   }
@@ -400,7 +400,7 @@ const handleSaveYouTubeLink = async () => {
     alert('Link video berhasil ditambahkan!');
     setYoutubeInputUrl('');
     // Panggil ulang fungsi fetch data video Anda di sini agar galeri ter-refresh
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gagal menyimpan:', error.message);
   } finally {
     setUploading(false);
