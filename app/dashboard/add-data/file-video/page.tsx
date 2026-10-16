@@ -421,7 +421,23 @@ const getYouTubeThumbnail = (url: string) => {
   }
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
 };
-  
+
+
+
+const extractYouTubeId = (url: string) => {
+  if (!url) return '';
+  let videoId = '';
+  if (url.includes('/shorts/')) {
+    videoId = url.split('/shorts/')[1]?.split('?')[0];
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0];
+  } else if (url.includes('v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0];
+  }
+  // Pastikan membersihkan karakter tambahan jika ada
+  return videoId ? videoId.split('&')[0].split('#')[0] : '';
+};
+
   return (
     <div className="p-0 space-y-6 max-w-[1700px] mx-auto">
       
@@ -708,17 +724,17 @@ const getYouTubeThumbnail = (url: string) => {
         <div className="h-40 w-full bg-slate-900 relative flex items-center justify-center overflow-hidden">
           {item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')) ? (
             // Jika link YouTube, tampilkan gambar Thumbnail berkualitas tinggi
-            <img 
-              src={
-                item.url.includes('/shorts/') 
-                  ? `https://img.youtube.com/vi/${item.url.split('/shorts/')[1]?.split('?')[0]}/hqdefault.jpg` 
-                  : item.url.includes('youtu.be/')
-                  ? `https://img.youtube.com/vi/${item.url.split('youtu.be/')[1]?.split('?')[0]}/hqdefault.jpg`
-                  : `https://img.youtube.com/vi/${item.url.split('v=')[1]?.split('&')[0]}/hqdefault.jpg`
-              }
-              alt={item.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-            />
+<img 
+            src={`https://img.youtube.com/vi/${
+              item.url.includes('/shorts/') 
+                ? item.url.split('/shorts/')[1]?.split('?')[0] 
+                : item.url.includes('youtu.be/')
+                ? item.url.split('youtu.be/')[1]?.split('?')[0]
+                : item.url.split('v=')[1]?.split('&')[0]
+            }/hqdefault.jpg`}
+            alt={item.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          />
           ) : (
             // Jika file video biasa dari Supabase Storage
             <video 
@@ -1058,10 +1074,12 @@ const getYouTubeThumbnail = (url: string) => {
 
         {/* ELEMEN VIDEO PLAYER UTAMA */}
         <div className="w-full flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
-          <iframe
+<iframe
             src={`https://www.youtube.com/embed/${
               activeVideo.url.includes('/shorts/') 
                 ? activeVideo.url.split('/shorts/')[1]?.split('?')[0] 
+                : activeVideo.url.includes('youtu.be/')
+                ? activeVideo.url.split('youtu.be/')[1]?.split('?')[0]
                 : activeVideo.url.split('v=')[1]?.split('&')[0]
             }?autoplay=1&enablejsapi=1`}
             className="w-full h-full relative z-10"
