@@ -1014,14 +1014,13 @@ const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Eve
       {modalSize === 'small' ? 'Restore' : 'Minimize'}
     </button>
     
-   {/* Tombol Expand / Fullscreen Layar Penuh Browser */}
+{/* Tombol Expand / Fullscreen Layar Penuh Browser */}
     <button 
       onClick={(e) => { 
         e.stopPropagation(); 
-        // Logika untuk membuat elemen modal menjadi Fullscreen Browser
         const modalElement = document.getElementById('video-modal-container');
         if (!document.fullscreenElement && modalElement) {
-          modalElement.requestFullscreen().catch((err: any) => { // <-- Ditambahkan tipe (err: any) di sini
+          modalElement.requestFullscreen().catch((err: any) => { // <-- Pastikan ada (err: any) di sini
             console.error("Gagal masuk mode fullscreen:", err);
           });
         } else {
