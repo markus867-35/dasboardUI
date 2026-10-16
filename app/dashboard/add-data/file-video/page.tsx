@@ -995,38 +995,52 @@ const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Eve
         }`}
       >
         
-        {/* AREA HEADER */}
-        <div 
-          onMouseDown={handleMouseDown}
-          className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none shrink-0 relative"
-          title="Klik dan tahan di sini untuk menggeser jendela"
-        >
-          <div className="pr-20 overflow-hidden">
-            <h2 className="text-xs font-bold truncate">{activeVideo.name}</h2>
-            <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
-          </div>
+{/* AREA HEADER */}
+<div 
+  onMouseDown={handleMouseDown}
+  className="cursor-move flex items-center justify-between mb-2 pb-2 border-b border-slate-700/20 select-none shrink-0 relative"
+  title="Klik dan tahan di sini untuk menggeser jendela"
+>
+  <div className="pr-20 overflow-hidden">
+    <h2 className="text-xs font-bold truncate">{activeVideo.name}</h2>
+    <p className="text-[9px] opacity-60">Geser jendela dari bagian atas ini</p>
+  </div>
 
-          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-20">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
-              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
-            >
-              {modalSize === 'small' ? 'Restore' : 'Minimize'}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'large' ? 'normal' : 'large'); }} 
-              className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
-            >
-              {modalSize === 'large' ? 'Normal' : 'Expand'}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
-              className="p-1 rounded-full hover:bg-red-600 transition cursor-pointer"
-            >
-              <FiX size={14} />
-            </button>
-          </div>
-        </div>
+  <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm p-1 rounded-full text-white shrink-0 relative z-20">
+    <button 
+      onClick={(e) => { e.stopPropagation(); setModalSize(modalSize === 'small' ? 'normal' : 'small'); }} 
+      className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
+    >
+      {modalSize === 'small' ? 'Restore' : 'Minimize'}
+    </button>
+    
+   {/* Tombol Expand / Fullscreen Layar Penuh Browser */}
+    <button 
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        // Logika untuk membuat elemen modal menjadi Fullscreen Browser
+        const modalElement = document.getElementById('video-modal-container');
+        if (!document.fullscreenElement && modalElement) {
+          modalElement.requestFullscreen().catch((err: any) => { // <-- Ditambahkan tipe (err: any) di sini
+            console.error("Gagal masuk mode fullscreen:", err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }} 
+      className="px-2 py-0.5 text-[10px] rounded hover:bg-white/20 transition cursor-pointer"
+    >
+      Full Screen
+    </button>
+
+    <button 
+      onClick={(e) => { e.stopPropagation(); setPosition({ x: 0, y: 0 }); setActiveVideo(null); }}
+      className="p-1 rounded-full hover:bg-red-600 transition cursor-pointer"
+    >
+      <FiX size={14} />
+    </button>
+  </div>
+</div>
 
         {/* ELEMEN VIDEO PLAYER UTAMA */}
         <div className="w-full flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative group">
