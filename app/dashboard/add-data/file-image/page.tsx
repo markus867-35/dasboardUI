@@ -333,44 +333,10 @@ const handleDeleteFolder = async (folderId: string) => {
 
 
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const blob = items[i].getAsFile();
-        if (blob) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target?.result as string;
-
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-              const MAX_WIDTH = 1200;
-              const MAX_HEIGHT = 1200;
-
-              if (width > height) {
-                if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
-              } else {
-                if (height > MAX_HEIGHT) { width = Math.round((width * MAX_HEIGHT) / height); height = MAX_HEIGHT; }
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx?.drawImage(img, 0, 0, width, height);
-
-              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
-              setPastedImageBase64(compressedBase64);
-              setPastedImageName(`pasted-image-${Date.now()}.jpg`);
-            };
-          };
-          reader.readAsDataURL(blob);
-        }
-      }
+const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const clipboardText = e.clipboardData.getData('text');
+    if (clipboardText && (clipboardText.startsWith('http://') || clipboardText.startsWith('https://'))) {
+      setPastedImageUrl(clipboardText.trim());
     }
   };
 
