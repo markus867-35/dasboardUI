@@ -29,6 +29,7 @@ export default function ActivityPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [systemStatus, setSystemStatus] = useState('Optimal (99.9% Uptime)');
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activitySearchQuery, setActivitySearchQuery] = useState('');
 
   // 1. Ambil data aktivitas dari Supabase saat halaman dimuat
   useEffect(() => {
@@ -204,57 +205,99 @@ export default function ActivityPage() {
           </div>
         </div>
 
+
+
+
+
+
+
+
         {/* SECTION RIWAYAT AKTIVITAS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          <div className={`md:col-span-2 p-6 rounded-2xl border shadow-lg ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className={`text-base font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                <Activity className="w-4 h-4 text-indigo-500" /> Riwayat Aktivitas Otomatis
-              </h2>
-              {activities.length > 0 && (
-                <button 
-                  onClick={handleClearHistory}
-                  className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 font-medium transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Bersihkan Log
-                </button>
-              )}
-            </div>
 
-           {activities.length === 0 ? (
-  <div className="text-center py-8 text-sm text-slate-400">
-    Belum ada riwayat aktivitas yang tercatat.
+<div className={`md:col-span-2 p-6 rounded-2xl border shadow-lg ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
+  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <h2 className={`text-base font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+      <Activity className="w-4 h-4 text-indigo-500" /> Riwayat Aktivitas Otomatis
+    </h2>
+
+    <div className="flex items-center gap-3 w-full sm:w-auto">
+      {/* 🔍 Input Pencarian Nama Admin */}
+      <input 
+        type="text"
+        placeholder="Cari nama admin..."
+        value={activitySearchQuery}
+        onChange={(e) => setActivitySearchQuery(e.target.value)}
+        className={`px-3 py-1.5 rounded-xl border text-xs outline-none w-full sm:w-48 ${isDark ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'}`}
+      />
+
+      {activities.length > 0 && (
+        <button 
+          onClick={handleClearHistory}
+          className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 font-medium transition shrink-0"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> Bersihkan Log
+        </button>
+      )}
+    </div>
   </div>
-) : (
-  <div className="space-y-4">
-    {activities.map((item) => (
-      <div key={item.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition ${isDark ? 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-900/70' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'}`}>
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-            <Sparkles className={`w-4 h-4 ${item.color || 'text-indigo-500'}`} />
-          </div>
-          <div>
-            {/* 🚀 1. Tambahkan baris ini untuk menampilkan Nama Admin */}
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-600'}`}>
-                👤 {item.nama || 'Admin'}
-              </span>
-            </div>
 
-            <p className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.title}</p>
-            {item.description && (
-              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.description}</p>
-            )}
-            <p className={`text-[10px] mt-1 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{item.timestamp || item.time || 'Baru saja'}</p>
-          </div>
-        </div>
-        <CheckCircle2 className="w-4 h-4 text-emerald-500 opacity-80" />
+  {(() => {
+    // 🔎 Filter aktivitas berdasarkan pencarian nama admin atau judul aktivitas
+    const filteredActivities = activities.filter((item) => {
+      const adminName = (item.nama || 'Admin').toLowerCase();
+      const titleText = (item.title || '').toLowerCase();
+      const query = activitySearchQuery.toLowerCase();
+      return adminName.includes(query) || titleText.includes(query);
+    });
+
+    return filteredActivities.length === 0 ? (
+      <div className="text-center py-8 text-sm text-slate-400">
+        {activities.length === 0 ? 'Belum ada riwayat aktivitas yang tercatat.' : 'Tidak ada aktivitas yang cocok dengan pencarian.'}
       </div>
-    ))}
-  </div>
-)}
+    ) : (
+      /* 📜 Kontainer yang bisa di-scroll dengan max-height */
+      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
+        {filteredActivities.map((item) => (
+          <div key={item.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition ${isDark ? 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-900/70' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+                <Sparkles className={`w-4 h-4 ${item.color || 'text-indigo-500'}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-600'}`}>
+                    👤 {item.nama || 'Admin'}
+                  </span>
+                </div>
+
+                <p className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.title}</p>
+                {item.description && (
+                  <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.description}</p>
+                )}
+                <p className={`text-[10px] mt-1 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{item.timestamp || item.time || 'Baru saja'}</p>
+              </div>
+            </div>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 opacity-80 shrink-0" />
           </div>
+        ))}
+      </div>
+    );
+  })()}
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
 
           <div className={`p-6 rounded-2xl border shadow-lg flex flex-col justify-between ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>
             <div>

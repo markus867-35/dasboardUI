@@ -76,26 +76,33 @@ const [stats, setStats] = useState({
     totalData: 0,
   });
 
-// State untuk filter tanggal Active Sessions
-const [sessionFilterDate, setSessionFilterDate] = useState<string>(
-  new Date().toISOString().split('T')[0] // Default: Tanggal hari ini (YYYY-MM-DD)
-);
 
+
+// State untuk filter tanggal Active Sessions (Menggunakan tanggal lokal)
+const [sessionFilterDate, setSessionFilterDate] = useState<string>(() => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+});
 
 // Jalankan fetch saat komponen pertama kali dimuat atau saat sessionFilterDate berubah
-  useEffect(() => {
-    fetchActiveSessionsByDate(sessionFilterDate);
-  }, [sessionFilterDate]);
+useEffect(() => {
+  fetchActiveSessionsByDate(sessionFilterDate);
+}, [sessionFilterDate]);
 
-  async function fetchActiveSessionsByDate(selectedDate: string) {
-    const startOfDay = `${selectedDate}T00:00:00`;
-    const endOfDay = `${selectedDate}T23:59:59`;
+async function fetchActiveSessionsByDate(selectedDate: string) {
+    // Tentukan awal dan akhir hari berdasarkan tanggal yang dipilih (format YYYY-MM-DD)
+    const startOfDay = `${selectedDate}T00:00:00.000+07:00`;
+    const endOfDay = `${selectedDate}T23:59:59.999+07:00`;
 
     const { data: sessionRes, error: sessionErr } = await supabase
       .from('login_sessions')
       .select('id, name, email, ip_address, status, logged_in_at, logged_out_at')
       .in('status', ['Aktif Bekerja', 'Offline'])
-      .gte('logged_in_at', startOfDay) // Filter berdasarkan waktu login pada tanggal tersebut
+      // Memastikan waktu login (logged_in_at) benar-benar di dalam rentang tanggal yang dipilih
+      .gte('logged_in_at', startOfDay) 
       .lte('logged_in_at', endOfDay)
       .order('logged_in_at', { ascending: false });
 
@@ -115,21 +122,24 @@ const [sessionFilterDate, setSessionFilterDate] = useState<string>(
     }
   }
 
-
-
-  const [filterDate, setFilterDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+// Ganti baris inisialisasi useState filterDate Anda dengan ini:
+  const [filterDate, setFilterDate] = useState<string>(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // Ini akan menghasilkan "2026-10-18" sesuai jam lokal komputer
+  });
     // 3. useEffect di level teratas (TIDAK di dalam if atau fungsi lain)
 // Panggil fungsi ini saat pertama kali load atau saat filterDate berubah
   useEffect(() => {
     fetchActivitiesByDate(filterDate);
   }, [filterDate]);
 
-  async function fetchActivitiesByDate(selectedDate: string) {
-    // Buat rentang waktu dari jam 00:00:00 sampai 23:59:59 pada tanggal yang dipilih
-    const startOfDay = `${selectedDate}T00:00:00`;
-    const endOfDay = `${selectedDate}T23:59:59`;
+async function fetchActivitiesByDate(selectedDate: string) {
+    // Tambahkan offset zona waktu lokal (+07:00)
+    const startOfDay = `${selectedDate}T00:00:00.000+07:00`;
+    const endOfDay = `${selectedDate}T23:59:59.999+07:00`;
 
     const { data, error } = await supabase
       .from('activity_logs')
@@ -139,10 +149,8 @@ const [sessionFilterDate, setSessionFilterDate] = useState<string>(
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Map data Supabase agar sesuai dengan format tampilan tabel (timestamp, dll)
       const formatted = data.map((item: any) => ({
         ...item,
-        // Format tanggal/waktu dari Supabase agar rapi ditampilkan di kolom waktu
         timestamp: new Date(item.created_at).toLocaleTimeString('id-ID', {
           hour: '2-digit',
           minute: '2-digit',
@@ -529,6 +537,11 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
           </ResponsiveContainer>
         </div>
       </div>
+
+
+
+
+
 
       {/* 3. Tabel Data dari Supabase */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
