@@ -8,12 +8,19 @@ import { supabase } from '@/lib/supabase';
 // 🚀 TAMBAHKAN INTERFACE INI DI SINI AGAR TIDAK ERROR "Cannot find name 'ActivityItem'"
 export interface ActivityItem {
   id?: any;
-  name: string;
-  email: string;
-  ip_address: string;
-  status: string;
-  logged_in_at: string;
+  name?: string;
+  email?: string;
+  ip_address?: string;
+  status?: string;
+  logged_in_at?: string;
   logged_out_at?: string | null;
+  // Tambahkan properti untuk aktivitas lokal/sistem di bawah ini:
+  nama?: string;
+  title?: string;
+  description?: string;
+  timestamp?: string;
+  type?: string;
+  color?: string;
 }
 
 interface AnimatedCounterProps {
