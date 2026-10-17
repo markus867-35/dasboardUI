@@ -44,6 +44,7 @@ export default function FileManagementPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  
 
 
 
@@ -212,7 +213,7 @@ logActivity(
 
 
 
-  
+
   const uploadFileToSupabase = async (file: File) => {
     try {
       let fileContent = null;
