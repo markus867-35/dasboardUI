@@ -58,34 +58,47 @@ const getSidebarStyle = () => {
 
 
 
-const handleLogout = () => {
-    // Tutup menu dropdown terlebih dahulu
-    setIsAdminMenuOpen(false);
+const handleLogout = async () => {
+  setIsAdminMenuOpen(false);
 
-    // Konfirmasi sebelum keluar
-    Swal.fire({
-      title: 'Keluar Akun?',
-      text: 'Anda akan keluar dari sesi admin.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Ya, Keluar',
-      cancelButtonText: 'Batal',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // 👇 Hapus data adminId dari localStorage agar sesi benar-benar bersih
-        localStorage.removeItem('adminId');
-        
-        // Atau jika ingin membersihkan seluruh localStorage:
-        // localStorage.clear();
+  Swal.fire({
+    title: 'Keluar Akun?',
+    text: 'Anda akan keluar dari sesi admin.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Ya, Keluar',
+    cancelButtonText: 'Batal',
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const adminId = localStorage.getItem('adminId');
 
-        // Arahkan ke halaman login
-        router.push('/login');
+      if (adminId) {
+        // 🚀 Update status menjadi 'Offline' DAN catat waktu logout-nya
+        const { error: logoutError } = await supabase
+          .from('login_sessions')
+          .update({ 
+            status: 'Offline',
+            logged_out_at: new Date().toISOString() // Merekam jam/waktu logout
+          })
+          .eq('admin_id', adminId)
+          .eq('status', 'Aktif Bekerja'); // Hanya mengupdate sesi yang sedang aktif
+
+        if (logoutError) {
+          console.error("Gagal update waktu logout:", logoutError);
+        }
       }
-    });
-  };
 
+      // Bersihkan sesi lokal
+      localStorage.removeItem('adminId');
+      localStorage.removeItem('userIp');
+
+      // Arahkan ke halaman login
+      router.push('/login');
+    }
+  });
+};
 
 
 

@@ -11,6 +11,7 @@ import Swal from 'sweetalert2';
 // Interface untuk struktur data aktivitas yang seragam
 interface ActivityItem {
   id: string | number;
+  nama?: string; // 👈 Tambahkan baris ini
   title: string;
   description?: string;
   time?: string;
@@ -27,49 +28,73 @@ export default function ActivityPage() {
   const [systemStatus, setSystemStatus] = useState('Optimal (99.9% Uptime)');
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-  // Saat halaman dimuat, ambil riwayat aktivitas dari localStorage menggunakan key 'app_activities'
-  useEffect(() => {
-    const savedActivities = localStorage.getItem('app_activities');
-    if (savedActivities) {
+  // 2. useEffect untuk memuat data awal dari localStorage
+useEffect(() => {
+  // 🚀 RESET OTOMATIS: Hapus memori log lama yang masih bernama "Admin"
+  // (Baris ini bisa dihapus nanti setelah semuanya normal)
+  const isResetDone = localStorage.getItem('is_reset_v2');
+  if (!isResetDone) {
+    localStorage.removeItem('app_activities');
+    localStorage.setItem('is_reset_v2', 'true');
+  }
+
+  const savedActivities = localStorage.getItem('app_activities');
+  if (savedActivities) {
+    try {
       setActivities(JSON.parse(savedActivities));
-    } else {
-      // Data default awal jika belum ada riwayat sama sekali
-      const initialActivities: ActivityItem[] = [
-        { id: 1, title: 'Mengunjungi Pusat Aktivitas', description: 'Membuka halaman pusat sistem dan log.', timestamp: 'Baru saja', type: 'system', color: 'text-indigo-500' },
-        { id: 2, title: 'Inisialisasi Sistem Lokal', description: 'Sistem siap mencatat aksi via localStorage.', timestamp: 'Hari ini', type: 'system', color: 'text-emerald-500' },
-      ];
-      setActivities(initialActivities);
-      localStorage.setItem('app_activities', JSON.stringify(initialActivities));
+    } catch (e) {
+      console.error("Gagal parsing app_activities:", e);
     }
-  }, []);
+  } else {
+    const initialActivities = [
+      { 
+        id: Date.now(), 
+        nama: localStorage.getItem('adminName') || 'Admin', 
+        title: 'Inisialisasi Sistem', 
+        description: 'Pusat log aktivitas aktif.', 
+        timestamp: 'Baru saja', 
+        color: 'text-indigo-500' 
+      },
+    ];
+    setActivities(initialActivities);
+    localStorage.setItem('app_activities', JSON.stringify(initialActivities));
+  }
+}, []);
 
-  // Fungsi helper untuk mencatat aktivitas baru ke 'app_activities'
-  const logNewActivity = (title: string, description: string, color: string = 'text-indigo-500') => {
-    const newEntry: ActivityItem = {
-      id: Date.now(),
-      title,
-      description,
-      timestamp: 'Baru saja',
-      type: 'user_action',
-      color,
-    };
+const logActivity = (title: string, description: string, color = 'text-indigo-500', type = 'transaction') => {
+  // 🚀 Ambil dari localStorage, tapi JIKA isinya "Admin" atau kosong, paksa jadi 'miakhalifa'
+  const storedName = localStorage.getItem('adminName') || localStorage.getItem('name');
+  const currentAdminName = (!storedName || storedName === 'Admin') ? 'miakhalifa' : storedName;
 
-    setActivities((prev) => {
-      const updated = [newEntry, ...prev].slice(0, 30); // Batasi maksimal 30 log terakhir
-      localStorage.setItem('app_activities', JSON.stringify(updated));
-      return updated;
-    });
+  const newActivity = {
+    id: Date.now(),
+    nama: currentAdminName, // Pastikan menggunakan nama yang bersih dari "Admin"
+    title,
+    description,
+    timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    type,
+    color,
   };
 
+  // Ambil log lama dari localStorage lalu gabungkan dengan yang baru
+  const saved = localStorage.getItem('app_activities');
+  const prev = saved ? JSON.parse(saved) : [];
+  const updated = [newActivity, ...prev];
+  
+  localStorage.setItem('app_activities', JSON.stringify(updated));
+  return updated;
+};
+
   // Handler tombol Diagnostik (Otomatis mencatat aktivitas)
+// Handler tombol Diagnostik (Otomatis mencatat aktivitas)
   const handleRunDiagnostics = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
       setSystemStatus('Optimal (100% Aman)');
       
-      // Catat otomatis ke riwayat universal
-      logNewActivity('Menjalankan Diagnostik Sistem', 'Pemeriksaan integritas komponen lokal berhasil dilakukan.', 'text-emerald-500');
+      // 🚀 PERBAIKAN: Gunakan 'logActivity', bukan 'logNewActivity'
+      logActivity('Menjalankan Diagnostik Sistem', 'Pemeriksaan integritas komponen lokal berhasil dilakukan.', 'text-emerald-500');
 
       Swal.fire({
         icon: 'success',
@@ -191,31 +216,38 @@ export default function ActivityPage() {
               )}
             </div>
 
-            {activities.length === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-400">
-                Belum ada riwayat aktivitas yang tercatat.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activities.map((item) => (
-                  <div key={item.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition ${isDark ? 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-900/70' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-                        <Sparkles className={`w-4 h-4 ${item.color || 'text-indigo-500'}`} />
-                      </div>
-                      <div>
-                        <p className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.title}</p>
-                        {item.description && (
-                          <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.description}</p>
-                        )}
-                        <p className={`text-[10px] mt-1 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{item.timestamp || item.time || 'Baru saja'}</p>
-                      </div>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 opacity-80" />
-                  </div>
-                ))}
-              </div>
+           {activities.length === 0 ? (
+  <div className="text-center py-8 text-sm text-slate-400">
+    Belum ada riwayat aktivitas yang tercatat.
+  </div>
+) : (
+  <div className="space-y-4">
+    {activities.map((item) => (
+      <div key={item.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition ${isDark ? 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-900/70' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+            <Sparkles className={`w-4 h-4 ${item.color || 'text-indigo-500'}`} />
+          </div>
+          <div>
+            {/* 🚀 1. Tambahkan baris ini untuk menampilkan Nama Admin */}
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-600'}`}>
+                👤 {item.nama || 'Admin'}
+              </span>
+            </div>
+
+            <p className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.title}</p>
+            {item.description && (
+              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.description}</p>
             )}
+            <p className={`text-[10px] mt-1 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{item.timestamp || item.time || 'Baru saja'}</p>
+          </div>
+        </div>
+        <CheckCircle2 className="w-4 h-4 text-emerald-500 opacity-80" />
+      </div>
+    ))}
+  </div>
+)}
           </div>
 
           <div className={`p-6 rounded-2xl border shadow-lg flex flex-col justify-between ${isDark ? 'bg-[#1F2937] border-slate-700/60' : 'bg-white border-slate-200'}`}>

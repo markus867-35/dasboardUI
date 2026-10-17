@@ -165,6 +165,10 @@ const getCardStyle = () => {
     return matchesFolder && matchesSearch;
   });
 
+
+
+
+
 const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
@@ -191,11 +195,13 @@ const handleCreateFolder = async (e: React.FormEvent) => {
         setIsCreatingFolder(false);
 
         // 2. CATAT KE LOG HANYA KETIKA BERHASIL TERSIMPAN DI DATABASE
-        logActivity(
-          'Manager Data',
-          `Berhasil membuat folder dengan nama: "${folderNameClean}"`,
-          'update'
-        );
+// ✅ KODE YANG BENAR (cukup panggil tanpa parameter tambahan):
+logActivity(
+  'Manager Data',
+  `Berhasil membuat folder dengan nama: "${folderNameClean}"`,
+  'text-emerald-500', // Warna indikator (opsional)
+  'update'
+);
       }
     } catch (error: any) {
       console.error('Gagal membuat folder:', error);
@@ -203,6 +209,10 @@ const handleCreateFolder = async (e: React.FormEvent) => {
     }
   };
 
+
+
+
+  
   const uploadFileToSupabase = async (file: File) => {
     try {
       let fileContent = null;

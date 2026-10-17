@@ -20,34 +20,75 @@ export default function AuthPage() {
   const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('email', signInData.email)
-        .single();
 
-      if (error || !data) {
-        throw new Error('Email atau akun tidak ditemukan.');
-      }
 
-      if (data.password !== signInData.password) {
-        throw new Error('Password yang Anda masukkan salah.');
-      }
 
-      Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
-        localStorage.setItem('adminId', String(data.id));
-        router.push('/dashboard');
-      });
-    } catch (err: any) {
-      Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat login.', 'error');
-    } finally {
-      setLoading(false);
+const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    // 1. Cek email admin di database
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', signInData.email)
+      .single();
+
+    if (error || !data) {
+      throw new Error('Email atau akun tidak ditemukan.');
     }
-  };
+
+    // 2. Cek kecocokan password
+    if (data.password !== signInData.password) {
+      throw new Error('Password yang Anda masukkan salah.');
+    }
+
+    // 3. Ambil IP publik pengguna
+    let clientIp = '192.168.1.15'; 
+    try {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipJson = await ipRes.json();
+      if (ipJson.ip) clientIp = ipJson.ip;
+    } catch (ipErr) {
+      console.warn('Gagal mengambil IP, menggunakan default.');
+    }
+
+    // Simpan IP ke localStorage
+    localStorage.setItem('userIp', clientIp);
+
+    // 4. MASUKKAN DATA KE TABEL 'login_sessions' (Pencatatan Sesi Aktif)
+    const { error: insertError } = await supabase
+      .from('login_sessions')
+      .insert([
+        {
+          admin_id: data.id,
+          name: data.name,
+          email: data.email,
+          ip_address: clientIp,
+          status: 'Aktif Bekerja',
+          logged_in_at: new Date().toISOString()
+        }
+      ]);
+
+    if (insertError) {
+      console.error("Gagal insert ke login_sessions:", insertError);
+      throw new Error("Gagal mencatat sesi: " + insertError.message);
+    }
+
+    // 5. Jika sukses, simpan adminId dan pindah ke dashboard
+// 5. Jika sukses, simpan adminId, adminName dan pindah ke dashboard
+    Swal.fire('Berhasil!', 'Login Berhasil.', 'success').then(() => {
+      localStorage.setItem('adminId', String(data.id));
+      localStorage.setItem('adminName', data.name); // 🚀 Tambahkan baris ini untuk menyimpan nama asli admin!
+      router.push('/dashboard');
+    });
+
+  } catch (err: any) {
+    Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat login.', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
