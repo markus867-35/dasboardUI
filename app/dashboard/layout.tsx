@@ -239,7 +239,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       clearTimeout(inactivityTimer);
       // 30 menit = 30 * 60 * 1000 ms. 
       // (Tips: Untuk testing singkat, bisa diubah misal jadi 5000 untuk 5 detik)
-      inactivityTimer = setTimeout(handleAutoLogout, 10 * 1000); // 10 * 1000 ms = 10 detik
+     inactivityTimer = setTimeout(handleAutoLogout, 30 * 60 * 1000);
     };
 
     // Daftar aktivitas user yang mendeteksi interaksi
