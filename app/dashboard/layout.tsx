@@ -9,6 +9,8 @@ import { FontSizeProvider, useFontSize, FontSizeContextType } from '@/app/contex
 import { LanguageProvider } from "@/app/context/LanguageContext";
 import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 import { useRouter } from "next/navigation";
+import { supabase } from '@/lib/supabase';
+import Swal from 'sweetalert2';
 
 // --- GLOBAL MUSIC CONTEXT YANG DIPERBARUI DENGAN DUKUNGAN YOUTUBE API ---
 interface MusicItem {
@@ -27,7 +29,6 @@ interface MusicContextType {
   isPlaying: boolean;
   togglePlayAudio: (item: MusicItem) => void;
   audioRef: React.RefObject<HTMLAudioElement | null>;
-  // Tambahan state global untuk YouTube API
   ytPlayerRef: React.MutableRefObject<any>;
   ytDuration: number;
   ytCurrentTime: number;
@@ -44,7 +45,6 @@ export function useGlobalMusic() {
   return context;
 }
 
-// Tambahan deklarasi global untuk tipe jendela YouTube API
 declare global {
   interface Window {
     YT: any;
@@ -100,7 +100,6 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     const isYT = activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be');
 
     if (isYT) {
-      // Pause audio lokal jika sedang memutar YouTube
       if (audioRef.current) audioRef.current.pause();
 
       let videoId = '';
@@ -151,7 +150,6 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       };
 
       if (!window.YT) {
-        // Load script YouTube API secara dinamis jika belum ada
         if (!document.getElementById('yt-api-script')) {
           const tag = document.createElement('script');
           tag.id = 'yt-api-script';
@@ -169,7 +167,6 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       };
 
     } else {
-      // Hancurkan player YouTube jika beralih ke lagu lokal
       if (ytPlayerRef.current && ytPlayerRef.current.destroy) {
         ytPlayerRef.current.destroy();
         ytPlayerRef.current = null;
@@ -196,6 +193,74 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       setIsSidebarOpen(false);
     }
   }, [setIsSidebarOpen, router]);
+
+  // --- 🚀 FITUR AUTO-LOGOUT 30 MENIT KARENA TIDAK ADA AKTIVITAS ---
+  useEffect(() => {
+    // Hanya jalankan jika auth sudah siap
+    if (!isAuthReady) return;
+
+    let inactivityTimer: NodeJS.Timeout;
+
+    const handleAutoLogout = async () => {
+      try {
+        const adminId = localStorage.getItem('adminId');
+        
+        if (adminId) {
+          await supabase
+            .from('login_sessions')
+            .update({ 
+              status: 'Offline', 
+              logged_out_at: new Date().toISOString() 
+            })
+            .eq('id', adminId);
+        }
+      } catch (err) {
+        console.error('Gagal memperbarui status logout otomatis:', err);
+      }
+
+      // Bersihkan data lokal terlebih dahulu
+      localStorage.clear();
+
+      // 🚀 Tampilkan SweetAlert2 sebelum diarahkan ke halaman login
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Sesi Berakhir',
+        text: 'Silahkan login kembali',
+        confirmButtonText: 'Login',
+        confirmButtonColor: '#4f46e5', // Sesuaikan warna tombol (indigo)
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+      });
+
+      router.push('/login');
+    };
+
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      // 30 menit = 30 * 60 * 1000 ms. 
+      // (Tips: Untuk testing singkat, bisa diubah misal jadi 5000 untuk 5 detik)
+      inactivityTimer = setTimeout(handleAutoLogout, 10 * 1000); // 10 * 1000 ms = 10 detik
+    };
+
+    // Daftar aktivitas user yang mendeteksi interaksi
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+    // Pasang event listener ke window
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, resetInactivityTimer);
+    });
+
+    // Jalankan timer pertama kali
+    resetInactivityTimer();
+
+    // Cleanup saat komponen unmount
+    return () => {
+      clearTimeout(inactivityTimer);
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, resetInactivityTimer);
+      });
+    };
+  }, [isAuthReady, router]);
 
   if (!isAuthReady) {
     return (
