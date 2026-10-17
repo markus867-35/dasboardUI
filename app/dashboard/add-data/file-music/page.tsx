@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { 
   FiMusic, FiUpload, FiTrash2, FiSearch, 
   FiGrid, FiList, FiX, FiPlay, FiPause, FiDisc, FiDownload, FiLink, FiSave,
@@ -232,7 +233,13 @@ const getCardStyle = () => {
     }
   };
 
-  const handleCreateFolder = async (e: React.FormEvent) => {
+
+
+
+
+
+
+const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
@@ -245,6 +252,15 @@ const getCardStyle = () => {
       if (error) throw error;
       if (data) {
         setFolders([...folders, data[0]]);
+
+        // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+        await logActivity(
+          'File Music',
+          `Berhasil membuat folder baru: "${newFolderName.trim()}"`,
+          'text-indigo-500', // Warna indikator
+          'create'           // Tipe aktivitas (bisa disesuaikan, misal 'create')
+        );
+
         setNewFolderName('');
         setIsCreatingFolder(false);
       }
@@ -253,6 +269,10 @@ const getCardStyle = () => {
       alert('Gagal membuat folder baru.');
     }
   };
+
+
+
+
 
   const handleUpdateFolder = async (id: string | number) => {
     if (!editedFolderName.trim()) return;
@@ -264,7 +284,17 @@ const getCardStyle = () => {
         .eq('id', id);
 
       if (error) throw error;
+      
       setFolders(folders.map(f => f.id === id ? { ...f, name: editedFolderName.trim() } : f));
+
+      // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+      await logActivity(
+        'File Music',
+        `Berhasil mengubah nama folder menjadi: "${editedFolderName.trim()}"`,
+        'text-indigo-500', // Warna indikator
+        'update'           // Tipe aktivitas
+      );
+
       setEditingFolderId(null);
     } catch (error) {
       console.error('Gagal mengubah nama folder:', error);
@@ -272,10 +302,20 @@ const getCardStyle = () => {
     }
   };
 
-  const handleDeleteFolder = async (id: string | number) => {
+
+
+
+
+
+
+const handleDeleteFolder = async (id: string | number) => {
     if (!confirm('Hapus folder ini? Musik di dalamnya akan dipindahkan ke "Semua Musik".')) return;
 
     try {
+      // Cari nama folder yang akan dihapus untuk dicatat di log (opsional, untuk memperjelas pesan log)
+      const folderToDelete = folders.find(f => f.id === id);
+      const folderName = folderToDelete ? folderToDelete.name : `ID: ${id}`;
+
       await supabase.from('music_tracks').update({ folder_id: null }).eq('folder_id', id);
       const { error } = await supabase.from('music_folders').delete().eq('id', id);
       if (error) throw error;
@@ -283,25 +323,63 @@ const getCardStyle = () => {
       setFolders(folders.filter(f => f.id !== id));
       setMusicList(musicList.map(m => m.folder_id === id ? { ...m, folder_id: null } : m));
       if (selectedFolderId === id) setSelectedFolderId('all');
+
+      // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+      await logActivity(
+        'File Music',
+        `Berhasil menghapus folder: "${folderName}"`,
+        'text-red-500',  // Warna indikator (merah untuk aksi hapus)
+        'delete'         // Tipe aktivitas
+      );
+
     } catch (error) {
       console.error('Gagal menghapus folder:', error);
       alert('Gagal menghapus folder.');
     }
   };
 
-  const handleMoveTrackToFolder = async (trackId: string | number, targetFolderId: string | number | null) => {
+
+
+
+
+
+
+
+const handleMoveTrackToFolder = async (trackId: string | number, targetFolderId: string | number | null) => {
     try {
+      // Cari nama track dan nama folder tujuan untuk memperjelas pesan log (opsional)
+      const trackToMove = musicList.find(m => m.id === trackId);
+      const trackName = trackToMove ? trackToMove.name : `ID: ${trackId}`;
+      
+      const targetFolder = targetFolderId === null 
+        ? 'Semua Musik' 
+        : folders.find(f => f.id === targetFolderId)?.name || `Folder ID: ${targetFolderId}`;
+
       const { error } = await supabase.from('music_tracks').update({ folder_id: targetFolderId }).eq('id', trackId);
       if (error) throw error;
+
       setMusicList(musicList.map(m => m.id === trackId ? { ...m, folder_id: targetFolderId } : m));
       setMovingTrack(null);
+
+      // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+      await logActivity(
+        'File Music',
+        `Berhasil memindahkan lagu "${trackName}" ke folder "${targetFolder}"`,
+        'text-indigo-500', // Warna indikator
+        'update'           // Tipe aktivitas
+      );
+
     } catch (error) {
       console.error('Gagal memindahkan lagu:', error);
       alert('Gagal memindahkan lagu ke folder.');
     }
   };
 
-  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+
+
+
+const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
       const file = e.target.files[0];
@@ -315,8 +393,10 @@ const getCardStyle = () => {
       const { data: publicURLData } = supabase.storage.from('music-files').getPublicUrl(fileName);
       const formattedDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
+      const trackName = file.name.replace(/\.[^/.]+$/, "");
+
       const newTrack = {
-        name: file.name.replace(/\.[^/.]+$/, ""),
+        name: trackName,
         artist: 'Unknown Artist',
         duration: '--:--',
         url: publicURLData.publicUrl,
@@ -327,7 +407,18 @@ const getCardStyle = () => {
 
       const { data, error: insertError } = await supabase.from('music_tracks').insert([newTrack]).select();
       if (insertError) throw insertError;
-      if (data) setMusicList([data[0], ...musicList]);
+      
+      if (data) {
+        setMusicList([data[0], ...musicList]);
+
+        // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+        await logActivity(
+          'File Music',
+          `Berhasil mengupload file musik/video: "${trackName}"`,
+          'text-green-500', // Warna indikator (hijau untuk aksi upload/tambah berhasil)
+          'create'          // Tipe aktivitas
+        );
+      }
     } catch (error) {
       console.error('Gagal mengupload musik:', error);
       alert('Terjadi kesalahan saat mengupload musik.');
@@ -336,7 +427,13 @@ const getCardStyle = () => {
     }
   };
 
-  const handleUrlSubmit = async (e: React.FormEvent) => {
+
+
+
+
+
+const handleUrlSubmit = async (e: React.FormEvent) => {
+  console.log("=== TOMBOL SUBMIT URL DIKLIK! ==="); // <--- Tambahkan ini
     e.preventDefault();
     if (!audioUrlInput.trim()) return alert('Silakan masukkan link audio atau YouTube!');
 
@@ -351,7 +448,6 @@ const getCardStyle = () => {
 
       // 🚀 Deteksi otomatis jika itu link YouTube (youtu.be atau youtube.com)
       if (finalUrl.includes('youtu.be') || finalUrl.includes('youtube.com')) {
-        // Ambil Video ID dari URL YouTube untuk disematkan
         let videoId = '';
         if (finalUrl.includes('youtu.be/')) {
           videoId = finalUrl.split('youtu.be/')[1]?.split('?')[0];
@@ -360,7 +456,7 @@ const getCardStyle = () => {
         }
 
         if (videoId) {
-          trackName = `YouTube Music (${videoId})`; // Bisa diubah teksnya sesuai keinginan
+          trackName = `YouTube Music (${videoId})`;
           artistName = 'YouTube';
           trackSize = 'YouTube';
         }
@@ -369,6 +465,8 @@ const getCardStyle = () => {
         trackName = decodeURIComponent(urlObj.pathname.split('/').pop() || 'External Audio Track');
         artistName = urlObj.hostname;
       }
+
+      console.log("1. Track Name yang akan disimpan:", trackName);
 
       const newTrack = {
         name: trackName,
@@ -382,13 +480,31 @@ const getCardStyle = () => {
 
       const { data, error } = await supabase.from('music_tracks').insert([newTrack]).select();
       if (error) throw error;
+
+      console.log("2. Data berhasil di-insert ke database:", data);
+
       if (data) {
         setMusicList([data[0], ...musicList]);
         setAudioUrlInput('');
+
+        console.log("3. Mencoba memanggil logActivity...");
+        
+        try {
+          await logActivity(
+            'File Music',
+            `Berhasil menambahkan link/URL audio: "${trackName}"`,
+            'text-green-500',
+            'create'
+          );
+          console.log("4. Log aktivitas BERHASIL dicatat!");
+        } catch (logErr) {
+          console.error("4. ERROR saat logActivity:", logErr);
+        }
+
         alert('Link berhasil ditambahkan!');
       }
     } catch (error) {
-      console.error('Gagal menyimpan link:', error);
+      console.error('Gagal menyimpan link (Catch Utama):', error);
       alert('URL tidak valid.');
     } finally {
       setSavingUrl(false);
@@ -402,18 +518,37 @@ const getCardStyle = () => {
   const handleDeleteMusic = async (id: string | number, fileUrl: string) => {
     if (!confirm('Hapus musik ini?')) return;
     try {
+      // Cari nama musik/track yang akan dihapus untuk dicatat ke log (opsional)
+      const trackToDelete = musicList.find(item => item.id === id);
+      const trackName = trackToDelete ? trackToDelete.name : `ID: ${id}`;
+
       await supabase.from('music_tracks').delete().eq('id', id);
+      
       if (activeAudio?.id === id) {
         audioRef.current?.pause();
         setActiveAudio(null);
         setIsPlaying(false);
         setIsPopupOpen(false);
       }
+      
       setMusicList(musicList.filter(item => item.id !== id));
+
+      // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+      await logActivity(
+        'File Music',
+        `Berhasil menghapus file musik/video: "${trackName}"`,
+        'text-red-500', // Warna indikator merah untuk aksi hapus
+        'delete'        // Tipe aktivitas
+      );
+
     } catch (error) {
       console.error('Gagal menghapus musik:', error);
+      alert('Gagal menghapus musik.');
     }
   };
+
+
+
 
 // Memutar / Menjedakan Lagu tanpa Membuka Pop-up
 const togglePlayAudio = (item: MusicItem) => {
@@ -675,6 +810,15 @@ const togglePlayAudio = (item: MusicItem) => {
                 setMusicList([data[0], ...musicList]);
                 setAudioUrlInput('');
                 setAudioTitleInput('');
+
+                // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+                await logActivity(
+                  'File Music',
+                  `Berhasil menambahkan link/URL audio: "${trackName}"`,
+                  'text-green-500', // Warna indikator hijau untuk penambahan
+                  'create'          // Tipe aktivitas
+                );
+
                 alert('Link berhasil ditambahkan!');
               }
             } catch (error) {

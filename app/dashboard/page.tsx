@@ -544,12 +544,12 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
 
 
       {/* 3. Tabel Data dari Supabase */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-   {/* Admin Activity / Transaction Log Table */}
-<div className={`w-full rounded-2xl p-4 sm:p-6 box-border ${getCardStyle()}`}>
+  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+ <div className={`w-full rounded-2xl p-4 sm:p-6 box-border ${getCardStyle()}`}>
   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
     <div>
-      <h3 className="text-lg font-bold">Riwayat Aktivitas & Transaksi Admin</h3>
+      <h3 className="text-lg font-bold">Riwayat Aktivitas & Transaksi </h3>
       <p className="text-xs opacity-70">Menampilkan riwayat tanggal: {filterDate}</p>
     </div>
 
@@ -561,8 +561,8 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
         onChange={(e) => setFilterDate(e.target.value)}
         className={`px-3 py-1.5 rounded-lg text-xs border outline-none ${
           mode === 'light'
-            ? 'bg-white border-black/10 text-slate-700'
-            : 'bg-slate-900 border-white/10 text-slate-200'
+            ? 'bg-white border-slate-300 text-slate-700'
+            : 'bg-slate-900 border-slate-700 text-slate-200'
         }`}
       />
       <span className={`text-xs px-3 py-1.5 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
@@ -571,18 +571,22 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     </div>
   </div>
   
-  {/* Bagian <table> tetap sama seperti milikmu sebelumnya ... */}
-  <div className="w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border border-black/5 dark:border-white/5">
+  {/* Bagian Tabel dengan Garis Pembatas Vertikal yang Jelas untuk Semua Mode */}
+  <div className={`w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
     <table className="w-full text-left text-sm min-w-[650px] border-collapse">
       <thead className={`sticky top-0 z-20 ${mode === 'light' ? 'bg-slate-100 shadow-sm' : 'bg-slate-800 shadow-sm'}`}>
-        <tr className={`border-b ${mode === 'light' ? 'border-black/10 text-slate-600' : 'border-white/10 text-slate-300'}`}>
-          <th className="p-3 font-semibold whitespace-nowrap">Admin</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Aksi / Transaksi</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Keterangan Detail</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Waktu</th>
+        <tr className={`border-b ${mode === 'light' ? 'border-slate-300 text-slate-700 font-bold' : 'border-slate-700 text-slate-200 font-bold'}`}>
+          {/* Kolom 1 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Name</th>
+          {/* Kolom 2 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Aksi / Transaksi</th>
+          {/* Kolom 3 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Keterangan Detail</th>
+          {/* Kolom 4 */}
+          <th className="p-3 whitespace-nowrap">Waktu</th>
         </tr>
       </thead>
-      <tbody className={`divide-y ${mode === 'light' ? 'divide-black/5 text-slate-700' : 'divide-white/10 text-slate-200'}`}>
+      <tbody className={`divide-y ${mode === 'light' ? 'divide-slate-300 text-slate-700' : 'divide-slate-700 text-slate-200'}`}>
         {activities.length === 0 ? (
           <tr>
             <td colSpan={4} className="py-6 text-center opacity-70">
@@ -592,14 +596,18 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
         ) : (
           activities.map((item, index) => (
             <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%]'}>
-              <td className="px-4 py-3 text-sm font-medium">
+              {/* Sel Data Kolom 1 */}
+              <td className={`px-4 py-3 text-sm font-medium border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
                   {item.nama || 'Admin'}
                 </span>
               </td>
-              <td className="p-3 whitespace-nowrap font-semibold">{item.title}</td>
-              <td className="p-3 whitespace-nowrap text-xs opacity-90">{item.description}</td>
+              {/* Sel Data Kolom 2 */}
+              <td className={`p-3 whitespace-nowrap font-semibold border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.title}</td>
+              {/* Sel Data Kolom 3 */}
+              <td className={`p-3 text-xs opacity-90 border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.description}</td>
+              {/* Sel Data Kolom 4 */}
               <td className="p-3 whitespace-nowrap text-xs font-mono">{item.timestamp}</td>
             </tr>
           ))
@@ -608,6 +616,8 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     </table>
   </div>
 </div>
+
+
 
 
 
@@ -630,8 +640,8 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
         onChange={(e) => setSessionFilterDate(e.target.value)}
         className={`px-3 py-1.5 rounded-lg text-xs border outline-none ${
           mode === 'light'
-            ? 'bg-white border-black/10 text-slate-700'
-            : 'bg-slate-900 border-white/10 text-slate-200'
+            ? 'bg-white border-slate-300 text-slate-700'
+            : 'bg-slate-900 border-slate-700 text-slate-200'
         }`}
       />
       <span className={`text-xs px-3 py-1.5 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
@@ -640,19 +650,24 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     </div>
   </div>
   
-  {/* Kontainer tabel tetap sama seperti kodenya di atas */}
-  <div className="w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border border-black/5 dark:border-white/5">
+  {/* Kontainer Tabel dengan Garis Pembatas Vertikal & Horizontal */}
+  <div className={`w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
     <table className="w-full text-left text-sm min-w-[700px] border-collapse">
       <thead className={`sticky top-0 z-20 ${mode === 'light' ? 'bg-slate-100 shadow-sm' : 'bg-slate-800 shadow-sm'}`}>
-        <tr className={`border-b ${mode === 'light' ? 'border-black/10 text-slate-600' : 'border-white/10 text-slate-300'}`}>
-          <th className="p-3 font-semibold whitespace-nowrap">User</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Email</th>
-          <th className="p-3 font-semibold whitespace-nowrap">IP Address</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Waktu (Login / Logout)</th>
-          <th className="p-3 font-semibold whitespace-nowrap">Status</th>
+        <tr className={`border-b ${mode === 'light' ? 'border-slate-300 text-slate-700 font-bold' : 'border-slate-700 text-slate-200 font-bold'}`}>
+          {/* Kolom 1 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Name</th>
+          {/* Kolom 2 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Email</th>
+          {/* Kolom 3 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>IP Address</th>
+          {/* Kolom 4 */}
+          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Waktu (Login / Logout)</th>
+          {/* Kolom 5 */}
+          <th className="p-3 whitespace-nowrap">Status</th>
         </tr>
       </thead>
-      <tbody className={`divide-y ${mode === 'light' ? 'divide-black/5 text-slate-700' : 'divide-white/10 text-slate-200'}`}>
+      <tbody className={`divide-y ${mode === 'light' ? 'divide-slate-300 text-slate-700' : 'divide-slate-700 text-slate-200'}`}>
         {activeSessions.length === 0 ? (
           <tr>
             <td colSpan={5} className="py-6 text-center opacity-70">
@@ -661,13 +676,17 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
           </tr>
         ) : (
           activeSessions.map((session, index) => (
-            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%'}>
-              <td className={`p-3 font-medium whitespace-nowrap ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>
+            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%]'}>
+              {/* Sel Data Kolom 1 */}
+              <td className={`p-3 font-medium whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300 text-slate-900' : 'border-slate-700 text-white'}`}>
                 {session.name}
               </td>
-              <td className="p-3 whitespace-nowrap">{session.email}</td>
-              <td className="p-3 font-mono text-xs whitespace-nowrap">{session.ip_address}</td>
-              <td className="p-3 text-xs whitespace-nowrap">
+              {/* Sel Data Kolom 2 */}
+              <td className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{session.email}</td>
+              {/* Sel Data Kolom 3 */}
+              <td className={`p-3 font-mono text-xs whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{session.ip_address}</td>
+              {/* Sel Data Kolom 4 */}
+              <td className={`p-3 text-xs whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
                 <div className="text-slate-500 dark:text-slate-400">
                   In: {session.logged_in_at ? new Date(session.logged_in_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }) : '-'}
                 </div>
@@ -677,6 +696,7 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
                   </div>
                 )}
               </td>
+              {/* Sel Data Kolom 5 */}
               <td className="p-3 whitespace-nowrap">
                 {session.status === 'Aktif Bekerja' ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-500 font-medium">
@@ -697,7 +717,6 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     </table>
   </div>
 </div>
-
       </div>
     </div>
   );

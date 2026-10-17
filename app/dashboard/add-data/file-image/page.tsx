@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { supabase } from '@/lib/supabase';
 import { 
   FiImage, FiUpload, FiTrash2, FiSearch, 
@@ -44,8 +45,8 @@ export default function FileImagePage() {
   const [editingFolder, setEditingFolder] = useState<FolderItem | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
 
-  const [pastedImageBase64, setPastedImageBase64] = useState<string | null>(null);
-  const [pastedImageName, setPastedImageName] = useState<string>('');
+const [pastedImageUrl, setPastedImageUrl] = useState('');
+const [pastedImageName, setPastedImageName] = useState('');
 
   const fetchData = async () => {
     try {
@@ -124,7 +125,13 @@ const getCardStyle = () => {
     }
   };
 
-  const handleCreateFolder = async (e: React.FormEvent) => {
+
+
+
+
+
+
+const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
@@ -147,40 +154,105 @@ const getCardStyle = () => {
         name: data[0].name
       };
       setFolders(prev => [createdFolder, ...prev]);
+
+      // 🚀 Catat aktivitas pembuatan folder baru ke log
+      await logActivity(
+        'File Image',
+        `Berhasil membuat folder baru: "${createdFolder.name}"`,
+        'text-emerald-500', // Warna indikator hijau untuk create/sukses
+        'create'            // Tipe aktivitas create
+      );
     }
 
     setNewFolderName('');
     setIsCreateFolderOpen(false);
   };
 
-  const handleUpdateFolder = async (e: React.FormEvent) => {
+
+
+
+const handleUpdateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFolder || !editFolderName.trim()) return;
 
+    const oldName = editingFolder.name;
     const updatedName = editFolderName.trim();
+
+    // 🚀 Lakukan update data ke Supabase terlebih dahulu
+    const { error } = await supabase
+      .from('folders')
+      .update({ name: updatedName })
+      .eq('id', editingFolder.id);
+
+    if (error) {
+      console.error('Gagal memperbarui folder:', error);
+      alert('Gagal memperbarui nama folder.');
+      return;
+    }
+
+    // Perbarui state lokal setelah sukses di database
     setFolders(prev => prev.map(f => f.id === editingFolder.id ? { ...f, name: updatedName } : f));
+    
     if (currentFolder?.id === editingFolder.id) {
       setCurrentFolder({ ...currentFolder, name: updatedName });
     }
+    
     setEditingFolder(null);
+    setEditFolderName('');
 
-    await supabase.from('folders').update({ name: updatedName }).eq('id', editingFolder.id);
+    // 🚀 Catat aktivitas perubahan nama folder ke log
+    await logActivity(
+      'File Image',
+      `Berhasil mengubah nama folder dari "${oldName}" menjadi "${updatedName}"`,
+      'text-blue-500', // Warna indikator biru untuk update
+      'update'         // Tipe aktivitas update
+    );
   };
 
-  const handleDeleteFolder = async (folderId: string) => {
+
+
+
+
+const handleDeleteFolder = async (folderId: string) => {
+    // Cari nama folder terlebih dahulu untuk dicatat di log
+    const targetFolder = folders.find(f => f.id === folderId);
+    const folderName = targetFolder?.name || `ID: ${folderId}`;
+
     if (!confirm("Hapus folder ini? Semua gambar di dalam folder ini juga akan terhapus.")) return;
 
-    await supabase.from('image_items').delete().eq('folder_id', folderId);
-    await supabase.from('folders').delete().eq('id', folderId);
+    // Hapus data terkait di database
+    const { error: errorImages } = await supabase.from('image_items').delete().eq('folder_id', folderId);
+    const { error: errorFolder } = await supabase.from('folders').delete().eq('id', folderId);
+
+    if (errorImages || errorFolder) {
+      console.error('Gagal menghapus folder:', errorFolder || errorImages);
+      alert('Gagal menghapus folder.');
+      return;
+    }
 
     setFolders(prev => prev.filter(f => f.id !== folderId));
     setImages(prev => prev.filter(img => img.folder_id !== folderId));
+    
     if (currentFolder?.id === folderId) {
       setCurrentFolder(null);
     }
+
+    // 🚀 Catat aktivitas penghapusan folder ke log
+    await logActivity(
+      'File Image',
+      `Berhasil menghapus folder beserta isinya: "${folderName}"`,
+      'text-red-500', // Warna indikator merah untuk hapus
+      'delete'        // Tipe aktivitas delete
+    );
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+
+
+
+
+
+ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       if (file.size > 5 * 1024 * 1024) {
@@ -241,12 +313,25 @@ const getCardStyle = () => {
               folder_id: data[0].folder_id ? data[0].folder_id.toString() : null
             };
             setImages(prev => [newImage, ...prev]);
+
+            // 🚀 Catat aktivitas upload file gambar ke log
+            await logActivity(
+              'File Image',
+              `Berhasil mengunggah file gambar: "${data[0].name}"`,
+              'text-emerald-500',
+              'create'
+            );
           }
         };
       };
       reader.readAsDataURL(file);
     }
   };
+
+
+
+
+
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     const items = e.clipboardData.items;
@@ -289,22 +374,31 @@ const getCardStyle = () => {
     }
   };
 
-  const handleSavePastedImage = async () => {
-    if (!pastedImageBase64) return;
 
-    const calculatedSize = `${(pastedImageBase64.length * (3/4) / (1024 * 1024)).toFixed(1)} MB`;
+
+
+
+
+const handleSavePastedImage = async () => {
+    if (!pastedImageUrl || !pastedImageUrl.trim()) return;
+
     const targetFolderId = currentFolder ? currentFolder.id : null;
+    const formattedDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
     const { data, error } = await supabase.from('image_items').insert([{
-      name: pastedImageName,
-      url: pastedImageBase64,
-      size: calculatedSize,
-      date: 'Baru saja',
+      name: pastedImageName.trim() || 'External Image',
+      url: pastedImageUrl.trim(),
+      size: 'External Link', // Ukuran bisa disesuaikan jika menggunakan file asli
+      date: formattedDate,
       dimension: 'Optimized',
       folder_id: targetFolderId
     }]).select();
 
-    if (error) return;
+    if (error) {
+      console.error('Gagal menyimpan URL gambar:', error);
+      alert('Gagal menyimpan URL gambar.');
+      return;
+    }
 
     if (data && data.length > 0) {
       const newImage: ImageItem = {
@@ -317,17 +411,53 @@ const getCardStyle = () => {
         folder_id: data[0].folder_id ? data[0].folder_id.toString() : null
       };
       setImages(prev => [newImage, ...prev]);
+
+      // 🚀 Catat aktivitas penambahan URL gambar ke log
+      await logActivity(
+        'File Image',
+        `Berhasil menambahkan URL gambar: "${data[0].name}"`,
+        'text-emerald-500',
+        'create'
+      );
+
+      alert('URL gambar berhasil disimpan!');
     }
 
-    setPastedImageBase64(null);
+    setPastedImageUrl(''); // Reset input URL
     setPastedImageName('');
   };
 
-  const handleDeleteImage = async (id: string | number) => {
-    await supabase.from('image_items').delete().eq('id', id);
-    setImages(prev => prev.filter(img => img.id !== id.toString()));
+
+
+
+const handleDeleteImage = async (id: string | number) => {
+    // Cari data gambar terlebih dahulu untuk mendapatkan nama/detailnya (opsional untuk keterangan log)
+    const targetImage = images.find(img => img.id.toString() === id.toString());
+    const imageName = targetImage?.name || `ID: ${id}`;
+
+    const { error } = await supabase.from('image_items').delete().eq('id', id);
+    if (error) {
+      console.error('Gagal menghapus gambar:', error);
+      alert('Gagal menghapus gambar.');
+      return;
+    }
+
+    setImages(prev => prev.filter(img => img.id.toString() !== id.toString()));
     setSelectedImage(null);
+
+    // 🚀 Catat aktivitas ke riwayat log
+    await logActivity(
+      'File Image',
+      `Berhasil menghapus gambar: "${imageName}"`,
+      'text-red-500', // Warna indikator merah untuk hapus
+      'delete'        // Tipe aktivitas delete
+    );
   };
+
+
+
+
+
 
   const activeFolders = !currentFolder && !searchQuery ? folders : folders.filter(f => !currentFolder && f.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const activeImages = images.filter(img => {
@@ -370,6 +500,10 @@ const getCardStyle = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedImage, activeImages]);
+
+
+
+
 
 return (
   <div className="w-full px-full sm:px-0 md:px-0 space-y-0 max-w-[1700px] mx-auto box-border">
@@ -425,7 +559,7 @@ return (
         </div>
       </div>
 
-      {/* INPUT UPLOAD & PASTE */}
+{/* INPUT UPLOAD & PASTE / URL */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-700/20">
         <label className={`flex items-center justify-center gap-3 p-3.5 sm:p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${mode === 'light' ? 'border-slate-300 hover:bg-slate-50' : 'border-slate-700 hover:bg-slate-800/50'}`}>
           <FiUpload className="text-blue-500 text-xl shrink-0" />
@@ -436,31 +570,36 @@ return (
           <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
         </label>
 
-        <div 
-          onPaste={handlePaste}
-          tabIndex={0}
-          className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border-2 border-dashed transition outline-none focus:border-blue-500 ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/30'}`}
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <FiClipboard className="text-emerald-500 text-xl flex-shrink-0" />
-            <div className="text-left truncate">
-              <p className="text-xs font-semibold truncate">
-                {pastedImageBase64 ? pastedImageName : "Klik di sini lalu Tekan Ctrl+V"}
-              </p>
-              <p className="text-[10px] opacity-60 truncate">
-                {pastedImageBase64 ? "Gambar siap disimpan" : "Paste tangkapan layar"}
-              </p>
-            </div>
+        <div className={`flex flex-col gap-2 p-3.5 sm:p-4 rounded-xl border-2 border-dashed transition ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/30'}`}>
+          <div className="flex items-center gap-2">
+            <FiClipboard className="text-emerald-500 text-xl shrink-0" />
+            <span className="text-xs font-semibold truncate">Simpan URL Gambar ke: "{currentFolder ? currentFolder.name : 'Utama'}"</span>
           </div>
 
-          {pastedImageBase64 && (
+          {/* Input Nama Gambar (Opsional) */}
+          <input 
+            type="text" 
+            placeholder="Nama Gambar (Opsional)"
+            value={pastedImageName}
+            onChange={(e) => setPastedImageName(e.target.value)}
+            className={`px-3 py-1.5 rounded-lg border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+          />
+
+          <div className="flex items-center gap-2">
+            <input 
+              type="url" 
+              placeholder="https://example.com/image.jpg"
+              value={pastedImageUrl}
+              onChange={(e) => setPastedImageUrl(e.target.value)}
+              className={`flex-grow px-3 py-2 rounded-lg border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+            />
             <button 
               onClick={handleSavePastedImage}
-              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 sm:px-4 py-2 rounded-lg font-medium transition flex-shrink-0 ml-2 shadow"
+              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition shrink-0 shadow"
             >
               <FiCheck size={14} /> Simpan
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>
