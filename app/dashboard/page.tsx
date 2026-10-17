@@ -5,9 +5,22 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, LabelList } from 'recharts';
 import { supabase } from '@/lib/supabase';
 
+// 🚀 TAMBAHKAN INTERFACE INI DI SINI AGAR TIDAK ERROR "Cannot find name 'ActivityItem'"
+export interface ActivityItem {
+  id?: any;
+  name: string;
+  email: string;
+  ip_address: string;
+  status: string;
+  logged_in_at: string;
+  logged_out_at?: string | null;
+}
+
 interface AnimatedCounterProps {
   value: number | string;
 }
+
+
 
 function AnimatedCounter({ value }: AnimatedCounterProps) {
   const [count, setCount] = useState<number>(0);
@@ -43,7 +56,7 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [monthData, setMonthData] = useState<any[]>([]);
   const [recentVisitors, setRecentVisitors] = useState<any[]>([]);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<ActivityItem[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 const [stats, setStats] = useState({
     totalVideo: 0,
@@ -94,8 +107,8 @@ async function fetchDashboardData() {
 // 1. Ambil data sesi yang memiliki status 'Aktif Bekerja' dan 'Offline' sekaligus
 const { data: sessionRes, error: sessionErr } = await supabase
   .from('login_sessions')
-  .select('id, name, email, ip_address, status, logged_in_at')
-  .in('status', ['Aktif Bekerja', 'Offline']) // 🚀 Mengambil kedua status
+  .select('id, name, email, ip_address, status, logged_in_at, logged_out_at') // ⬅️ Tambahkan ini
+  .in('status', ['Aktif Bekerja', 'Offline'])
   .order('logged_in_at', { ascending: false });
 
 if (!sessionErr && sessionRes) {
