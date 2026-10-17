@@ -76,13 +76,85 @@ const [stats, setStats] = useState({
     totalData: 0,
   });
 
-    // 3. useEffect di level teratas (TIDAK di dalam if atau fungsi lain)
+// State untuk filter tanggal Active Sessions
+const [sessionFilterDate, setSessionFilterDate] = useState<string>(
+  new Date().toISOString().split('T')[0] // Default: Tanggal hari ini (YYYY-MM-DD)
+);
+
+
+// Jalankan fetch saat komponen pertama kali dimuat atau saat sessionFilterDate berubah
   useEffect(() => {
-    const savedActivities = localStorage.getItem('app_activities');
-    if (savedActivities) {
-      setActivities(JSON.parse(savedActivities));
+    fetchActiveSessionsByDate(sessionFilterDate);
+  }, [sessionFilterDate]);
+
+  async function fetchActiveSessionsByDate(selectedDate: string) {
+    const startOfDay = `${selectedDate}T00:00:00`;
+    const endOfDay = `${selectedDate}T23:59:59`;
+
+    const { data: sessionRes, error: sessionErr } = await supabase
+      .from('login_sessions')
+      .select('id, name, email, ip_address, status, logged_in_at, logged_out_at')
+      .in('status', ['Aktif Bekerja', 'Offline'])
+      .gte('logged_in_at', startOfDay) // Filter berdasarkan waktu login pada tanggal tersebut
+      .lte('logged_in_at', endOfDay)
+      .order('logged_in_at', { ascending: false });
+
+    if (!sessionErr && sessionRes) {
+      const formattedSessions: ActivityItem[] = sessionRes.map((admin) => ({
+        id: admin.id,
+        name: admin.name || 'Tanpa Nama',      
+        email: admin.email || 'Tidak ada email', 
+        ip_address: admin.ip_address || '192.168.1.15', 
+        status: admin.status || 'Aktif Bekerja',
+        logged_in_at: admin.logged_in_at,
+        logged_out_at: admin.logged_out_at || '-',
+      }));
+      setActiveSessions(formattedSessions);
+    } else {
+      console.error('Gagal mengambil sesi:', sessionErr);
     }
-  }, []);
+  }
+
+
+
+  const [filterDate, setFilterDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+    // 3. useEffect di level teratas (TIDAK di dalam if atau fungsi lain)
+// Panggil fungsi ini saat pertama kali load atau saat filterDate berubah
+  useEffect(() => {
+    fetchActivitiesByDate(filterDate);
+  }, [filterDate]);
+
+  async function fetchActivitiesByDate(selectedDate: string) {
+    // Buat rentang waktu dari jam 00:00:00 sampai 23:59:59 pada tanggal yang dipilih
+    const startOfDay = `${selectedDate}T00:00:00`;
+    const endOfDay = `${selectedDate}T23:59:59`;
+
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      // Map data Supabase agar sesuai dengan format tampilan tabel (timestamp, dll)
+      const formatted = data.map((item: any) => ({
+        ...item,
+        // Format tanggal/waktu dari Supabase agar rapi ditampilkan di kolom waktu
+        timestamp: new Date(item.created_at).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+      }));
+      setActivities(formatted);
+    } else {
+      console.error('Gagal mengambil riwayat:', error);
+    }
+  }
+
 
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [isMounted, setIsMounted] = useState(false);
@@ -105,30 +177,58 @@ const [stats, setStats] = useState({
   }, []);
 
 
+// 2. Fungsi untuk menambah aktivitas baru langsung ke Supabase
+const addActivity = async (newAct: {
+    nama: string;
+    title: string;
+    description: string;
+    type?: string;
+    color?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .insert([newAct])
+        .select();
 
+      if (error) {
+        console.error('❌ Gagal insert ke Supabase:', error.message, error.details);
+        alert('Gagal menyimpan aktivitas: ' + error.message);
+        return;
+      }
+
+      if (data) {
+        console.log('✅ Berhasil menyimpan:', data);
+        setActivities((prev) => [data[0], ...prev]);
+      }
+    } catch (err) {
+      console.error('❌ Error tak terduga:', err);
+    }
+  };
 
 
 async function fetchDashboardData() {
     try {
-     // 1. Ambil data Active Sessions langsung dari tabel login_sessions
-// 1. Ambil data sesi yang memiliki status 'Aktif Bekerja' dan 'Offline' sekaligus
-const { data: sessionRes, error: sessionErr } = await supabase
-  .from('login_sessions')
-  .select('id, name, email, ip_address, status, logged_in_at, logged_out_at') // ⬅️ Tambahkan ini
-  .in('status', ['Aktif Bekerja', 'Offline'])
-  .order('logged_in_at', { ascending: false });
 
-if (!sessionErr && sessionRes) {
-  const formattedSessions = sessionRes.map((admin) => ({
-    name: admin.name || 'Tanpa Nama',      
-    email: admin.email || 'Tidak ada email', 
-    ip_address: admin.ip_address || '192.168.1.15', 
-    status: admin.status || 'Aktif Bekerja',
-    logged_in_at: admin.logged_in_at,
-    logged_out_at: admin.logged_out_at || '-', // Ditambahkan agar bisa ditampilkan kapan login/logout-nya
-  }));
-  setActiveSessions(formattedSessions);
-}
+      // 1. Ambil data Active Sessions langsung dari tabel login_sessions
+      const { data: sessionRes, error: sessionErr } = await supabase
+        .from('login_sessions')
+        .select('id, name, email, ip_address, status, logged_in_at, logged_out_at')
+        .in('status', ['Aktif Bekerja', 'Offline'])
+        .order('logged_in_at', { ascending: false });
+
+      if (!sessionErr && sessionRes) {
+        const formattedSessions: ActivityItem[] = sessionRes.map((admin) => ({
+          id: admin.id,
+          name: admin.name || 'Tanpa Nama',      
+          email: admin.email || 'Tidak ada email', 
+          ip_address: admin.ip_address || '192.168.1.15', 
+          status: admin.status || 'Aktif Bekerja',
+          logged_in_at: admin.logged_in_at,
+          logged_out_at: admin.logged_out_at || '-',
+        }));
+        setActiveSessions(formattedSessions);
+      }
 
       // 2. Ambil data dari tabel-tabel utama secara parallel (untuk statistik & grafik mingguan otomatis)
       const [
@@ -432,16 +532,33 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
 
       {/* 3. Tabel Data dari Supabase */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
-{/* Admin Activity / Transaction Log Table */}
+   {/* Admin Activity / Transaction Log Table */}
 <div className={`w-full rounded-2xl p-4 sm:p-6 box-border ${getCardStyle()}`}>
-  <div className="flex justify-between items-center mb-4">
-    <h3 className="text-lg font-bold">Riwayat Aktivitas & Transaksi Admin</h3>
-    <span className={`text-xs px-3 py-1 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
-      Realtime Log
-    </span>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+    <div>
+      <h3 className="text-lg font-bold">Riwayat Aktivitas & Transaksi Admin</h3>
+      <p className="text-xs opacity-70">Menampilkan riwayat tanggal: {filterDate}</p>
+    </div>
+
+    {/* 🚀 INPUT FILTER TANGGAL */}
+    <div className="flex items-center gap-2">
+      <input
+        type="date"
+        value={filterDate}
+        onChange={(e) => setFilterDate(e.target.value)}
+        className={`px-3 py-1.5 rounded-lg text-xs border outline-none ${
+          mode === 'light'
+            ? 'bg-white border-black/10 text-slate-700'
+            : 'bg-slate-900 border-white/10 text-slate-200'
+        }`}
+      />
+      <span className={`text-xs px-3 py-1.5 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
+        Realtime Log
+      </span>
+    </div>
   </div>
   
+  {/* Bagian <table> tetap sama seperti milikmu sebelumnya ... */}
   <div className="w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border border-black/5 dark:border-white/5">
     <table className="w-full text-left text-sm min-w-[650px] border-collapse">
       <thead className={`sticky top-0 z-20 ${mode === 'light' ? 'bg-slate-100 shadow-sm' : 'bg-slate-800 shadow-sm'}`}>
@@ -456,33 +573,21 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
         {activities.length === 0 ? (
           <tr>
             <td colSpan={4} className="py-6 text-center opacity-70">
-              Belum ada riwayat aktivitas atau transaksi.
+              Belum ada riwayat aktivitas atau transaksi pada tanggal {filterDate}.
             </td>
           </tr>
         ) : (
           activities.map((item, index) => (
-            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%'}>
-              {/* Kolom 1: Nama Admin / Tipe */}
-<td className="px-4 py-3 text-sm font-medium">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-        {item.nama || 'Admin'}
-      </span></td>
-              
-              {/* Kolom 2: Judul Aksi / Transaksi */}
-              <td className="p-3 whitespace-nowrap font-semibold">
-                {item.title}
+            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%]'}>
+              <td className="px-4 py-3 text-sm font-medium">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                  {item.nama || 'Admin'}
+                </span>
               </td>
-              
-              {/* Kolom 3: Keterangan / Deskripsi */}
-              <td className="p-3 whitespace-nowrap text-xs opacity-90">
-                {item.description}
-              </td>
-              
-              {/* Kolom 4: Waktu */}
-              <td className="p-3 whitespace-nowrap text-xs font-mono">
-                {item.timestamp}
-              </td>
+              <td className="p-3 whitespace-nowrap font-semibold">{item.title}</td>
+              <td className="p-3 whitespace-nowrap text-xs opacity-90">{item.description}</td>
+              <td className="p-3 whitespace-nowrap text-xs font-mono">{item.timestamp}</td>
             </tr>
           ))
         )}
@@ -496,16 +601,33 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
 
 
 
-     {/* Active Sessions Table */}
+{/* Active Sessions Table */}
 <div className={`w-full rounded-2xl p-4 sm:p-6 box-border ${getCardStyle()}`}>
-  <div className="flex justify-between items-center mb-4">
-    <h3 className="text-lg font-bold">Active Sessions & History</h3>
-    <span className={`text-xs px-3 py-1 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
-      Live View
-    </span>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+    <div>
+      <h3 className="text-lg font-bold">Active Sessions & History</h3>
+      <p className="text-xs opacity-70">Menampilkan sesi tanggal: {sessionFilterDate}</p>
+    </div>
+    
+    {/* 🚀 INPUT FILTER TANGGAL SESI */}
+    <div className="flex items-center gap-2">
+      <input
+        type="date"
+        value={sessionFilterDate}
+        onChange={(e) => setSessionFilterDate(e.target.value)}
+        className={`px-3 py-1.5 rounded-lg text-xs border outline-none ${
+          mode === 'light'
+            ? 'bg-white border-black/10 text-slate-700'
+            : 'bg-slate-900 border-white/10 text-slate-200'
+        }`}
+      />
+      <span className={`text-xs px-3 py-1.5 rounded-lg ${mode === 'light' ? 'text-slate-500 bg-black/5' : 'text-slate-200 bg-white/10'}`}>
+        Live View
+      </span>
+    </div>
   </div>
   
-  {/* 🚀 Kontainer ganda untuk scroll horizontal (overflow-x-auto) dan vertikal (max-h + overflow-y-auto) */}
+  {/* Kontainer tabel tetap sama seperti kodenya di atas */}
   <div className="w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border border-black/5 dark:border-white/5">
     <table className="w-full text-left text-sm min-w-[700px] border-collapse">
       <thead className={`sticky top-0 z-20 ${mode === 'light' ? 'bg-slate-100 shadow-sm' : 'bg-slate-800 shadow-sm'}`}>
@@ -521,28 +643,17 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
         {activeSessions.length === 0 ? (
           <tr>
             <td colSpan={5} className="py-6 text-center opacity-70">
-              Tidak ada sesi aktif atau riwayat.
+              Tidak ada sesi aktif atau riwayat pada tanggal {sessionFilterDate}.
             </td>
           </tr>
         ) : (
           activeSessions.map((session, index) => (
-            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%]'}>
-              {/* Kolom 1: User / Nama */}
+            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%'}>
               <td className={`p-3 font-medium whitespace-nowrap ${mode === 'light' ? 'text-slate-900' : 'text-white'}`}>
                 {session.name}
               </td>
-              
-              {/* Kolom 2: Email */}
-              <td className="p-3 whitespace-nowrap">
-                {session.email}
-              </td>
-              
-              {/* Kolom 3: IP Address */}
-              <td className="p-3 font-mono text-xs whitespace-nowrap">
-                {session.ip_address}
-              </td>
-
-              {/* Kolom 4: Waktu Login & Logout */}
+              <td className="p-3 whitespace-nowrap">{session.email}</td>
+              <td className="p-3 font-mono text-xs whitespace-nowrap">{session.ip_address}</td>
               <td className="p-3 text-xs whitespace-nowrap">
                 <div className="text-slate-500 dark:text-slate-400">
                   In: {session.logged_in_at ? new Date(session.logged_in_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }) : '-'}
@@ -553,8 +664,6 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
                   </div>
                 )}
               </td>
-              
-              {/* Kolom 5: Status dengan indikator warna dinamis */}
               <td className="p-3 whitespace-nowrap">
                 {session.status === 'Aktif Bekerja' ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-500 font-medium">

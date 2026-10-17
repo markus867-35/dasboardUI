@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { 
   FiVideo, FiUpload, FiTrash2, FiSearch, 
   FiGrid, FiList, FiX, FiPlay, FiFolder, FiFolderPlus, FiSkipBack,FiEdit2, FiSkipForward ,FiMove, FiArrowLeft 
@@ -38,6 +39,7 @@ const [videoDimensions, setVideoDimensions] = useState({ width: 700, height: 500
 const [editingVideoId, setEditingVideoId] = useState<string | number | null>(null);
 const [editedVideoName, setEditedVideoName] = useState('');
 const [youtubeInputUrl, setYoutubeInputUrl] = useState('');
+const [youtubeTitleInput, setYoutubeTitleInput] = useState('');
 
 
 
@@ -140,21 +142,32 @@ const getCardStyle = () => {
   };
 
   const handleDeleteFolder = async (id: string | number) => {
-    if (!confirm('Hapus folder ini? Video di dalamnya akan dipindahkan ke "Semua Video".')) return;
+  if (!confirm('Hapus folder ini? Video di dalamnya akan dipindahkan ke "Semua Video".')) return;
 
-    try {
-      await supabase.from('video_tracks').update({ folder_id: null }).eq('folder_id', id);
-      const { error } = await supabase.from('video_folders').delete().eq('id', id);
-      if (error) throw error;
+  try {
+    // Kosongkan folder_id pada video yang ada di dalam folder tersebut
+    await supabase.from('video_tracks').update({ folder_id: null }).eq('folder_id', id);
+    
+    // Hapus folder dari database
+    const { error } = await supabase.from('video_folders').delete().eq('id', id);
+    if (error) throw error;
 
-      setFolders(folders.filter(f => f.id !== id));
-      setVideoList(videoList.map(v => v.folder_id === id ? { ...v, folder_id: null } : v));
-      if (selectedFolderId === id) setSelectedFolderId('all');
-    } catch (error: any) {
-      console.error('Gagal menghapus folder:', error);
-      alert('Gagal menghapus folder.');
-    }
-  };
+    // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+    await logActivity(
+      'File Video',
+      `Berhasil menghapus folder dan memindahkan isinya ke "Semua Video"`,
+      'text-red-500', // Warna merah untuk menandakan tindakan hapus/security
+      'security'      // Tipe aktivitas
+    );
+
+    setFolders(folders.filter(f => f.id !== id));
+    setVideoList(videoList.map(v => v.folder_id === id ? { ...v, folder_id: null } : v));
+    if (selectedFolderId === id) setSelectedFolderId('all');
+  } catch (error: any) {
+    console.error('Gagal menghapus folder:', error);
+    alert('Gagal menghapus folder.');
+  }
+};
 
   const handleMoveVideoToFolder = async (videoId: string | number, targetFolderId: string | number | null) => {
     try {
@@ -224,6 +237,10 @@ const getCardStyle = () => {
     }
   };
 
+
+
+
+
   const handleDeleteVideo = async (id: string | number, fileUrl: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus video ini?')) return;
 
@@ -258,6 +275,10 @@ const getCardStyle = () => {
     }
   };
 
+
+
+
+
 const filteredVideos = videoList.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -275,16 +296,26 @@ const handleUpdateFolder = async (id: string | number) => {
   if (!editedFolderName.trim()) return;
 
   try {
+    const newFolderName = editedFolderName.trim();
     const { error } = await supabase
       .from('video_folders')
-      .update({ name: editedFolderName.trim() })
+      .update({ name: newFolderName })
       .eq('id', id);
 
     if (error) throw error;
     
+    // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+    await logActivity(
+      'File Video',
+      `Berhasil mengubah nama folder menjadi: "${newFolderName}"`,
+      'text-indigo-500', // Warna indikator
+      'update'           // Tipe aktivitas
+    );
+
     // Perbarui state lokal dengan benar
-    setFolders(folders.map(f => f.id === id ? { ...f, name: editedFolderName.trim() } : f));
+    setFolders(folders.map(f => f.id === id ? { ...f, name: newFolderName } : f));
     setEditingFolderId(null);
+    setEditedFolderName(''); // Opsional: Bersihkan inputan
   } catch (error: any) {
     console.error('Gagal mengubah nama folder:', error);
     alert('Gagal mengubah nama folder.');
@@ -352,6 +383,8 @@ useEffect(() => {
 }, [activeVideo]);
 
 
+
+
 const handleUpdateVideoName = async (id: string | number) => {
   if (!editedVideoName.trim()) {
     setEditingVideoId(null);
@@ -359,15 +392,24 @@ const handleUpdateVideoName = async (id: string | number) => {
   }
 
   try {
+    const newName = editedVideoName.trim();
     const { error } = await supabase
-      .from('video_tracks') // Sesuaikan dengan nama tabel database Anda (misal: video_tracks atau music_tracks)
-      .update({ name: editedVideoName.trim() })
+      .from('video_tracks') // Sesuaikan dengan nama tabel database Anda
+      .update({ name: newName })
       .eq('id', id);
 
     if (error) throw error;
 
+    // 🚀 CATAT AKTIVITAS KE SUPABASE & LOCALSTORAGE
+    await logActivity(
+      'File Video',
+      `Berhasil mengubah nama video/file menjadi: "${newName}"`,
+      'text-indigo-500', // Warna indikator
+      'update'           // Tipe aktivitas
+    );
+
     // Perbarui state lokal agar langsung berubah tanpa perlu refresh
-    setVideoList(videoList.map(v => v.id === id ? { ...v, name: editedVideoName.trim() } : v));
+    setVideoList(videoList.map(v => v.id === id ? { ...v, name: newName } : v));
     setEditingVideoId(null);
     setEditedVideoName('');
   } catch (error: any) {
@@ -377,18 +419,26 @@ const handleUpdateVideoName = async (id: string | number) => {
 };
 
 
+
+
+
+
+
 const handleSaveYouTubeLink = async () => {
   if (!youtubeInputUrl) return;
   setUploading(true);
 
   try {
-    // Simpan ke Supabase database (bukan storage)
+    // Tentukan nama: jika user mengisi input nama, gunakan itu. Jika kosong, gunakan teks default.
+    const videoName = youtubeTitleInput.trim() || 'Video YouTube';
+
+    // Simpan ke Supabase database
     const { error } = await supabase
       .from('video_tracks')
       .insert([
         { 
-          name: 'Video YouTube', 
-          url: youtubeInputUrl, // Link YouTube masuk ke kolom url
+          name: videoName, // Menggunakan nama dari input user
+          url: youtubeInputUrl, 
           size: 'YouTube',
           folder_id: selectedFolderId === 'all' ? null : selectedFolderId,
           date: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -397,11 +447,23 @@ const handleSaveYouTubeLink = async () => {
 
     if (error) throw error;
 
+    // Catat aktivitas ke Supabase (activity_logs)
+    await logActivity(
+      'File Video',
+      `Berhasil menambahkan link video YouTube: "${videoName}" (${youtubeInputUrl})`,
+      'text-emerald-500',
+      'upload'
+    );
+
     alert('Link video berhasil ditambahkan!');
     setYoutubeInputUrl('');
+    setYoutubeTitleInput(''); // Reset input nama setelah berhasil
+    
     // Panggil ulang fungsi fetch data video Anda di sini agar galeri ter-refresh
+    // fetchVideos(); 
   } catch (error: any) {
     console.error('Gagal menyimpan:', error.message);
+    alert('Gagal menyimpan link: ' + error.message);
   } finally {
     setUploading(false);
   }
@@ -550,25 +612,44 @@ const extractYouTubeId = (url: string) => {
       </div>
     </div>
 
-    {/* Form Input untuk Link YouTube */}
-    <div className="flex gap-2 mt-3">
-      <input 
-        type="text" 
-        placeholder="Tempel link YouTube di sini (cth: https://youtu.be/...)" 
-        value={youtubeInputUrl}
-        onChange={(e) => setYoutubeInputUrl(e.target.value)}
-        className={`flex-1 px-3 py-2 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
-      />
-      <button 
-        type="button"
-        onClick={handleSaveYouTubeLink} // Fungsi untuk menyimpan ke tabel video_tracks
-        disabled={uploading}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-xl font-medium shrink-0 transition"
-      >
-        {uploading ? 'Menyimpan...' : 'Simpan Video'}
-      </button>
-    </div>
+{/* Form Input untuk Link YouTube */}
+<div className="flex flex-col gap-2 mt-3">
+  {/* Input Nama/Judul Video */}
+  <input 
+    type="text" 
+    placeholder="Judul Video (Opsional, cth: Tutorial React)" 
+    value={youtubeTitleInput}
+    onChange={(e) => setYoutubeTitleInput(e.target.value)}
+    disabled={uploading}
+    className={`w-full px-3 py-2 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+  />
+
+  {/* Baris Input URL dan Tombol Simpan */}
+  <div className="flex gap-2">
+    <input 
+      type="text" 
+      placeholder="Tempel link YouTube di sini (cth: https://youtu.be/...)" 
+      value={youtubeInputUrl}
+      onChange={(e) => setYoutubeInputUrl(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (!uploading) handleSaveYouTubeLink();
+        }
+      }}
+      className={`flex-1 px-3 py-2 rounded-xl border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+    />
+    <button 
+      type="button"
+      onClick={handleSaveYouTubeLink} // Fungsi untuk menyimpan ke tabel video_tracks
+      disabled={uploading}
+      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-xl font-medium shrink-0 transition"
+    >
+      {uploading ? 'Menyimpan...' : 'Simpan Video'}
+    </button>
   </div>
+</div>
+</div>
 </div>
 </div>
 

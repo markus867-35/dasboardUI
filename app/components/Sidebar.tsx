@@ -559,13 +559,7 @@ const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
           )}
         </div>
 
-<button 
-      onClick={handleLogout}
-      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition-all flex items-center space-x-2 cursor-pointer"
-    >
-      <FiLogOut size={16} /> 
-      <span>🚪 Keluar (Logout)</span>
-    </button>
+
       </nav>
 
 

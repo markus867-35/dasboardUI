@@ -7,17 +7,19 @@ import {
   Terminal, ArrowUpRight, RefreshCw, Sparkles, CheckCircle2, Trash2 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { supabase } from '@/lib/supabase'; // 🚀 Pastikan import supabase sudah benar
 
-// Interface untuk struktur data aktivitas yang seragam
+// Interface untuk struktur data aktivitas dari Supabase
 interface ActivityItem {
   id: string | number;
-  nama?: string; // 👈 Tambahkan baris ini
+  nama?: string;
   title: string;
   description?: string;
   time?: string;
   timestamp?: string;
   type?: string;
   color?: string;
+  created_at?: string;
 }
 
 export default function ActivityPage() {
@@ -28,78 +30,76 @@ export default function ActivityPage() {
   const [systemStatus, setSystemStatus] = useState('Optimal (99.9% Uptime)');
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-  // 2. useEffect untuk memuat data awal dari localStorage
-useEffect(() => {
-  // 🚀 RESET OTOMATIS: Hapus memori log lama yang masih bernama "Admin"
-  // (Baris ini bisa dihapus nanti setelah semuanya normal)
-  const isResetDone = localStorage.getItem('is_reset_v2');
-  if (!isResetDone) {
-    localStorage.removeItem('app_activities');
-    localStorage.setItem('is_reset_v2', 'true');
-  }
+  // 1. Ambil data aktivitas dari Supabase saat halaman dimuat
+  useEffect(() => {
+    fetchActivitiesFromSupabase();
+  }, []);
 
-  const savedActivities = localStorage.getItem('app_activities');
-  if (savedActivities) {
-    try {
-      setActivities(JSON.parse(savedActivities));
-    } catch (e) {
-      console.error("Gagal parsing app_activities:", e);
+  async function fetchActivitiesFromSupabase() {
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      const formatted = data.map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.created_at).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      }));
+      setActivities(formatted);
+    } else {
+      console.error('Gagal mengambil aktivitas dari Supabase:', error);
     }
-  } else {
-    const initialActivities = [
-      { 
-        id: Date.now(), 
-        nama: localStorage.getItem('adminName') || 'Admin', 
-        title: 'Inisialisasi Sistem', 
-        description: 'Pusat log aktivitas aktif.', 
-        timestamp: 'Baru saja', 
-        color: 'text-indigo-500' 
-      },
-    ];
-    setActivities(initialActivities);
-    localStorage.setItem('app_activities', JSON.stringify(initialActivities));
   }
-}, []);
 
-const logActivity = (title: string, description: string, color = 'text-indigo-500', type = 'transaction') => {
-  // 🚀 Ambil dari localStorage, tapi JIKA isinya "Admin" atau kosong, paksa jadi 'miakhalifa'
-  const storedName = localStorage.getItem('adminName') || localStorage.getItem('name');
-  const currentAdminName = (!storedName || storedName === 'Admin') ? 'miakhalifa' : storedName;
+  // 2. Fungsi untuk mencatat aktivitas langsung ke Supabase
+  const logActivity = async (title: string, description: string, color = 'text-indigo-500', type = 'transaction') => {
+    const storedName = localStorage.getItem('adminName') || localStorage.getItem('name');
+    const currentAdminName = (!storedName || storedName === 'Admin') ? 'miakhalifa' : storedName;
 
-  const newActivity = {
-    id: Date.now(),
-    nama: currentAdminName, // Pastikan menggunakan nama yang bersih dari "Admin"
-    title,
-    description,
-    timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-    type,
-    color,
+    const newActivity = {
+      nama: currentAdminName,
+      title,
+      description,
+      type,
+      color,
+    };
+
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .insert([newActivity])
+      .select();
+
+    if (!error && data) {
+      const inserted = {
+        ...data[0],
+        timestamp: new Date(data[0].created_at).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+      setActivities((prev) => [inserted, ...prev]);
+    } else {
+      console.error('Gagal menyimpan log ke Supabase:', error);
+    }
   };
 
-  // Ambil log lama dari localStorage lalu gabungkan dengan yang baru
-  const saved = localStorage.getItem('app_activities');
-  const prev = saved ? JSON.parse(saved) : [];
-  const updated = [newActivity, ...prev];
-  
-  localStorage.setItem('app_activities', JSON.stringify(updated));
-  return updated;
-};
-
-  // Handler tombol Diagnostik (Otomatis mencatat aktivitas)
-// Handler tombol Diagnostik (Otomatis mencatat aktivitas)
+  // Handler tombol Diagnostik
   const handleRunDiagnostics = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsRefreshing(false);
       setSystemStatus('Optimal (100% Aman)');
       
-      // 🚀 PERBAIKAN: Gunakan 'logActivity', bukan 'logNewActivity'
-      logActivity('Menjalankan Diagnostik Sistem', 'Pemeriksaan integritas komponen lokal berhasil dilakukan.', 'text-emerald-500');
+      await logActivity('Menjalankan Diagnostik Sistem', 'Pemeriksaan integritas komponen sistem berhasil dilakukan.', 'text-emerald-500', 'system');
 
       Swal.fire({
         icon: 'success',
         title: 'Diagnostik Selesai!',
-        text: 'Sistem berjalan normal dan otomatis tercatat di riwayat.',
+        text: 'Sistem berjalan normal dan tercatat di Supabase.',
         background: isDark ? '#1F2937' : '#ffffff',
         color: isDark ? '#f8fafc' : '#0f172a',
         confirmButtonColor: '#4f46e5',
@@ -109,31 +109,37 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     }, 1200);
   };
 
-  // Handler untuk menghapus riwayat aktivitas
+  // Handler untuk menghapus seluruh riwayat di Supabase (Opsional)
   const handleClearHistory = () => {
     Swal.fire({
-      title: 'Hapus Riwayat?',
-      text: 'Semua catatan aktivitas lokal akan dibersihkan.',
+      title: 'Hapus Semua Riwayat?',
+      text: 'Semua catatan aktivitas di database akan dihapus permanen.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Ya, Bersihkan',
+      confirmButtonText: 'Ya, Hapus Semua',
       cancelButtonText: 'Batal',
       background: isDark ? '#1F2937' : '#ffffff',
       color: isDark ? '#f8fafc' : '#0f172a',
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setActivities([]);
-        localStorage.removeItem('app_activities');
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil dibersihkan!',
-          timer: 1000,
-          showConfirmButton: false,
-          background: isDark ? '#1F2937' : '#ffffff',
-          color: isDark ? '#f8fafc' : '#0f172a',
-        });
+        // Hapus data dari tabel activity_logs Supabase
+        const { error } = await supabase.from('activity_logs').delete().neq('id', 0); // Menghapus semua baris
+        
+        if (!error) {
+          setActivities([]);
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil dibersihkan!',
+            timer: 1000,
+            showConfirmButton: false,
+            background: isDark ? '#1F2937' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#0f172a',
+          });
+        } else {
+          Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error');
+        }
       }
     });
   };

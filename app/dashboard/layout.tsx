@@ -10,7 +10,7 @@ import { LanguageProvider } from "@/app/context/LanguageContext";
 import { SidebarThemeProvider } from '@/app/context/SidebarThemeContext';
 import { useRouter } from "next/navigation";
 
-// --- BUAT GLOBAL MUSIC CONTEXT AGAR BISA DIKONTROL DARI HALAMAN MANAPUN ---
+// --- GLOBAL MUSIC CONTEXT YANG DIPERBARUI DENGAN DUKUNGAN YOUTUBE API ---
 interface MusicItem {
   id: string | number;
   name: string;
@@ -27,6 +27,11 @@ interface MusicContextType {
   isPlaying: boolean;
   togglePlayAudio: (item: MusicItem) => void;
   audioRef: React.RefObject<HTMLAudioElement | null>;
+  // Tambahan state global untuk YouTube API
+  ytPlayerRef: React.MutableRefObject<any>;
+  ytDuration: number;
+  ytCurrentTime: number;
+  setYtCurrentTime: (val: number) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -37,6 +42,14 @@ export function useGlobalMusic() {
     throw new Error('useGlobalMusic harus digunakan di dalam MusicProvider');
   }
   return context;
+}
+
+// Tambahan deklarasi global untuk tipe jendela YouTube API
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
 }
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
@@ -50,13 +63,28 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // --- STATE & REF YOUTUBE API GLOBAL ---
+  const ytPlayerRef = useRef<any>(null);
+  const [ytDuration, setYtDuration] = useState<number>(0);
+  const [ytCurrentTime, setYtCurrentTime] = useState<number>(0);
+
   const togglePlayAudio = (item: MusicItem) => {
+    const isYT = item.size === 'YouTube' || item.url.includes('youtube.com') || item.url.includes('youtu.be');
+    
     if (activeAudio?.id === item.id) {
       if (isPlaying) {
-        audioRef.current?.pause();
+        if (isYT && ytPlayerRef.current?.pauseVideo) {
+          ytPlayerRef.current.pauseVideo();
+        } else {
+          audioRef.current?.pause();
+        }
         setIsPlaying(false);
       } else {
-        audioRef.current?.play().catch(err => console.log(err));
+        if (isYT && ytPlayerRef.current?.playVideo) {
+          ytPlayerRef.current.playVideo();
+        } else {
+          audioRef.current?.play().catch(err => console.log(err));
+        }
         setIsPlaying(true);
       }
     } else {
@@ -65,15 +93,98 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     }
   };
 
+  // Efek penanganan Audio Lokal vs YouTube API
   useEffect(() => {
-    if (activeAudio && audioRef.current) {
-      audioRef.current.src = activeAudio.url;
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    if (!activeAudio) return;
+
+    const isYT = activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be');
+
+    if (isYT) {
+      // Pause audio lokal jika sedang memutar YouTube
+      if (audioRef.current) audioRef.current.pause();
+
+      let videoId = '';
+      if (activeAudio.url.includes('youtu.be/')) {
+        videoId = activeAudio.url.split('youtu.be/')[1]?.split('?')[0];
+      } else if (activeAudio.url.includes('watch?v=')) {
+        videoId = activeAudio.url.split('watch?v=')[1]?.split('&')[0];
+      }
+
+      if (!videoId) return;
+
+      let timer: any;
+
+      const initPlayer = () => {
+        if (window.YT && window.YT.Player) {
+          if (ytPlayerRef.current && ytPlayerRef.current.destroy) {
+            ytPlayerRef.current.destroy();
+          }
+
+          ytPlayerRef.current = new window.YT.Player('global-youtube-player', {
+            height: '0',
+            width: '0',
+            videoId: videoId,
+            playerVars: {
+              autoplay: 1,
+              controls: 0,
+            },
+            events: {
+              onReady: (event: any) => {
+                event.target.playVideo();
+                setIsPlaying(true);
+                setYtDuration(event.target.getDuration());
+                
+                timer = setInterval(() => {
+                  if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
+                    setYtCurrentTime(ytPlayerRef.current.getCurrentTime());
+                  }
+                }, 1000);
+              },
+              onStateChange: (event: any) => {
+                if (event.data === window.YT.PlayerState.ENDED) {
+                  setIsPlaying(false);
+                }
+              }
+            },
+          });
+        }
+      };
+
+      if (!window.YT) {
+        // Load script YouTube API secara dinamis jika belum ada
+        if (!document.getElementById('yt-api-script')) {
+          const tag = document.createElement('script');
+          tag.id = 'yt-api-script';
+          tag.src = "https://www.youtube.com/iframe_api";
+          const firstScriptTag = document.getElementsByTagName('script')[0];
+          firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        }
+        window.onYouTubeIframeAPIReady = initPlayer;
+      } else {
+        initPlayer();
+      }
+
+      return () => {
+        if (timer) clearInterval(timer);
+      };
+
+    } else {
+      // Hancurkan player YouTube jika beralih ke lagu lokal
+      if (ytPlayerRef.current && ytPlayerRef.current.destroy) {
+        ytPlayerRef.current.destroy();
+        ytPlayerRef.current = null;
+      }
+      setYtCurrentTime(0);
+      setYtDuration(0);
+
+      if (audioRef.current) {
+        audioRef.current.src = activeAudio.url;
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }
     }
   }, [activeAudio]);
 
   useEffect(() => {
-    // Pastikan sesi login aman saat di-refresh
     const adminId = localStorage.getItem('adminId');
     if (!adminId) {
       router.push('/login');
@@ -86,7 +197,6 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     }
   }, [setIsSidebarOpen, router]);
 
-  // Tampilkan loading sebentar saat proses sinkronisasi refresh agar tidak crash
   if (!isAuthReady) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#142028] text-white">
@@ -96,7 +206,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   }
 
   return (
-    <MusicContext.Provider value={{ activeAudio, isPlaying, togglePlayAudio, audioRef }}>
+    <MusicContext.Provider value={{ activeAudio, isPlaying, togglePlayAudio, audioRef, ytPlayerRef, ytDuration, ytCurrentTime, setYtCurrentTime }}>
       <TabProvider>
         <div className={`flex min-h-screen w-full relative ${fontSize}`}>
           {/* BACKDROP MOBILE */}
@@ -120,11 +230,12 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
             <main className="flex-1 p-0 sm:p-3 overflow-y-auto w-full box-border">{children}</main>
           </div>
 
-          {/* ELEMEN AUDIO HTML5 GLOBAL (TIDAK AKAN HANCUR SAAT PINDAH HALAMAN) */}
+          {/* ELEMEN AUDIO HTML5 GLOBAL & WADAH YOUTUBE API TERSEMBUNYI */}
           <audio 
             ref={audioRef}
             onEnded={() => setIsPlaying(false)}
           />
+          <div id="global-youtube-player" className="hidden"></div>
         </div>
       </TabProvider>
     </MusicContext.Provider>

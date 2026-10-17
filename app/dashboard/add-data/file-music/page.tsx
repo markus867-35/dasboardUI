@@ -9,6 +9,15 @@ import {
 } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 
+
+// Tambahkan deklarasi TypeScript untuk jendela YouTube global
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
 interface MusicItem {
   id: string | number;
   name: string;
@@ -59,8 +68,106 @@ export default function FileMusicPage() {
 
   // State Khusus Pop-up (HANYA AKTIF SAAT IKON DIKLIK)
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [audioTitleInput, setAudioTitleInput] = useState('');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+
+
+  useEffect(() => {
+  if (!window.YT) {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+  }
+}, []);
+
+
+  const ytPlayerRef = useRef<any>(null);
+  const [ytDuration, setYtDuration] = useState<number>(0);
+  const [ytCurrentTime, setYtCurrentTime] = useState<number>(0);
+
+// Inisialisasi & Pengaturan Audio/YouTube saat activeAudio berubah
+useEffect(() => {
+  if (!activeAudio) return;
+
+  const isYT = activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be');
+
+  if (isYT) {
+    // Jika lagu baru adalah YouTube, pastikan audio lokal dimatikan
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    const videoId = activeAudio.url.split('youtu.be/')[1]?.split('?')[0] || activeAudio.url.split('watch?v=')[1]?.split('&')[0];
+    if (!videoId) return;
+
+    let timer: any;
+
+    const initPlayer = () => {
+      if (window.YT && window.YT.Player) {
+        // Hancurkan player lama jika sudah ada
+        if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+          try { ytPlayerRef.current.destroy(); } catch (e) {}
+        }
+
+        ytPlayerRef.current = new window.YT.Player('youtube-player-hidden', {
+          height: '0',
+          width: '0',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+          },
+          events: {
+            onReady: (event: any) => {
+              event.target.playVideo();
+              setYtDuration(event.target.getDuration());
+              setIsPlaying(true);
+              timer = setInterval(() => {
+                if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
+                  setYtCurrentTime(ytPlayerRef.current.getCurrentTime());
+                }
+              }, 1000);
+            },
+            onStateChange: (event: any) => {
+              if (event.data === window.YT.PlayerState.ENDED) {
+                handleNextTrack();
+              }
+            }
+          },
+        });
+      }
+    };
+
+    if (!window.YT) {
+      window.onYouTubeIframeAPIReady = initPlayer;
+    } else {
+      initPlayer();
+    }
+
+    return () => {
+      clearInterval(timer);
+    };
+
+  } else {
+    // Jika lagu baru adalah audio lokal, hancurkan YouTube player agar suaranya mati
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+      try {
+        ytPlayerRef.current.destroy();
+        ytPlayerRef.current = null;
+      } catch (e) {}
+    }
+
+    if (audioRef.current) {
+      audioRef.current.load();
+      audioRef.current.playbackRate = playbackSpeed;
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }
+}, [activeAudio]);
 
 const getCardStyle = () => {
     if (mode === 'light') {
@@ -231,20 +338,44 @@ const getCardStyle = () => {
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!audioUrlInput.trim()) return alert('Silakan masukkan link audio!');
+    if (!audioUrlInput.trim()) return alert('Silakan masukkan link audio atau YouTube!');
 
     try {
       setSavingUrl(true);
       const formattedDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-      const urlObj = new URL(audioUrlInput);
-      const defaultName = urlObj.pathname.split('/').pop() || 'External Audio Track';
+      
+      let finalUrl = audioUrlInput.trim();
+      let trackName = 'External Audio Track';
+      let artistName = 'Streaming';
+      let trackSize = 'Streaming';
+
+      // 🚀 Deteksi otomatis jika itu link YouTube (youtu.be atau youtube.com)
+      if (finalUrl.includes('youtu.be') || finalUrl.includes('youtube.com')) {
+        // Ambil Video ID dari URL YouTube untuk disematkan
+        let videoId = '';
+        if (finalUrl.includes('youtu.be/')) {
+          videoId = finalUrl.split('youtu.be/')[1]?.split('?')[0];
+        } else if (finalUrl.includes('watch?v=')) {
+          videoId = finalUrl.split('watch?v=')[1]?.split('&')[0];
+        }
+
+        if (videoId) {
+          trackName = `YouTube Music (${videoId})`; // Bisa diubah teksnya sesuai keinginan
+          artistName = 'YouTube';
+          trackSize = 'YouTube';
+        }
+      } else {
+        const urlObj = new URL(finalUrl);
+        trackName = decodeURIComponent(urlObj.pathname.split('/').pop() || 'External Audio Track');
+        artistName = urlObj.hostname;
+      }
 
       const newTrack = {
-        name: decodeURIComponent(defaultName.replace(/\.[^/.]+$/, "")),
-        artist: urlObj.hostname,
+        name: trackName,
+        artist: artistName,
         duration: '--:--',
-        url: audioUrlInput.trim(),
-        size: 'Streaming',
+        url: finalUrl,
+        size: trackSize,
         date: formattedDate,
         folder_id: selectedFolderId === 'all' ? null : selectedFolderId
       };
@@ -254,6 +385,7 @@ const getCardStyle = () => {
       if (data) {
         setMusicList([data[0], ...musicList]);
         setAudioUrlInput('');
+        alert('Link berhasil ditambahkan!');
       }
     } catch (error) {
       console.error('Gagal menyimpan link:', error);
@@ -262,6 +394,10 @@ const getCardStyle = () => {
       setSavingUrl(false);
     }
   };
+
+
+
+
 
   const handleDeleteMusic = async (id: string | number, fileUrl: string) => {
     if (!confirm('Hapus musik ini?')) return;
@@ -279,21 +415,45 @@ const getCardStyle = () => {
     }
   };
 
-  // Memutar / Menjedakan Lagu tanpa Membuka Pop-up
-  const togglePlayAudio = (item: MusicItem) => {
-    if (activeAudio?.id === item.id) {
-      if (isPlaying) {
-        audioRef.current?.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current?.play().catch(err => console.log(err));
-        setIsPlaying(true);
+// Memutar / Menjedakan Lagu tanpa Membuka Pop-up
+const togglePlayAudio = (item: MusicItem) => {
+  const isTargetYT = item.size === 'YouTube' || item.url.includes('youtube.com') || item.url.includes('youtu.be');
+
+  if (activeAudio?.id === item.id) {
+    if (isPlaying) {
+      if (!isTargetYT && audioRef.current) {
+        audioRef.current.pause();
+      } else if (isTargetYT && ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
+        ytPlayerRef.current.pauseVideo();
       }
+      setIsPlaying(false);
     } else {
-      setActiveAudio(item);
+      if (!isTargetYT && audioRef.current) {
+        audioRef.current.play().catch(err => console.log(err));
+      } else if (isTargetYT && ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+        ytPlayerRef.current.playVideo();
+      }
       setIsPlaying(true);
     }
-  };
+  } else {
+    // Matikan audio lokal yang lama jika ada
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    // Hancurkan YouTube player lama jika ada
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+      try {
+        ytPlayerRef.current.destroy();
+        ytPlayerRef.current = null;
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    setActiveAudio(item);
+    setIsPlaying(true);
+  }
+};
 
   // HANYA MEMUNCULKAN POP-UP KETIKA IKON MUSIK DIKLIK EKSPLISIT
   const handleIconClickOpenPopup = (item: MusicItem, e: React.MouseEvent) => {
@@ -462,15 +622,88 @@ const getCardStyle = () => {
             <input type="file" accept="audio/*" onChange={handleMusicUpload} disabled={uploading} className="hidden" />
           </label>
 
-          <form onSubmit={handleUrlSubmit} className={`flex flex-col justify-center p-3.5 sm:p-4 rounded-xl border-2 border-dashed ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/20'}`}>
-            <div className="flex items-center gap-2 mb-1.5">
+<form onSubmit={async (e) => {
+            e.preventDefault();
+            if (!audioUrlInput.trim()) return alert('Silakan masukkan link audio atau YouTube!');
+
+            try {
+              setSavingUrl(true);
+              const formattedDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+              
+              let finalUrl = audioUrlInput.trim();
+              let trackName = audioTitleInput.trim() || 'External Audio Track';
+              let artistName = 'Streaming';
+              let trackSize = 'Streaming';
+
+              if (finalUrl.includes('youtu.be') || finalUrl.includes('youtube.com')) {
+                let videoId = '';
+                if (finalUrl.includes('youtu.be/')) {
+                  videoId = finalUrl.split('youtu.be/')[1]?.split('?')[0];
+                } else if (finalUrl.includes('watch?v=')) {
+                  videoId = finalUrl.split('watch?v=')[1]?.split('&')[0];
+                }
+
+                if (videoId) {
+                  // Jika judul manual kosong, gunakan format ID yang bersih
+                  if (!audioTitleInput.trim()) {
+                    trackName = `YouTube Audio (${videoId})`;
+                  }
+                  artistName = 'YouTube';
+                  trackSize = 'YouTube';
+                }
+              } else {
+                const urlObj = new URL(finalUrl);
+                if (!audioTitleInput.trim()) {
+                  trackName = decodeURIComponent(urlObj.pathname.split('/').pop() || 'External Audio Track');
+                }
+                artistName = urlObj.hostname;
+              }
+
+              const newTrack = {
+                name: trackName,
+                artist: artistName,
+                duration: '--:--',
+                url: finalUrl,
+                size: trackSize,
+                date: formattedDate,
+                folder_id: selectedFolderId === 'all' ? null : selectedFolderId
+              };
+
+              const { data, error } = await supabase.from('music_tracks').insert([newTrack]).select();
+              if (error) throw error;
+              if (data) {
+                setMusicList([data[0], ...musicList]);
+                setAudioUrlInput('');
+                setAudioTitleInput('');
+                alert('Link berhasil ditambahkan!');
+              }
+            } catch (error) {
+              console.error('Gagal menyimpan link:', error);
+              alert('URL tidak valid.');
+            } finally {
+              setSavingUrl(false);
+            }
+          }} className={`flex flex-col gap-2 p-3.5 sm:p-4 rounded-xl border-2 border-dashed ${mode === 'light' ? 'border-slate-300 bg-slate-50/50' : 'border-slate-700 bg-slate-800/20'}`}>
+            
+            <div className="flex items-center gap-2">
               <FiLink className="text-indigo-500 shrink-0" size={14} />
               <span className="text-xs font-semibold truncate">Simpan Link Audio ke: "{currentFolderName}"</span>
             </div>
+
+            {/* Input Judul Lagu (Opsional) */}
+            <input 
+              type="text" 
+              placeholder="Judul Lagu (Opsional, misal: Musik Relax)"
+              value={audioTitleInput}
+              onChange={(e) => setAudioTitleInput(e.target.value)}
+              disabled={savingUrl}
+              className={`px-3 py-1.5 rounded-lg border text-xs outline-none ${mode === 'light' ? 'bg-white border-slate-300' : 'bg-[#0f172a] border-slate-700 text-white'}`}
+            />
+
             <div className="flex items-center gap-2">
               <input 
                 type="url" 
-                placeholder="https://contoh.com/audio.mp3"
+                placeholder="https://youtu.be/... atau link mp3"
                 value={audioUrlInput}
                 onChange={(e) => setAudioUrlInput(e.target.value)}
                 disabled={savingUrl}
@@ -601,6 +834,12 @@ const getCardStyle = () => {
   </div>
 
 
+
+
+
+
+<div id="youtube-player-hidden" className="hidden"></div>
+
   {/* TAMPILAN KOTAK PANEL LENGKAP (HANYA MUNCUL DI DESKTOP / md:) */}
   <div className="hidden md:flex flex-col w-full">
     <div className="flex items-center justify-between border-b pb-2 border-slate-700/20">
@@ -612,56 +851,101 @@ const getCardStyle = () => {
 
     {activeAudio ? (
       <div className="py-3 space-y-3 flex flex-col items-center text-center">
-        
-        {/* KOTAK ICON BERPUTAR JELAS */}
-        <div 
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg my-1 border-2 border-white/40 transition-transform ${
-            isPlaying ? 'animate-spin' : ''
-          }`}
-          style={{ animationDuration: '3s' }}
-        >
-          <div className="w-8 h-8 rounded-lg bg-slate-900/40 border border-white/20 flex items-center justify-center">
-            <FiDisc size={18} className="text-white" />
-          </div>
-        </div>
 
-        <div className="w-full px-2">
-          <h4 className="text-xs font-bold truncate w-full" title={activeAudio.name}>
-            {activeAudio.name}
-          </h4>
-          <p className="text-[10px] opacity-60 truncate w-full mt-0.5">
-            {activeAudio.artist}
-          </p>
-        </div>
 
-        {/* Progress Bar & Durasi */}
-        <div className="w-full space-y-1">
-          <input 
-            type="range" 
-            min={0} 
-            max={duration || 100} 
-            value={currentTime} 
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setCurrentTime(val);
-              if (audioRef.current) audioRef.current.currentTime = val;
-            }}
-            className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-          <div className="flex justify-between text-[10px] opacity-60">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
+
+
+{/* Status Teks YouTube */}
+{(activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) && (
+  <div className="w-full flex flex-col items-center">
+    <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-medium mb-1">
+      Streaming YouTube (Audio)
+    </span>
+  </div>
+)}
+
+{/* 2. TAMPILAN VISUAL KOTAK MUSIK BERPUTAR */}
+<div 
+  className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg my-1 border-2 border-white/40 transition-transform ${
+    isPlaying ? 'animate-spin' : ''
+  }`}
+  style={{ animationDuration: '3s' }}
+>
+  <div className="w-8 h-8 rounded-lg bg-slate-900/40 border border-white/20 flex items-center justify-center">
+    <FiDisc size={18} className="text-white" />
+  </div>
+</div>
+
+<div className="w-full px-2">
+  <h4 className="text-xs font-bold truncate w-full" title={activeAudio.name}>
+    {activeAudio.name}
+  </h4>
+  <p className="text-[10px] opacity-60 truncate w-full mt-0.5">
+    {activeAudio.artist}
+  </p>
+</div>
+
+{/* Progress Bar & Durasi Universal (Mendukung YouTube API & Audio Lokal) */}
+<div className="w-full space-y-1">
+  <input 
+    type="range" 
+    min={0} 
+    max={
+      (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+        ? (ytDuration || 100) 
+        : (duration || 100)
+    } 
+    value={
+      (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+        ? ytCurrentTime 
+        : currentTime
+    } 
+    onChange={(e) => {
+      const val = Number(e.target.value);
+      const isYT = activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be');
+      
+      if (isYT) {
+        setYtCurrentTime(val);
+        if (ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+          ytPlayerRef.current.seekTo(val, true);
+        }
+      } else {
+        setCurrentTime(val);
+        if (audioRef.current) {
+          audioRef.current.currentTime = val;
+        }
+      }
+    }}
+    className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+  />
+  <div className="flex justify-between text-[10px] opacity-60">
+    <span>
+      {formatTime(
+        (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+          ? ytCurrentTime 
+          : currentTime
+      )}
+    </span>
+    <span>
+      {formatTime(
+        (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+          ? ytDuration 
+          : duration
+      )}
+    </span>
+  </div>
+</div>
 
         {/* Tombol Kontrol */}
         <div className="flex items-center justify-center gap-2 pt-1 w-full">
           <button onClick={handlePrevTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Sebelumnya">
             <FiSkipBack size={14} />
           </button>
-          <button onClick={() => skipTime(-10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Mundur 10s">
-            -10s
-          </button>
+          {activeAudio.size !== 'YouTube' && !activeAudio.url.includes('youtube.com') && !activeAudio.url.includes('youtu.be') && (
+            <button onClick={() => skipTime(-10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Mundur 10s">
+              -10s
+            </button>
+          )}
           <button 
             onClick={() => togglePlayAudio(activeAudio)} 
             className="p-3 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition"
@@ -669,9 +953,11 @@ const getCardStyle = () => {
           >
             {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
           </button>
-          <button onClick={() => skipTime(10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Maju 10s">
-            +10s
-          </button>
+          {activeAudio.size !== 'YouTube' && !activeAudio.url.includes('youtube.com') && !activeAudio.url.includes('youtu.be') && (
+            <button onClick={() => skipTime(10)} className="px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-[10px] font-semibold" title="Maju 10s">
+              +10s
+            </button>
+          )}
           <button onClick={handleNextTrack} className="p-2 rounded-full bg-slate-500/20 hover:bg-slate-500/30 transition" title="Selanjutnya">
             <FiSkipForward size={14} />
           </button>
@@ -858,18 +1144,49 @@ const getCardStyle = () => {
               <input 
                 type="range" 
                 min={0} 
-                max={duration || 100} 
-                value={currentTime} 
+                max={
+                  (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+                    ? (ytDuration || 100) 
+                    : (duration || 100)
+                } 
+                value={
+                  (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+                    ? ytCurrentTime 
+                    : currentTime
+                } 
                 onChange={(e) => {
                   const val = Number(e.target.value);
-                  setCurrentTime(val);
-                  if (audioRef.current) audioRef.current.currentTime = val;
+                  const isYT = activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be');
+                  
+                  if (isYT) {
+                    setYtCurrentTime(val);
+                    if (ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+                      ytPlayerRef.current.seekTo(val, true);
+                    }
+                  } else {
+                    setCurrentTime(val);
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = val;
+                    }
+                  }
                 }}
                 className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
               <div className="flex justify-between text-[10px] opacity-60">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+                <span>
+                  {formatTime(
+                    (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+                      ? ytCurrentTime 
+                      : currentTime
+                  )}
+                </span>
+                <span>
+                  {formatTime(
+                    (activeAudio.size === 'YouTube' || activeAudio.url.includes('youtube.com') || activeAudio.url.includes('youtu.be')) 
+                      ? ytDuration 
+                      : duration
+                  )}
+                </span>
               </div>
             </div>
 
@@ -923,6 +1240,10 @@ const getCardStyle = () => {
         </div>
       )}
 
+
+
+
+
       {/* MODAL PINDAH FOLDER */}
       {movingTrack && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -952,20 +1273,18 @@ const getCardStyle = () => {
           </div>
         </div>
       )}
-
-      {/* ELEMENT AUDIO UTAMA (OTOMATIS BERPINDAH KE LAGU BERIKUTNYA) */}
-      {activeAudio && (
-        <audio 
-          ref={audioRef} 
-          src={activeAudio.url} 
-          onEnded={handleNextTrack} 
-          onPlay={() => setIsPlaying(true)} 
-          onPause={() => setIsPlaying(false)} 
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        />
-      )}
-
+{/* ELEMENT AUDIO UTAMA (Hanya aktif jika bukan YouTube) */}
+{activeAudio && activeAudio.size !== 'YouTube' && (
+  <audio 
+    ref={audioRef} 
+    src={activeAudio.url} 
+    onEnded={handleNextTrack} 
+    onPlay={() => setIsPlaying(true)} 
+    onPause={() => setIsPlaying(false)} 
+    onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+    onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+  />
+)}
     </div>
   );
 }
