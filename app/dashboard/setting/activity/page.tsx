@@ -258,7 +258,7 @@ export default function ActivityPage() {
       </div>
     ) : (
       /* 📜 Kontainer yang bisa di-scroll dengan max-height */
-      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
+      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-transparant">
         {filteredActivities.map((item) => (
           <div key={item.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition ${isDark ? 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-900/70' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'}`}>
             <div className="flex items-center gap-3">

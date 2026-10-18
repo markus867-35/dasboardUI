@@ -80,12 +80,12 @@ const [stats, setStats] = useState({
 
 // State untuk filter tanggal Active Sessions (Menggunakan tanggal lokal)
 const [sessionFilterDate, setSessionFilterDate] = useState<string>(() => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-});
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // Ini akan menghasilkan "2026-10-18" sesuai jam lokal komputer
+  });
 
 // Jalankan fetch saat komponen pertama kali dimuat atau saat sessionFilterDate berubah
 useEffect(() => {
@@ -93,7 +93,7 @@ useEffect(() => {
 }, [sessionFilterDate]);
 
 async function fetchActiveSessionsByDate(selectedDate: string) {
-    // Tentukan awal dan akhir hari berdasarkan tanggal yang dipilih (format YYYY-MM-DD)
+    // Gunakan format UTC atau awalan-akhiran hari standar
     const startOfDay = `${selectedDate}T00:00:00.000+07:00`;
     const endOfDay = `${selectedDate}T23:59:59.999+07:00`;
 
@@ -101,7 +101,6 @@ async function fetchActiveSessionsByDate(selectedDate: string) {
       .from('login_sessions')
       .select('id, name, email, ip_address, status, logged_in_at, logged_out_at')
       .in('status', ['Aktif Bekerja', 'Offline'])
-      // Memastikan waktu login (logged_in_at) benar-benar di dalam rentang tanggal yang dipilih
       .gte('logged_in_at', startOfDay) 
       .lte('logged_in_at', endOfDay)
       .order('logged_in_at', { ascending: false });
@@ -120,7 +119,13 @@ async function fetchActiveSessionsByDate(selectedDate: string) {
     } else {
       console.error('Gagal mengambil sesi:', sessionErr);
     }
-  }
+}
+
+
+
+
+
+
 
 // Ganti baris inisialisasi useState filterDate Anda dengan ini:
   const [filterDate, setFilterDate] = useState<string>(() => {
