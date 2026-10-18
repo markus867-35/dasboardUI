@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useRouter } from 'next/navigation';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { FiArrowLeft } from 'react-icons/fi';
 
 export default function CurrencyFormPage() {
   const router = useRouter();
-    const { mode } = useTheme();
+  const { mode } = useTheme();
   const isDark = mode === 'dark';
-
 
   const [formData, setFormData] = useState({
     country: '',
@@ -23,8 +23,28 @@ export default function CurrencyFormPage() {
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Data disimpan:', formData);
-    router.push('/currencies'); 
+    
+    try {
+      // Jika Anda menyimpan ke Supabase, lakukan proses insert di sini terlebih dahulu, contoh:
+      /*
+      const { error } = await supabase.from('currencies').insert([formData]);
+      if (error) throw error;
+      */
+
+      console.log('Data disimpan:', formData);
+
+      // Catat aktivitas penambahan mata uang baru ke log
+      logActivity(
+        'Currency', // Nama modul/aksi yang muncul di tabel log
+        `Berhasil menambahkan mata uang baru: "${formData.currency} (${formData.code})".`,
+        'create' // Tipe aktivitas
+      );
+
+      router.push('/currencies'); 
+    } catch (error: any) {
+      console.error('Gagal menyimpan mata uang:', error);
+      alert(`Terjadi kesalahan: ${error.message || error}`);
+    }
   };
 
   return (

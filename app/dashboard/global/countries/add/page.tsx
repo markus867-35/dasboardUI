@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { FiArrowLeft, FiMoon, FiSun } from 'react-icons/fi';
 
 export default function AddCountryPage() {
@@ -24,10 +25,29 @@ export default function AddCountryPage() {
 
   const handleAddCountry = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Data negara disimpan:', form);
-    router.push('/countries'); // Sesuaikan dengan route halaman direktori Anda
-  };
 
+    try {
+      // Jika Anda menyimpan ke database Supabase, lakukan insert di sini, contoh:
+      /*
+      const { error } = await supabase.from('countries').insert([form]);
+      if (error) throw error;
+      */
+
+      console.log('Data negara disimpan:', form);
+
+      // Catat aktivitas penambahan negara baru ke log
+      logActivity(
+        'Country', // Nama modul/aksi yang muncul di tabel log
+        `Berhasil menambahkan negara baru: "${form.name}" (${form.code || '-'}).`,
+        'create' // Tipe aktivitas
+      );
+
+      router.push('/countries'); // Sesuaikan dengan route halaman direktori Anda
+    } catch (error: any) {
+      console.error('Gagal menyimpan negara:', error);
+      alert(`Terjadi kesalahan: ${error.message || error}`);
+    }
+  };
   return (
     <div className={`max-w-3xl mx-auto p-6 my-8 rounded-2xl border shadow-xl transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       

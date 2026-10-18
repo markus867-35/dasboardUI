@@ -65,6 +65,7 @@ export default function DashboardPage() {
   const [recentVisitors, setRecentVisitors] = useState<any[]>([]);
   const [activeSessions, setActiveSessions] = useState<ActivityItem[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [expandedRows, setExpandedRows] = useState<number[]>([]);
 const [stats, setStats] = useState({
     totalVideo: 0,
     totalFile: 0,
@@ -76,6 +77,13 @@ const [stats, setStats] = useState({
     totalData: 0,
   });
 
+const toggleRow = (index: number) => {
+    if (expandedRows.includes(index)) {
+      setExpandedRows(expandedRows.filter(i => i !== index)); // Tutup jika sudah terbuka
+    } else {
+      setExpandedRows([...expandedRows, index]); // Buka jika belum
+    }
+  };
 
 
 // State untuk filter tanggal Active Sessions (Menggunakan tanggal lokal)
@@ -576,46 +584,61 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
     </div>
   </div>
   
-  {/* Bagian Tabel dengan Garis Pembatas Vertikal yang Jelas untuk Semua Mode */}
+{/* Bagian Tabel dengan Garis Pembatas Vertikal yang Jelas untuk Semua Mode */}
   <div className={`w-full max-h-[400px] overflow-y-auto overflow-x-auto rounded-lg border ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
-    <table className="w-full text-left text-sm min-w-[650px] border-collapse">
+    <table className="w-full text-left text-sm min-w-[900px] border-collapse">
       <thead className={`sticky top-0 z-20 ${mode === 'light' ? 'bg-slate-100 shadow-sm' : 'bg-slate-800 shadow-sm'}`}>
         <tr className={`border-b ${mode === 'light' ? 'border-slate-300 text-slate-700 font-bold' : 'border-slate-700 text-slate-200 font-bold'}`}>
-          {/* Kolom 1 */}
-          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Name</th>
-          {/* Kolom 2 */}
-          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Aksi / Transaksi</th>
-          {/* Kolom 3 */}
-          <th className={`p-3 whitespace-nowrap border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Keterangan Detail</th>
-          {/* Kolom 4 */}
-          <th className="p-3 whitespace-nowrap">Waktu</th>
+          <th className={`p-3 whitespace-nowrap border-r w-[140px] ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Name</th>
+          <th className={`p-3 whitespace-nowrap border-r w-[150px] ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Aksi / Transaksi</th>
+          <th className={`p-3 whitespace-nowrap border-r min-w-[320px] ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Keterangan Detail</th>
+          <th className={`p-3 whitespace-nowrap border-r w-[110px] ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>Waktu</th>
+          <th className="p-3 whitespace-nowrap w-[90px] text-center">Aksi</th>
         </tr>
       </thead>
       <tbody className={`divide-y ${mode === 'light' ? 'divide-slate-300 text-slate-700' : 'divide-slate-700 text-slate-200'}`}>
         {activities.length === 0 ? (
           <tr>
-            <td colSpan={4} className="py-6 text-center opacity-70">
+            <td colSpan={5} className="py-6 text-center opacity-70">
               Belum ada riwayat aktivitas atau transaksi pada tanggal {filterDate}.
             </td>
           </tr>
         ) : (
-          activities.map((item, index) => (
-            <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%]'}>
-              {/* Sel Data Kolom 1 */}
-              <td className={`px-4 py-3 text-sm font-medium border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                  {item.nama || 'Admin'}
-                </span>
-              </td>
-              {/* Sel Data Kolom 2 */}
-              <td className={`p-3 whitespace-nowrap font-semibold border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.title}</td>
-              {/* Sel Data Kolom 3 */}
-              <td className={`p-3 text-xs opacity-90 border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.description}</td>
-              {/* Sel Data Kolom 4 */}
-              <td className="p-3 whitespace-nowrap text-xs font-mono">{item.timestamp}</td>
-            </tr>
-          ))
+          activities.map((item, index) => {
+            const isLongText = item.description && item.description.length > 60;
+            const isExpanded = expandedRows.includes(index);
+            
+            // Tampilkan terpotong jika belum di-expand, tampilkan penuh jika sudah di-expand
+            const displayDesc = isLongText && !isExpanded 
+              ? item.description.substring(0, 60) + '...' 
+              : item.description;
+
+            return (
+              <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%'}>
+                <td className={`px-4 py-3 text-sm font-medium border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    {item.nama || 'Admin'}
+                  </span>
+                </td>
+                <td className={`p-3 whitespace-nowrap font-semibold border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.title}</td>
+                <td className={`p-3 text-xs opacity-90 border-r whitespace-normal break-words ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>
+                  {displayDesc}
+                </td>
+                <td className={`p-3 whitespace-nowrap text-xs font-mono border-r ${mode === 'light' ? 'border-slate-300' : 'border-slate-700'}`}>{item.timestamp}</td>
+                <td className="p-3 text-center whitespace-nowrap">
+                  {isLongText && (
+                    <button
+                      onClick={() => toggleRow(index)}
+                      className="px-2.5 py-1 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition shadow-sm"
+                    >
+                      {isExpanded ? 'Tutup' : 'Detail'}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })
         )}
       </tbody>
     </table>

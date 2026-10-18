@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { 
   FiFolder, FiUpload, FiLink, FiTrash2, FiSearch, 
   FiGrid, FiList, FiFile, FiPackage, FiArchive, FiArrowLeft, FiX, FiEye 
@@ -289,11 +290,22 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       parent_folder: item.parentFolder,
       content: item.content
     }));
-    
+
     if (dbPayload.length > 0) {
       const { error } = await supabase.from('file_items').insert(dbPayload);
       if (error) {
         console.error('Gagal menyimpan ke Supabase:', error.message);
+      } else {
+        // CONTOH PERBAIKAN: 
+        // Ambil nama folder pertama dari discoveredFolders atau beri ringkasan upload
+        const folderNames = Array.from(discoveredFolders.keys());
+        const mainFolder = folderNames.length > 0 ? folderNames[0] : 'Folder';
+
+logActivity(
+  'File Manager', // <- Ini dikirim sebagai parameter pertama
+  `Berhasil mengunggah folder atau file baru: "${mainFolder}" beserta isinya.`,
+  'upload'
+);
       }
     }
   }
@@ -306,10 +318,31 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     return matchesFolder && matchesSearch;
   });
 
-  const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
+const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await supabase.from('file_items').delete().eq('id', id);
+
+    // 1. Cari data file/folder yang akan dihapus untuk dicatat ke log
+    const targetItem = files.find(f => f.id === id);
+    const itemName = targetItem ? targetItem.name : 'Item';
+    const itemType = targetItem?.type === 'folder' ? 'folder' : 'file';
+
+    // 2. Hapus dari Supabase
+    const { error } = await supabase.from('file_items').delete().eq('id', id);
+    
+    if (error) {
+      console.error('Gagal menghapus dari Supabase:', error.message);
+      return;
+    }
+
+    // 3. Update state lokal
     setFiles(files.filter(f => f.id !== id));
+
+    // 4. Catat aktivitas penghapusan
+    logActivity(
+      'File Manager', // Muncul di kolom Aksi / Transaksi
+      `Berhasil menghapus ${itemType}: "${itemName}".`,
+      'delete' // Tipe aktivitas (bisa disesuaikan)
+    );
   };
 
 
@@ -352,7 +385,16 @@ const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     element.click();
     document.body.removeChild(element);
     URL.revokeObjectURL(fileUrl);
+
+    // Catat aktivitas download ke log
+    logActivity(
+      'File Manager',
+      `Berhasil mendownload file: "${file.name}".`,
+      'download' // Tipe aktivitas untuk riwayat
+    );
   };
+
+  
   return (
     <div className="p-0 space-y-6 relative">
       {/* HEADER & TOOLBAR */}

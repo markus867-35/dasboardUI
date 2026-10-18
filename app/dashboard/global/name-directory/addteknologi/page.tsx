@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@/app/context/ThemeContext';
 import { FiPlus, FiArrowLeft } from 'react-icons/fi';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { supabase } from '@/lib/supabase';
 
 export default function TambahTeknologiPage() {
@@ -39,8 +40,15 @@ export default function TambahTeknologiPage() {
       setLoading(true);
       
       // Simpan ke Supabase:
-      // const { error } = await supabase.from('tech_directories').insert([newItem]);
-      // if (error) throw error;
+      const { error } = await supabase.from('tech_directories').insert([newItem]);
+      if (error) throw error;
+
+      // Catat aktivitas penambahan data teknologi ke log
+      logActivity(
+        'Global Technology', // Kategori/Aksi yang akan tampil di tabel log
+        `Berhasil menambahkan data teknologi baru untuk negara: "${newItem.country}".`,
+        'create' // Tipe aktivitas
+      );
 
       alert('Data teknologi berhasil ditambahkan!');
       router.push('/dashboard/global/name-directory'); // Kembali ke halaman utama direktori setelah sukses

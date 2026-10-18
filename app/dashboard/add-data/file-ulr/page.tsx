@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/context/ThemeContext';
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import Swal from 'sweetalert2';
 import { 
   FiLink, FiPlus, FiTrash2, FiSearch, 
@@ -147,18 +148,30 @@ const getCardStyle = () => {
         setUrlList([data[0], ...urlList]);
         setNewTitle('');
         setNewUrl('');
+
+        // Catat aktivitas penambahan URL ke log
+        logActivity(
+          'File Url', // Kategori/Aksi yang akan tampil di tabel log
+          `Berhasil menambahkan tautan baru: "${newItem.title}".`,
+          'create' // Tipe aktivitas (bisa disesuaikan, misal 'create' atau 'upload')
+        );
       }
     } catch (error: any) {
       console.error('Gagal menyimpan URL:', error);
       alert(`Terjadi kesalahan saat menyimpan URL: ${error.message || error}`);
     }
   };
-
+  
   // Hapus URL dari Supabase
-  const handleDeleteUrl = async (id: string | number) => {
+const handleDeleteUrl = async (id: string | number) => {
     if (!confirm('Apakah Anda yakin ingin menghapus tautan ini?')) return;
 
     try {
+      // 1. Cari data URL yang akan dihapus untuk dicatat ke log
+      const targetUrl = urlList.find(u => u.id === id);
+      const urlName = targetUrl ? (targetUrl.title || targetUrl.url) : 'Tautan';
+
+      // 2. Hapus dari database Supabase
       const { error } = await supabase
         .from('url_bookmarks')
         .delete()
@@ -166,7 +179,15 @@ const getCardStyle = () => {
 
       if (error) throw error;
 
+      // 3. Update state lokal
       setUrlList(urlList.filter(u => u.id !== id));
+
+      // 4. Catat aktivitas penghapusan URL ke log
+      logActivity(
+        'File Ulr', // Atau bisa disesuaikan, misal 'Bookmark / URL'
+        `Berhasil menghapus tautan: "${urlName}".`,
+        'delete'
+      );
     } catch (error) {
       console.error('Gagal menghapus URL:', error);
       alert('Gagal menghapus tautan dari database.');

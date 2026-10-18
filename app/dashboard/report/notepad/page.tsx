@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase'; // <-- Cukup gunakan ini saja
 import { useTheme } from '@/app/context/ThemeContext'; 
+import { logActivity } from '@/app/utils/activityLogger'; // Impor helper logger
 import { 
   Folder, FolderPlus, FileText, Plus, Trash2, Edit3, 
   Save, X, ChevronRight, Menu, Search, Table as TableIcon, Image as ImageIcon, Bold, Italic, List, ListOrdered ,AlignLeft, AlignCenter, AlignRight, AlignJustify
@@ -481,17 +482,32 @@ export default function NoteManagerPage() {
     }
   }, [selectedNote]);
 
+
+
+
+
+
   // --- CRUD FOLDER ---
+// --- CRUD FOLDER ---
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
+    const folderName = newFolderName.trim();
+
     const { data, error } = await supabase
       .from('folders')
-      .insert([{ name: newFolderName.trim() }])
+      .insert([{ name: folderName }])
       .select();
 
     if (!error && data) {
+      // Catat aktivitas pembuatan folder baru ke log
+      logActivity(
+        'Notepad',
+        `Berhasil membuat folder baru: "${folderName}".`,
+        'create' // Tipe aktivitas untuk pembuatan data baru
+      );
+
       setNewFolderName('');
       setIsCreatingFolder(false);
       await fetchFolders();
@@ -501,14 +517,32 @@ export default function NoteManagerPage() {
     }
   };
 
+
+
+
+
+
+
+
   const handleUpdateFolder = async (folderId: string) => {
     if (!editedFolderName.trim()) return;
+
+    const newFolderName = editedFolderName.trim();
+
+    // 1. Update nama folder di Supabase
     const { error } = await supabase
       .from('folders')
-      .update({ name: editedFolderName.trim() })
+      .update({ name: newFolderName })
       .eq('id', folderId);
 
     if (!error) {
+      // 2. Catat aktivitas perubahan nama folder ke log
+      logActivity(
+        'Notepad',
+        `Berhasil mengubah nama folder menjadi: "${newFolderName}".`,
+        'update' // Tipe aktivitas untuk pembaruan data
+      );
+
       setEditingFolderId(null);
       fetchFolders();
     } else {
@@ -516,10 +550,30 @@ export default function NoteManagerPage() {
     }
   };
 
+
+
+
+
+
   const handleDeleteFolder = async (folderId: string) => {
     if (!confirm('Hapus folder ini beserta seluruh catatan di dalamnya?')) return;
+
+    // 1. Cari nama folder yang akan dihapus untuk dicatat ke log
+    // (Sesuaikan variabel 'folders' dengan nama state daftar folder Anda jika berbeda)
+    const targetFolder = folders.find((f: any) => f.id === folderId);
+    const folderName = targetFolder ? targetFolder.name : 'Folder';
+
+    // 2. Hapus dari database Supabase
     const { error } = await supabase.from('folders').delete().eq('id', folderId);
+    
     if (!error) {
+      // 3. Catat aktivitas penghapusan folder ke log
+      logActivity(
+        'Notepad',
+        `Berhasil menghapus folder: "${folderName}" beserta isinya.`,
+        'delete' // Tipe aktivitas untuk penghapusan
+      );
+
       if (selectedFolderId === folderId) {
         setSelectedFolderId(null);
         setSelectedNote(null);
@@ -530,22 +584,35 @@ export default function NoteManagerPage() {
     }
   };
 
+
+
+
+
   // --- CRUD NOTE ---
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNoteTitle.trim() || !selectedFolderId) return;
 
+    const noteTitle = newNoteTitle.trim();
+
     const { data, error } = await supabase
       .from('notes')
       .insert([{
         folder_id: selectedFolderId,
-        title: newNoteTitle.trim(),
+        title: noteTitle,
         content: '',
         updated_at: new Date().toISOString()
       }])
       .select();
 
     if (!error && data) {
+      // Catat aktivitas pembuatan catatan baru ke log
+      logActivity(
+        'Notepad',
+        `Berhasil membuat catatan baru: "${noteTitle}".`,
+        'create' // Tipe aktivitas untuk pembuatan data baru
+      );
+
       setNewNoteTitle('');
       setIsCreatingNote(false);
       await fetchNotes(selectedFolderId);
@@ -554,8 +621,15 @@ export default function NoteManagerPage() {
       alert('Gagal membuat catatan: ' + error?.message);
     }
   };
+  
 
-  const handleSaveNoteContent = async () => {
+
+
+
+
+
+
+const handleSaveNoteContent = async () => {
     if (!selectedNote) return;
     setLoading(true);
 
@@ -568,26 +642,58 @@ export default function NoteManagerPage() {
       .eq('id', selectedNote.id);
 
     setLoading(false);
+    
     if (error) {
       alert('Gagal menyimpan catatan!');
     } else {
       setSelectedNote({ ...selectedNote, content: noteContent });
+
+      const noteTitle = selectedNote.title || selectedNote.name || 'Catatan Tanpa Judul';
+      
+      // 1. Bersihkan semua tag HTML (seperti <p>, <strong>, dll)
+      // 2. Hapus pembatas 50 karakter agar teks tidak terpotong dan tidak ada titik-titik (...)
+      const cleanContent = noteContent.replace(/<\/?[^>]+(>|$)/g, "").trim();
+
+      try {
+        await logActivity(
+          'Notepad',
+          `Memperbarui catatan "${noteTitle}" dengan isi: "${cleanContent || '(Kosong)'}"`,
+          'update'
+        );
+      } catch (logErr) {
+        console.error("Gagal mengirim log:", logErr);
+      }
     }
   };
 
-  const handleUpdateNoteTitle = async () => {
+
+
+
+
+
+const handleUpdateNoteTitle = async () => {
     if (!selectedNote || !editedNoteTitle.trim()) return;
+
+    const oldTitle = selectedNote.title; // Simpan judul lama untuk referensi log (opsional)
+    const newTitle = editedNoteTitle.trim();
 
     const { error } = await supabase
       .from('notes')
       .update({ 
-        title: editedNoteTitle.trim(),
+        title: newTitle,
         updated_at: new Date().toISOString()
       })
       .eq('id', selectedNote.id);
 
     if (!error) {
-      setSelectedNote({ ...selectedNote, title: editedNoteTitle.trim() });
+      // Catat aktivitas perubahan judul catatan ke log
+      logActivity(
+        'Notepad',
+        `Berhasil mengubah judul catatan dari "${oldTitle}" menjadi "${newTitle}".`,
+        'update' // Tipe aktivitas untuk update
+      );
+
+      setSelectedNote({ ...selectedNote, title: newTitle });
       setIsEditingNoteTitle(false);
       if (selectedFolderId) fetchNotes(selectedFolderId);
     } else {
@@ -595,10 +701,29 @@ export default function NoteManagerPage() {
     }
   };
 
-  const handleDeleteNote = async (noteId: string) => {
+
+
+
+
+
+const handleDeleteNote = async (noteId: string) => {
     if (!confirm('Hapus catatan ini?')) return;
+
+    // 1. Cari judul catatan yang akan dihapus untuk dicatat ke log
+    const targetNote = notes.find(n => n.id === noteId);
+    const noteTitle = targetNote ? targetNote.title : 'Catatan';
+
+    // 2. Hapus dari database Supabase
     const { error } = await supabase.from('notes').delete().eq('id', noteId);
+    
     if (!error) {
+      // 3. Catat aktivitas penghapusan catatan ke log
+      logActivity(
+        'Notepad', // Nama modul/aksi yang muncul di tabel log
+        `Berhasil menghapus catatan: "${noteTitle}".`,
+        'delete' // Tipe aktivitas
+      );
+
       if (selectedFolderId) fetchNotes(selectedFolderId);
     } else {
       alert('Gagal menghapus catatan');
