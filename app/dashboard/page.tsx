@@ -603,15 +603,17 @@ const logActivity = (title: string, description: string, color = 'text-indigo-50
               Belum ada riwayat aktivitas atau transaksi pada tanggal {filterDate}.
             </td>
           </tr>
-        ) : (
+ ) : (
           activities.map((item, index) => {
-            const isLongText = item.description && item.description.length > 60;
+            // Amankan item.description agar tidak bernilai undefined
+            const descriptionText = item.description || '';
+            const isLongText = descriptionText.length > 60;
             const isExpanded = expandedRows.includes(index);
             
             // Tampilkan terpotong jika belum di-expand, tampilkan penuh jika sudah di-expand
             const displayDesc = isLongText && !isExpanded 
-              ? item.description.substring(0, 60) + '...' 
-              : item.description;
+              ? descriptionText.substring(0, 60) + '...' 
+              : descriptionText;
 
             return (
               <tr key={index} className={mode === 'light' ? 'hover:bg-black/[2%]' : 'hover:bg-white/[2%'}>
