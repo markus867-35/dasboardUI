@@ -606,19 +606,23 @@ export default function NoteManagerPage() {
       .select();
 
     if (!error && data) {
-      // Catat aktivitas pembuatan catatan baru ke log
-      logActivity(
-        'Notepad',
-        `Berhasil membuat catatan baru: "${noteTitle}".`,
-        'create' // Tipe aktivitas untuk pembuatan data baru
-      );
+      // Catat aktivitas pembuatan catatan baru ke log dengan aman
+      try {
+        await logActivity(
+          'Notepad',
+          `Berhasil membuat catatan baru: "${noteTitle}".`,
+          'create'
+        );
+      } catch (logErr) {
+        console.error("Gagal mencatat log aktivitas:", logErr);
+      }
 
       setNewNoteTitle('');
       setIsCreatingNote(false);
       await fetchNotes(selectedFolderId);
       setSelectedNote(data[0]);
     } else {
-      alert('Gagal membuat catatan: ' + error?.message);
+      alert('Gagal membuat catatan: ' + (error?.message || 'Terjadi kesalahan'));
     }
   };
   
@@ -648,7 +652,7 @@ const handleSaveNoteContent = async () => {
     } else {
       setSelectedNote({ ...selectedNote, content: noteContent });
 
-      const noteTitle = selectedNote.title || selectedNote.name || 'Catatan Tanpa Judul';
+      const noteTitle = selectedNote.title || 'Catatan Tanpa Judul';
       
       // 1. Bersihkan semua tag HTML (seperti <p>, <strong>, dll)
       // 2. Hapus pembatas 50 karakter agar teks tidak terpotong dan tidak ada titik-titik (...)
